@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed": "#001c38",
+            "surface": "#f8f9ff",
+            "surface-bright": "#f8f9ff",
+            "on-primary": "#ffffff",
+            "error-container": "#ffdad6",
+            "on-secondary-container": "#38617d",
+            "on-surface": "#191c20",
+            "tertiary-fixed-dim": "#f7bd4f",
+            "on-tertiary": "#ffffff",
+            "secondary-container": "#b3dcfd",
+            "on-error-container": "#93000a",
+            "on-tertiary-container": "#4a3300",
+            "surface-container-high": "#e7e8ee",
+            "on-surface-variant": "#414750",
+            "tertiary": "#7d5800",
+            "secondary-fixed-dim": "#a3cbeb",
+            "on-tertiary-fixed": "#271900",
+            "surface-container": "#ededf4",
+            "on-secondary-fixed": "#001e2f",
+            "surface-tint": "#1e60a1",
+            "inverse-on-surface": "#f0f0f6",
+            "surface-container-lowest": "#ffffff",
+            "on-primary-container": "#003866",
+            "on-secondary": "#ffffff",
+            "surface-variant": "#e1e2e8",
+            "secondary": "#3a637e",
+            "background": "#f8f9ff",
+            "outline": "#727781",
+            "primary-container": "#6ba3e8",
+            "on-background": "#191c20",
+            "tertiary-container": "#cc972c",
+            "surface-dim": "#d9dae0",
+            "on-tertiary-fixed-variant": "#5e4100",
+            "surface-container-low": "#f2f3f9",
+            "error": "#ba1a1a",
+            "secondary-fixed": "#c9e6ff",
+            "tertiary-fixed": "#ffdea9",
+            "on-secondary-fixed-variant": "#1f4b65",
+            "on-error": "#ffffff",
+            "primary-fixed-dim": "#a2c9ff",
+            "primary": "#1e60a1",
+            "outline-variant": "#c1c7d2",
+            "on-primary-fixed-variant": "#004881",
+            "inverse-primary": "#a2c9ff",
+            "inverse-surface": "#2e3035",
+            "primary-fixed": "#d3e4ff",
+            "surface-container-highest": "#e1e2e8"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "xs": "4px",
+            "gutter": "16px",
+            "md": "16px",
+            "sm": "8px",
+            "xxl": "48px",
+            "container-margin": "24px",
+            "base": "4px",
+            "xl": "32px",
+            "lg": "24px"
+          },
+          "fontFamily": {
+            "label-md": ["Inter"],
+            "label-sm": ["Inter"],
+            "h1": ["Inter"],
+            "body-md": ["Inter"],
+            "h3": ["Inter"],
+            "body-sm": ["Inter"],
+            "h2": ["Inter"],
+            "body-lg": ["Inter"]
+          },
+          "fontSize": {
+            "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+            "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.04em", "fontWeight": "500"}],
+            "h1": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+            "h3": ["24px", {"lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "600"}],
+            "body-sm": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+            "h2": ["32px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #F5F9FF;
+    }
+    .ambient-shadow {
+      box-shadow: 0 2px 8px rgba(107, 163, 232, 0.08);
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="h-full font-body-md text-on-surface">
+<!-- Main Container -->
+<main class="min-h-screen flex flex-col px-container-margin py-xl max-w-md mx-auto">
+<!-- Top Section: Logo & Welcome -->
+<header class="flex flex-col items-center text-center mt-xl mb-xxl">
+<div class="w-16 h-16 bg-primary-container rounded-xl flex items-center justify-center mb-md ambient-shadow">
+<span class="material-symbols-outlined text-on-primary text-[32px]" data-icon="rocket_launch">rocket_launch</span>
+</div>
+<h1 class="font-h1 text-h2 text-on-primary-container mb-xs">Sales.AI</h1>
+<p class="font-body-md text-on-surface-variant">Chào mừng bạn quay trở lại với giải pháp AI thông minh</p>
+</header>
+<!-- Middle Section: Login Form -->
+<section class="flex-grow">
+<div class="bg-surface-container-lowest rounded-[16px] p-lg ambient-shadow space-y-md">
+<!-- Email Field -->
+<div class="space-y-xs">
+<label class="font-label-md text-on-surface-variant block ml-xs">Email</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-primary transition-colors" data-icon="mail">mail</span>
+<input class="w-full bg-surface-container-low border-outline-variant rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none" placeholder="example@email.com" type="email"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-xs">
+<label class="font-label-md text-on-surface-variant block ml-xs">Mật khẩu</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-primary transition-colors" data-icon="lock">lock</span>
+<input class="w-full bg-surface-container-low border-outline-variant rounded-xl py-3 pl-12 pr-12 focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Forgot Password -->
+<div class="flex justify-end">
+<a class="font-label-md text-primary hover:text-on-primary-fixed-variant transition-colors" href="#">Quên mật khẩu?</a>
+</div>
+</div>
+</section>
+<!-- Bottom Section: Actions -->
+<footer class="mt-xl space-y-xl">
+<div class="space-y-md">
+<!-- Primary Login Button -->
+<button class="w-full bg-primary-container text-on-primary font-label-md py-4 rounded-[10px] shadow-lg hover:brightness-105 active:scale-[0.98] transition-all">
+          Đăng nhập
+        </button>
+<!-- Divider -->
+<div class="flex items-center gap-md">
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+<span class="font-label-sm text-outline">Hoặc đăng nhập với</span>
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+</div>
+<!-- Social Login Icons -->
+<div class="flex justify-center gap-lg">
+<button class="w-14 h-14 rounded-full bg-surface-container-lowest ambient-shadow flex items-center justify-center hover:bg-surface-container transition-colors">
+<img alt="Google" class="w-6 h-6" data-alt="Official Google G logo in flat vector style with brand colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqdqEO-PkcuB8lk29jMea73iRxEpy1FIih8UHI5JLA66BySjTyXlXXioUtr1EFqp5-v5vkYjXHSQBKc9TveML3Pha3tBa2D5dNP-ayjtYZgBPDphKVYVYwTYtbte7NrDwsFRw14YygGwRjLs-6mA5qvMfFCtNWjjvKjnQPaG-4DioZvAa5b1Q3dzF5sxfwDLZDtGnJYwHFaDVlsi8hJo-OH2SPGhK7mRsRUMCciFDviph14w5TjKZ6Zd-2doyBXNHp00rEoaDMMWzx"/>
+</button>
+<button class="w-14 h-14 rounded-full bg-surface-container-lowest ambient-shadow flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[#1877F2]" data-icon="facebook" style="font-variation-settings: 'FILL' 1;">social_leaderboard</span>
+</button>
+<button class="w-14 h-14 rounded-full bg-surface-container-lowest ambient-shadow flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface" data-icon="apple" style="font-variation-settings: 'FILL' 1;">ios</span>
+</button>
+</div>
+</div>
+<!-- Sign Up Link -->
+<div class="text-center">
+<p class="font-body-sm text-on-surface-variant">
+          Chưa có tài khoản? 
+          <a class="font-label-md text-primary ml-1 hover:underline" href="#">Đăng ký ngay</a>
+</p>
+</div>
+<!-- Shared Components Footer Integration -->
+<div class="flex flex-col items-center gap-sm pt-md border-t border-blue-100/30">
+<div class="flex gap-md">
+<span class="font-label-sm text-outline hover:text-primary cursor-pointer transition-colors">Privacy Policy</span>
+<span class="font-label-sm text-outline hover:text-primary cursor-pointer transition-colors">Terms of Service</span>
+</div>
+<p class="font-label-sm text-outline opacity-60">© 2024 Sales.AI. All rights reserved.</p>
+</div>
+</footer>
+</main>
+<!-- Decorative Background Element -->
+<div class="fixed top-0 right-0 -z-10 w-64 h-64 bg-primary-container/10 blur-[100px] rounded-full"></div>
+<div class="fixed bottom-0 left-0 -z-10 w-72 h-72 bg-tertiary-container/10 blur-[120px] rounded-full"></div>
+</body></html>
