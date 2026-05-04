@@ -1,6 +1,6 @@
 <template>
     <aside :class="[
-        'fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-99999 border-r border-gray-200',
+        'fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-brand-25 dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-99999 border-r border-brand-100',
         {
             'lg:w-[290px]': isExpanded || isMobileOpen || isHovered,
             'lg:w-[90px]': !isExpanded && !isHovered,
@@ -14,11 +14,8 @@
             !isExpanded && !isHovered ? 'lg:justify-center' : 'justify-start',
         ]">
             <router-link to="/">
-                <img v-if="isExpanded || isHovered || isMobileOpen" class="dark:hidden" src="/images/logo/logo.svg"
-                    alt="Logo" width="150" height="40" />
-                <img v-if="isExpanded || isHovered || isMobileOpen" class="hidden dark:block"
-                    src="/images/logo/logo-dark.svg" alt="Logo" width="150" height="40" />
-                <img v-else src="/images/logo/logo-icon.svg" alt="Logo" width="32" height="32" />
+                <BrandLogo v-if="isExpanded || isHovered || isMobileOpen" />
+                <BrandLogo v-else icon-only />
             </router-link>
         </div>
         <div class="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
@@ -26,7 +23,7 @@
                 <div class="flex flex-col gap-4">
                     <div v-for="(menuGroup, groupIndex) in menuGroups" :key="groupIndex">
                         <h2 :class="[
-                            'mb-4 text-xs uppercase flex leading-[20px] text-gray-400',
+                            'mb-4 text-xs uppercase flex leading-[20px] text-brand-400 dark:text-gray-500',
                             !isExpanded && !isHovered
                                 ? 'lg:justify-center'
                                 : 'justify-start',
@@ -147,15 +144,17 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { onMounted } from "vue";
 import { useRoute } from "vue-router";
 
 import {
-    GridIcon,
+    Message2Line,
+    TaskIcon,
     ChevronDownIcon,
     HorizontalDots,
 } from "../../icons";
 import SidebarWidget from "./SidebarWidget.vue";
+import BrandLogo from "@/components/common/BrandLogo.vue";
 import { useSidebar } from "@/composables/useSidebar";
 
 const route = useRoute();
@@ -164,43 +163,59 @@ const { isExpanded, isMobileOpen, isHovered, openSubmenu } = useSidebar();
 
 const menuGroups = [
     {
-        title: "Menu",
+        title: "Menu chính",
         items: [
             {
-                icon: GridIcon,
-                name: "Dashboard",
-                path: "/",
+                icon: Message2Line,
+                name: "Chat tài liệu",
+                subItems: [
+                    { name: "Chat với AI", path: "/chat", pro: false, new: false },
+                    { name: "Thư viện tài liệu", path: "/doc-library", pro: false, new: false },
+                ],
+            },
+            {
+                icon: TaskIcon,
+                name: "CRM & Công việc",
+                path: "/crm-work",
             },
         ],
     },
 ];
 
-const isActive = (path) => route.path === path;
+const isActive = (path) => {
+    if (path === "/doc-library") {
+        return route.path.startsWith("/doc-library");
+    }
+    return route.path === path;
+};
 
 const toggleSubmenu = (groupIndex, itemIndex) => {
     const key = `${groupIndex}-${itemIndex}`;
     openSubmenu.value = openSubmenu.value === key ? null : key;
 };
 
-const isAnySubmenuRouteActive = computed(() => {
-    return menuGroups.some((group) =>
-        group.items.some(
-            (item) =>
-                item.subItems && item.subItems.some((subItem) => isActive(subItem.path))
-        )
-    );
-});
-
 const isSubmenuOpen = (groupIndex, itemIndex) => {
     const key = `${groupIndex}-${itemIndex}`;
-    return (
-        openSubmenu.value === key ||
-        (isAnySubmenuRouteActive.value &&
-            menuGroups[groupIndex].items[itemIndex].subItems?.some((subItem) =>
-                isActive(subItem.path)
-            ))
-    );
+    return openSubmenu.value === key;
 };
+
+onMounted(() => {
+    // Open the matching submenu on first load, but still allow manual collapse.
+    if (openSubmenu.value !== null) {
+        return;
+    }
+
+    for (let groupIndex = 0; groupIndex < menuGroups.length; groupIndex += 1) {
+        const group = menuGroups[groupIndex];
+        for (let itemIndex = 0; itemIndex < group.items.length; itemIndex += 1) {
+            const item = group.items[itemIndex];
+            if (item.subItems?.some((subItem) => isActive(subItem.path))) {
+                openSubmenu.value = `${groupIndex}-${itemIndex}`;
+                return;
+            }
+        }
+    }
+});
 
 const startTransition = (el) => {
     el.style.height = "auto";

@@ -1,8 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
+interface UserProfile {
+  name: string
+  email: string
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('token'))
+  const user = ref<UserProfile | null>(
+    token.value ? { name: 'Quản trị viên', email: 'admin@salio.ai' } : null,
+  )
 
   const isAuthenticated = computed(() => !!token.value)
 
@@ -11,6 +19,7 @@ export const useAuthStore = defineStore('auth', () => {
       const fakeToken = `mock-token-${Date.now()}`
       token.value = fakeToken
       localStorage.setItem('token', fakeToken)
+      user.value = { name: 'Quản trị viên', email: 'admin@salio.ai' }
       return true
     }
     return false
@@ -18,8 +27,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   function logout() {
     token.value = null
+    user.value = null
     localStorage.removeItem('token')
   }
 
-  return { token, isAuthenticated, login, logout }
+  return { token, user, isAuthenticated, login, logout }
 })

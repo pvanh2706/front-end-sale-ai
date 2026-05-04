@@ -20,28 +20,57 @@ const router = createRouter({
             meta: { title: 'Đăng ký', public: true },
         },
         {
+            path: '/chat',
+            name: 'ChatView',
+            component: () => import('../views/Chat/ChatView.vue'),
+            meta: { title: 'AI Chat' },
+        },
+        {
+            path: '/crm-work',
+            name: 'CrmWorkView',
+            component: () => import('../views/Crm/CrmWorkView.vue'),
+            meta: { title: 'CRM & Công việc' },
+        },
+        {
+            path: '/doc-library',
+            redirect: '/doc-library/company',
+        },
+        {
+            path: '/doc-library/company',
+            name: 'DocLibraryCompanyView',
+            component: () => import('../views/DocLibrary/DocLibraryView.vue'),
+            meta: { title: 'Tài liệu công ty' },
+        },
+        {
+            path: '/doc-library/personal',
+            name: 'DocLibraryPersonalView',
+            component: () => import('../views/DocLibrary/DocLibraryView.vue'),
+            meta: { title: 'Tài liệu cá nhân' },
+        },
+        {
             path: '/',
-            name: 'HelloWorld',
-            component: () => import('../views/HelloWorld.vue'),
-            meta: { title: 'Hello World' },
+            redirect: '/chat',
         },
     ],
 })
 
 router.beforeEach((to, from, next) => {
-    document.title = `CodeOn POS - ${String(to.meta.title ?? '')}`
+    document.title = to.meta.title ? `${String(to.meta.title)} — Salio` : 'Salio'
 
     const authStore = useAuthStore()
 
     // Redirect to login if accessing a protected route without a token
     if (!authStore.isAuthenticated && !to.meta.public) {
-        next({ name: 'Login' })
+        next({
+            name: 'Login',
+            query: { redirect: to.fullPath },
+        })
         return
     }
 
-    // Redirect to home if already logged in and trying to access login
-    if (authStore.isAuthenticated && to.name === 'Login') {
-        next({ name: 'HelloWorld' })
+    // Prevent authenticated users from visiting auth pages
+    if (authStore.isAuthenticated && (to.name === 'Login' || to.name === 'Register')) {
+        next({ name: 'ChatView' })
         return
     }
 

@@ -8,7 +8,7 @@
         <img src="/images/user/owner.jpg" alt="User" />
       </span>
 
-      <span class="block mr-1 font-medium text-theme-sm">Musharof </span>
+      <span class="block mr-1 font-medium text-theme-sm">{{ displayName }}</span>
 
       <ChevronDownIcon :class="{ 'rotate-180': dropdownOpen }" />
     </button>
@@ -20,10 +20,10 @@
     >
       <div>
         <span class="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-          Musharof Chowdhury
+          {{ authStore.user?.name ?? 'Người dùng' }}
         </span>
         <span class="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-          randomuser@pimjo.com
+          {{ authStore.user?.email ?? 'admin@salio.ai' }}
         </span>
       </div>
 
@@ -43,32 +43,43 @@
         </li>
       </ul>
       <router-link
-        to="/signin"
+        to="/login"
         @click="signOut"
         class="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
       >
         <LogoutIcon
           class="text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
         />
-        Sign out
+        Đăng xuất
       </router-link>
     </div>
     <!-- Dropdown End -->
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { UserCircleIcon, ChevronDownIcon, LogoutIcon, SettingsIcon, InfoCircleIcon } from '@/icons'
 import { RouterLink } from 'vue-router'
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useAuthStore } from '@/stores/useAuthStore'
+
+const authStore = useAuthStore()
+const router = useRouter()
+
+const displayName = computed(() => {
+  const name = authStore.user?.name
+  if (!name) return 'Người dùng'
+  return name.split(' ').pop() ?? name
+})
 
 const dropdownOpen = ref(false)
-const dropdownRef = ref(null)
+const dropdownRef = ref<HTMLElement | null>(null)
 
 const menuItems = [
-  { href: '/profile', icon: UserCircleIcon, text: 'Edit profile' },
-  { href: '/chat', icon: SettingsIcon, text: 'Account settings' },
-  { href: '/profile', icon: InfoCircleIcon, text: 'Support' },
+  { href: '/chat', icon: UserCircleIcon, text: 'Hồ sơ cá nhân' },
+  { href: '/chat', icon: SettingsIcon, text: 'Cài đặt tài khoản' },
+  { href: '/chat', icon: InfoCircleIcon, text: 'Hỗ trợ & liên hệ' },
 ]
 
 const toggleDropdown = () => {
@@ -80,13 +91,13 @@ const closeDropdown = () => {
 }
 
 const signOut = () => {
-  // Implement sign out logic here
-  console.log('Signing out...')
+  authStore.logout()
   closeDropdown()
+  router.push('/login')
 }
 
-const handleClickOutside = (event) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+const handleClickOutside = (event: MouseEvent) => {
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
     closeDropdown()
   }
 }
