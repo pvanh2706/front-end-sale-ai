@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
+import SettingsView from '@/views/Settings/SettingsView.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -46,6 +47,34 @@ const router = createRouter({
             name: 'DocLibraryPersonalView',
             component: () => import('../views/DocLibrary/DocLibraryView.vue'),
             meta: { title: 'Tài liệu cá nhân' },
+        },
+        {
+            path: '/settings',
+            component: SettingsView,
+            meta: { requiresAuth: true, title: 'Cài đặt' },
+            children: [
+                { path: '', redirect: '/settings/appearance' },
+                {
+                    path: 'appearance',
+                    component: () => import('@/views/Settings/AppearanceSettings.vue'),
+                },
+                {
+                    path: 'profile',
+                    component: () => import('@/views/Settings/ProfileSettings.vue'),
+                },
+                {
+                    path: 'notifications',
+                    component: () => import('@/views/Settings/NotificationSettings.vue'),
+                },
+                {
+                    path: 'language',
+                    component: () => import('@/views/Settings/LanguageSettings.vue'),
+                },
+                {
+                    path: 'security',
+                    component: () => import('@/views/Settings/SecuritySettings.vue'),
+                },
+            ],
         },
         {
             path: '/',

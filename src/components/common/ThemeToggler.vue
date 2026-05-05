@@ -1,12 +1,11 @@
 <template>
   <button
-    @click="toggleTheme"
+    @click="themeStore.toggleColorMode"
     class="flex items-center justify-center w-10 h-10 text-gray-500 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-    :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+    :title="themeStore.isDarkMode ? 'Chuyen sang che do sang' : 'Chuyen sang che do toi'"
   >
-    <!-- Sun icon (shown in dark mode) -->
     <svg
-      v-if="isDarkMode"
+      v-if="themeStore.isDarkMode"
       width="20"
       height="20"
       viewBox="0 0 24 24"
@@ -21,7 +20,6 @@
         stroke-linejoin="round"
       />
     </svg>
-    <!-- Moon icon (shown in light mode) -->
     <svg
       v-else
       width="20"
@@ -39,10 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { useTheme } from '@/components/layout/ThemeProvider.vue'
+import { useThemeStore } from '@/stores/theme'
 
-const { isDarkMode, toggleTheme } = useTheme() as {
-  isDarkMode: { value: boolean }
-  toggleTheme: () => void
-}
+const themeStore = useThemeStore()
 </script>

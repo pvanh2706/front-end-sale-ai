@@ -48,8 +48,8 @@
   --color-white: var(--color-bg);
   --color-black: var(--color-text-primary);
 
-  --color-primary-50: var(--color-accent-50);
-  --color-primary-100: var(--color-accent-100);
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
   --color-primary-200: #bfdbfe;
   --color-primary-300: #93c5fd;
   --color-primary-400: #60a5fa;
@@ -60,12 +60,12 @@
   --color-primary-900: #1e3a8a;
   --color-primary-950: #172554;
 
-  --color-accent-50: #eff6ff;
-  --color-accent-100: #dbeafe;
-  --color-accent-200: #bfdbfe;
-  --color-accent-300: #93c5fd;
-  --color-accent-400: #60a5fa;
-  --color-accent-500: #3b82f6;
+  --color-accent-50: var(--color-primary-50);
+  --color-accent-100: var(--color-primary-100);
+  --color-accent-200: var(--color-primary-200);
+  --color-accent-300: var(--color-primary-300);
+  --color-accent-400: var(--color-primary-400);
+  --color-accent-500: var(--color-primary-500);
 
   --color-blue-light-25: #f5fbff;
   --color-blue-light-50: #f0f9ff;
@@ -203,10 +203,12 @@
 
 @utility menu-item-active {
   @apply border-l-2 border-accent-400 bg-primary-800 text-accent-100 dark:bg-primary-800 dark:text-accent-100;
+  border-left-color: var(--color-sidebar-active-border);
 }
 
 @utility menu-item-inactive {
-  @apply text-accent-200 hover:bg-primary-800/70 group-hover:text-white dark:text-accent-200 dark:hover:bg-primary-800/70 dark:hover:text-white;
+  @apply hover:bg-primary-800/70 group-hover:text-white dark:hover:bg-primary-800/70 dark:hover:text-white;
+  color: var(--color-sidebar-text);
 }
 
 @utility menu-item-icon {
@@ -214,11 +216,13 @@
 }
 
 @utility menu-item-icon-active {
-  @apply text-accent-100 dark:text-accent-100;
+  @apply dark:text-accent-100;
+  color: var(--color-accent-100);
 }
 
 @utility menu-item-icon-inactive {
-  @apply text-accent-300 group-hover:text-accent-100 dark:text-accent-300 dark:group-hover:text-accent-100;
+  @apply group-hover:text-accent-100 dark:group-hover:text-accent-100;
+  color: var(--color-sidebar-text);
 }
 
 @utility menu-item-arrow {
@@ -226,11 +230,13 @@
 }
 
 @utility menu-item-arrow-active {
-  @apply rotate-180 text-accent-100 dark:text-accent-100;
+  @apply rotate-180 dark:text-accent-100;
+  color: var(--color-accent-100);
 }
 
 @utility menu-item-arrow-inactive {
-  @apply text-accent-300 group-hover:text-accent-100 dark:text-accent-300 dark:group-hover:text-accent-100;
+  @apply group-hover:text-accent-100 dark:group-hover:text-accent-100;
+  color: var(--color-sidebar-text);
 }
 
 @utility menu-dropdown-item {
@@ -239,10 +245,12 @@
 
 @utility menu-dropdown-item-active {
   @apply border-l-2 border-accent-400 bg-primary-800 text-accent-100 dark:bg-primary-800 dark:text-accent-100;
+  border-left-color: var(--color-sidebar-active-border);
 }
 
 @utility menu-dropdown-item-inactive {
-  @apply text-accent-200 hover:bg-primary-800/70 dark:text-accent-200 dark:hover:bg-primary-800/70;
+  @apply hover:bg-primary-800/70 dark:hover:bg-primary-800/70;
+  color: var(--color-sidebar-text);
 }
 
 @utility menu-dropdown-badge {
