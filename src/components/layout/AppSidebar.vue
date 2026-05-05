@@ -1,6 +1,6 @@
 <template>
     <aside :class="[
-        'fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-brand-25 dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-99999 border-r border-brand-100',
+        'fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-primary-900 dark:bg-primary-900 dark:border-primary-800 text-accent-200 h-screen transition-all duration-300 ease-in-out z-99999 border-r border-primary-800',
         {
             'lg:w-[290px]': isExpanded || isMobileOpen || isHovered,
             'lg:w-[90px]': !isExpanded && !isHovered,
@@ -23,7 +23,7 @@
                 <div class="flex flex-col gap-4">
                     <div v-for="(menuGroup, groupIndex) in menuGroups" :key="groupIndex">
                         <h2 :class="[
-                            'mb-4 text-xs uppercase flex leading-[20px] text-brand-400 dark:text-gray-500',
+                            'mb-4 text-xs uppercase flex leading-[20px] text-accent-200/80 dark:text-accent-200/80',
                             !isExpanded && !isHovered
                                 ? 'lg:justify-center'
                                 : 'justify-start',
@@ -57,7 +57,7 @@
                                     <ChevronDownIcon v-if="isExpanded || isHovered || isMobileOpen" :class="[
                                         'ml-auto w-5 h-5 transition-transform duration-200',
                                         {
-                                            'rotate-180 text-brand-500': isSubmenuOpen(
+                                            'rotate-180 text-accent-100': isSubmenuOpen(
                                                 groupIndex,
                                                 index
                                             ),

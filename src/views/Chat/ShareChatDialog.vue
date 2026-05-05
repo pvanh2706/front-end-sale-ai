@@ -46,7 +46,7 @@
             <button
               type="button"
               class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none"
-              :class="isPublicLink ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-700'"
+              :class="isPublicLink ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'"
               :aria-checked="isPublicLink"
               role="switch"
               @click="isPublicLink = !isPublicLink"
@@ -73,7 +73,7 @@
             <Button
               variant="ghost"
               size="sm"
-              class="shrink-0 gap-1.5 text-brand-500 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-500/10"
+              class="shrink-0 gap-1.5 text-primary-500 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10"
               :disabled="!isPublicLink"
               @click="handleCopyLink"
             >
@@ -103,7 +103,7 @@
               />
             </div>
             <Button
-              class="shrink-0 bg-brand-500 text-white hover:bg-brand-600"
+              class="shrink-0 bg-primary-500 text-white hover:bg-primary-600"
               :disabled="!inviteEmail.trim()"
               @click="handleAddInvite"
             >
@@ -118,14 +118,14 @@
               :key="user.email"
               class="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/50"
             >
-              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-theme-xs font-semibold text-brand-600 dark:bg-brand-500/20 dark:text-brand-400">
+              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-theme-xs font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
                 {{ getInitials(user.email) }}
               </div>
               <span class="flex-1 truncate text-theme-sm text-gray-700 dark:text-gray-300">{{ user.email }}</span>
               <div class="flex items-center gap-2">
                 <select
                   v-model="user.role"
-                  class="rounded-lg border border-gray-200 bg-white px-2 py-1 text-theme-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                  class="rounded-lg border border-gray-200 bg-white px-2 py-1 text-theme-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                 >
                   <option value="view">Chỉ xem</option>
                   <option value="comment">Bình luận</option>
@@ -156,26 +156,26 @@
               :key="perm.id"
               class="flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3.5 transition-all"
               :class="defaultPermission === perm.id
-                ? 'border-brand-500 bg-brand-50 dark:border-brand-400 dark:bg-brand-500/10'
+                ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-500/10'
                 : 'border-gray-100 bg-white hover:border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700'"
               @click="defaultPermission = perm.id"
             >
               <div
                 class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-all"
                 :class="defaultPermission === perm.id
-                  ? 'border-brand-500 dark:border-brand-400'
+                  ? 'border-primary-500 dark:border-primary-400'
                   : 'border-gray-300 dark:border-gray-600'"
               >
                 <div
                   v-if="defaultPermission === perm.id"
-                  class="h-2 w-2 rounded-full bg-brand-500 dark:bg-brand-400"
+                  class="h-2 w-2 rounded-full bg-primary-500 dark:bg-primary-400"
                 ></div>
               </div>
               <div>
                 <p
                   class="text-theme-sm font-semibold"
                   :class="defaultPermission === perm.id
-                    ? 'text-brand-500 dark:text-brand-400'
+                    ? 'text-primary-500 dark:text-primary-400'
                     : 'text-gray-900 dark:text-white'"
                 >
                   {{ perm.label }}
@@ -241,7 +241,7 @@
             Hủy
           </Button>
           <Button
-            class="flex-1 bg-brand-500 text-white hover:bg-brand-600 md:flex-none"
+            class="flex-1 bg-primary-500 text-white hover:bg-primary-600 md:flex-none"
             :disabled="isSaving || (!isPublicLink && invitedUsers.length === 0)"
             @click="handleSave"
           >

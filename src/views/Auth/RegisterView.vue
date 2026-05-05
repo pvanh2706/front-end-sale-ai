@@ -11,7 +11,7 @@
         <!-- App logo + headline -->
         <div class="mb-10 lg:mb-12">
           <h2 class="flex items-center gap-3 text-2xl lg:text-[32px] font-bold tracking-tight text-gray-900 mb-3">
-            <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -27,10 +27,10 @@
 
         <!-- Dashboard illustration -->
         <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-theme-xl border border-white/40">
-          <div class="absolute inset-0 flex flex-col p-4 gap-3 bg-gradient-to-br from-brand-50 to-white">
+          <div class="absolute inset-0 flex flex-col p-4 gap-3 bg-gradient-to-br from-primary-50 to-white">
             <!-- Mock top bar -->
             <div class="flex items-center gap-2">
-              <div class="h-2.5 w-20 bg-brand-200 rounded-full"></div>
+              <div class="h-2.5 w-20 bg-primary-200 rounded-full"></div>
               <div class="h-2 w-14 bg-gray-200 rounded-full ml-auto"></div>
               <div class="h-2 w-8 bg-gray-200 rounded-full"></div>
             </div>
@@ -40,15 +40,15 @@
                 <div class="h-2 w-full bg-gray-100 rounded"></div>
                 <div class="h-2 w-3/4 bg-gray-100 rounded"></div>
                 <div class="h-2 w-1/2 bg-gray-100 rounded"></div>
-                <div class="h-2 w-3/4 bg-brand-100 rounded mt-1"></div>
-                <div class="h-2 w-1/2 bg-brand-100 rounded"></div>
+                <div class="h-2 w-3/4 bg-primary-100 rounded mt-1"></div>
+                <div class="h-2 w-1/2 bg-primary-100 rounded"></div>
               </div>
               <div class="flex-1 bg-white/70 rounded-lg flex items-end px-3 py-3 gap-1.5">
                 <div
                   v-for="(h, i) in chartBars"
                   :key="i"
                   class="flex-1 rounded-t-sm"
-                  :class="i % 2 === 0 ? 'bg-brand-300' : 'bg-brand-500'"
+                  :class="i % 2 === 0 ? 'bg-primary-300' : 'bg-primary-500'"
                   :style="{ height: h + '%' }"
                 ></div>
               </div>
@@ -57,7 +57,7 @@
             <div class="grid grid-cols-3 gap-2">
               <div class="bg-white/80 rounded-lg p-2">
                 <div class="h-2 w-10 bg-gray-200 rounded mb-1.5"></div>
-                <div class="h-3.5 w-8 bg-brand-500 rounded"></div>
+                <div class="h-3.5 w-8 bg-primary-500 rounded"></div>
               </div>
               <div class="bg-white/80 rounded-lg p-2">
                 <div class="h-2 w-12 bg-gray-200 rounded mb-1.5"></div>
@@ -69,7 +69,7 @@
               </div>
             </div>
           </div>
-          <div class="absolute inset-0 bg-gradient-to-t from-brand-500/20 to-transparent pointer-events-none"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-primary-500/20 to-transparent pointer-events-none"></div>
         </div>
       </div>
 
@@ -81,8 +81,8 @@
       </div>
 
       <!-- Decorative blobs -->
-      <div class="absolute top-[-10%] right-[-10%] w-64 h-64 rounded-full blur-3xl opacity-40 bg-brand-100 pointer-events-none"></div>
-      <div class="absolute bottom-[-5%] left-[10%] w-48 h-48 rounded-full blur-3xl opacity-50 bg-brand-50 pointer-events-none"></div>
+      <div class="absolute top-[-10%] right-[-10%] w-64 h-64 rounded-full blur-3xl opacity-40 bg-primary-100 pointer-events-none"></div>
+      <div class="absolute bottom-[-5%] left-[10%] w-48 h-48 rounded-full blur-3xl opacity-50 bg-primary-50 pointer-events-none"></div>
     </section>
 
     <!-- Right Column: Registration Form -->
@@ -91,7 +91,7 @@
 
         <!-- Mobile only: logo + app name -->
         <div class="md:hidden flex flex-col items-center gap-3 mb-2">
-          <div class="w-12 h-12 rounded-xl bg-brand-500 flex items-center justify-center">
+          <div class="w-12 h-12 rounded-xl bg-primary-500 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24"
               stroke="currentColor" stroke-width="1.5" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round"
@@ -127,12 +127,12 @@
               <FormControl>
                 <div class="relative group">
                   <User
-                    class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-brand-500 transition-colors pointer-events-none"
+                    class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-primary-500 transition-colors pointer-events-none"
                     aria-hidden="true"
                   />
                   <Input
                     v-bind="componentField"
-                    class="pl-12 h-12 rounded-xl border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 focus:border-brand-500 focus:ring-brand-500/20 transition-all"
+                    class="pl-12 h-12 rounded-xl border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 transition-all"
                     placeholder="Nguyễn Văn A"
                     type="text"
                     autocomplete="name"
@@ -153,12 +153,12 @@
               <FormControl>
                 <div class="relative group">
                   <Mail
-                    class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-brand-500 transition-colors pointer-events-none"
+                    class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-primary-500 transition-colors pointer-events-none"
                     aria-hidden="true"
                   />
                   <Input
                     v-bind="componentField"
-                    class="pl-12 h-12 rounded-xl border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 focus:border-brand-500 focus:ring-brand-500/20 transition-all"
+                    class="pl-12 h-12 rounded-xl border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 transition-all"
                     placeholder="name@company.com"
                     type="email"
                     autocomplete="email"
@@ -179,12 +179,12 @@
               <FormControl>
                 <div class="relative group">
                   <Building2
-                    class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-brand-500 transition-colors pointer-events-none"
+                    class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-primary-500 transition-colors pointer-events-none"
                     aria-hidden="true"
                   />
                   <Input
                     v-bind="componentField"
-                    class="pl-12 h-12 rounded-xl border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 focus:border-brand-500 focus:ring-brand-500/20 transition-all"
+                    class="pl-12 h-12 rounded-xl border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 transition-all"
                     placeholder="Công ty TNHH AI Solutions"
                     type="text"
                     autocomplete="organization"
@@ -205,20 +205,20 @@
               <FormControl>
                 <div class="relative group">
                   <Lock
-                    class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-brand-500 transition-colors pointer-events-none"
+                    class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-primary-500 transition-colors pointer-events-none"
                     aria-hidden="true"
                   />
                   <Input
                     v-bind="componentField"
                     :type="showPassword ? 'text' : 'password'"
-                    class="pl-12 pr-12 h-12 rounded-xl border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 focus:border-brand-500 focus:ring-brand-500/20 transition-all"
+                    class="pl-12 pr-12 h-12 rounded-xl border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 transition-all"
                     placeholder="Tối thiểu 8 ký tự"
                     autocomplete="new-password"
                     aria-required="true"
                   />
                   <button
                     type="button"
-                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded"
                     :aria-label="showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
                     @click="showPassword = !showPassword"
                   >
@@ -257,20 +257,20 @@
               <FormControl>
                 <div class="relative group">
                   <ShieldCheck
-                    class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-brand-500 transition-colors pointer-events-none"
+                    class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-primary-500 transition-colors pointer-events-none"
                     aria-hidden="true"
                   />
                   <Input
                     v-bind="componentField"
                     :type="showConfirmPassword ? 'text' : 'password'"
-                    class="pl-12 pr-12 h-12 rounded-xl border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 focus:border-brand-500 focus:ring-brand-500/20 transition-all"
+                    class="pl-12 pr-12 h-12 rounded-xl border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 transition-all"
                     placeholder="Nhập lại mật khẩu"
                     autocomplete="new-password"
                     aria-required="true"
                   />
                   <button
                     type="button"
-                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded"
                     :aria-label="showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
                     @click="showConfirmPassword = !showConfirmPassword"
                   >
@@ -296,9 +296,9 @@
               class="text-sm text-gray-500 cursor-pointer select-none leading-relaxed dark:text-gray-400"
             >
               Tôi đồng ý với
-              <a href="#" class="text-brand-500 font-semibold hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500 rounded">Điều khoản dịch vụ</a>
+              <a href="#" class="text-primary-500 font-semibold hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-500 rounded">Điều khoản dịch vụ</a>
               và
-              <a href="#" class="text-brand-500 font-semibold hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500 rounded">Chính sách bảo mật</a>
+              <a href="#" class="text-primary-500 font-semibold hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-500 rounded">Chính sách bảo mật</a>
             </label>
           </div>
 
@@ -311,7 +311,7 @@
           <button
             type="submit"
             :disabled="isLoading || !agreedToTerms"
-            class="w-full h-12 bg-brand-500 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-brand-600 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-theme-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+            class="w-full h-12 bg-primary-500 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-primary-600 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-theme-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
             :aria-busy="isLoading"
           >
             <span v-if="isLoading">Đang tạo tài khoản...</span>
@@ -335,7 +335,7 @@
         <div class="grid grid-cols-2 gap-3">
           <button
             type="button"
-            class="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-xl bg-white dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-semibold text-gray-700 dark:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            class="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-xl bg-white dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-semibold text-gray-700 dark:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             aria-label="Đăng ký với Google"
           >
             <img src="https://www.google.com/favicon.ico" alt="" aria-hidden="true" class="w-5 h-5 object-contain" />
@@ -343,7 +343,7 @@
           </button>
           <button
             type="button"
-            class="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-xl bg-white dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-semibold text-gray-700 dark:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            class="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-xl bg-white dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-semibold text-gray-700 dark:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             aria-label="Đăng ký với Microsoft"
           >
             <svg class="w-5 h-5 shrink-0" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -361,7 +361,7 @@
           Đã có tài khoản?
           <RouterLink
             to="/login"
-            class="text-brand-500 font-bold ml-1 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+            class="text-primary-500 font-bold ml-1 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded"
           >
             Đăng nhập
           </RouterLink>

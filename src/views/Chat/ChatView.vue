@@ -24,7 +24,7 @@
                 class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-theme-sm transition-colors"
                 :class="[
                   node.id === activeFolderId
-                    ? 'bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-300'
+                    ? 'bg-primary-50 text-primary-500 dark:bg-primary-500/15 dark:text-primary-300'
                     : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
                   node.level === 1 ? 'ml-4' : '',
                   node.level === 2 ? 'ml-8' : '',
@@ -58,7 +58,7 @@
                 :key="item.id"
                 class="group rounded-xl border p-3 transition-all dark:bg-gray-800/40"
                 :class="item.id === selectedConversationId
-                  ? 'border-brand-200 bg-brand-50/60 dark:border-brand-500/40 dark:bg-brand-500/10'
+                  ? 'border-primary-200 bg-primary-50/60 dark:border-primary-500/40 dark:bg-primary-500/10'
                   : 'border-transparent bg-white hover:border-gray-200 hover:bg-gray-50 dark:hover:border-gray-700'"
                 @click="selectedConversationId = item.id"
               >
@@ -91,14 +91,14 @@
           <div class="border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900 md:px-6">
             <div class="flex items-start justify-between gap-4">
               <div>
-                <p class="text-theme-xs text-gray-500">Khách hàng / Doanh nghiệp / Công ty ABC / <span class="font-medium text-brand-500">Báo giá Q2</span></p>
+                <p class="text-theme-xs text-gray-500">Khách hàng / Doanh nghiệp / Công ty ABC / <span class="font-medium text-primary-500">Báo giá Q2</span></p>
                 <h1 class="mt-1 text-title-xs font-semibold text-gray-900 dark:text-white">Báo giá khách hàng ABC - Q2/2026</h1>
               </div>
               <div class="hidden items-center gap-1 md:flex">
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  class="text-gray-500 hover:text-brand-500 dark:text-gray-400 dark:hover:text-brand-400"
+                  class="text-gray-500 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
                   aria-label="Xem tài liệu"
                   title="Xem tài liệu"
                 >
@@ -107,7 +107,7 @@
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  class="text-gray-500 hover:text-brand-500 dark:text-gray-400 dark:hover:text-brand-400"
+                  class="text-gray-500 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
                   aria-label="Chia sẻ"
                   title="Chia sẻ"
                   @click="showShareDialog = true"
@@ -117,7 +117,7 @@
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  class="text-gray-500 hover:text-brand-500 dark:text-gray-400 dark:hover:text-brand-400"
+                  class="text-gray-500 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
                   aria-label="Tải xuống"
                   title="Tải xuống"
                   @click="showExportDialog = true"
@@ -127,7 +127,7 @@
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  class="text-gray-500 hover:text-brand-500 dark:text-gray-400 dark:hover:text-brand-400"
+                  class="text-gray-500 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
                   aria-label="Cài đặt"
                   title="Cài đặt"
                 >
@@ -150,7 +150,7 @@
               >
                 <div class="max-w-3xl" :class="message.role === 'user' ? 'items-end' : 'items-start'">
                   <div v-if="message.role === 'ai'" class="mb-2 flex items-center gap-2 text-theme-xs text-gray-500">
-                    <div class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-500 text-white">
+                    <div class="flex h-7 w-7 items-center justify-center rounded-full bg-primary-500 text-white">
                       <LoaderCircle v-if="message.pending" class="h-3.5 w-3.5 animate-spin" />
                       <Sparkles v-else class="h-3.5 w-3.5" />
                     </div>
@@ -160,7 +160,7 @@
 
                   <Card :class="message.role === 'user'
                     ? 'rounded-2xl rounded-tr-sm border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
-                    : 'rounded-2xl rounded-tl-sm border-brand-100 bg-white dark:border-brand-500/30 dark:bg-gray-900'"
+                    : 'rounded-2xl rounded-tl-sm border-primary-100 bg-white dark:border-primary-500/30 dark:bg-gray-900'"
                   >
                     <CardContent class="p-4 md:p-5">
                       <p class="whitespace-pre-line text-theme-sm leading-6 text-gray-700 dark:text-gray-200">{{ message.content }}</p>
@@ -189,11 +189,11 @@
             <footer class="border-t border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 md:p-6">
               <div class="mx-auto max-w-4xl space-y-3">
                 <div class="flex items-center justify-between gap-3 text-theme-sm">
-                  <div class="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-brand-500 dark:bg-brand-500/15 dark:text-brand-300">
+                  <div class="inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-primary-500 dark:bg-primary-500/15 dark:text-primary-300">
                     <FileText class="h-4 w-4" />
                     <span>Đang chat với {{ activeDocumentCount }} tài liệu</span>
                   </div>
-                  <Button variant="link" class="h-auto p-0 text-brand-500">Quản lý</Button>
+                  <Button variant="link" class="h-auto p-0 text-primary-500">Quản lý</Button>
                 </div>
 
                 <form class="relative" @submit.prevent="sendMessage">
@@ -201,7 +201,7 @@
                     type="button"
                     variant="ghost"
                     size="icon"
-                    class="absolute left-2 top-1/2 z-10 -translate-y-1/2 text-gray-500 hover:text-brand-500"
+                    class="absolute left-2 top-1/2 z-10 -translate-y-1/2 text-gray-500 hover:text-primary-500"
                   >
                     <Paperclip class="h-4 w-4" />
                   </Button>
@@ -210,12 +210,12 @@
                     :rows="2"
                     placeholder="Nhập câu hỏi tại đây..."
                     @keydown="handleComposerKeydown"
-                    class="min-h-[64px] rounded-xl border-gray-300 bg-gray-50 py-4 pl-12 pr-14 text-theme-sm text-gray-700 focus-visible:border-brand-500 focus-visible:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                    class="min-h-[64px] rounded-xl border-gray-300 bg-gray-50 py-4 pl-12 pr-14 text-theme-sm text-gray-700 focus-visible:border-primary-500 focus-visible:ring-primary-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                   />
                   <Button
                     type="submit"
                     size="icon"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-brand-500 text-white hover:bg-brand-600"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-primary-500 text-white hover:bg-primary-600"
                     :disabled="!draftMessage.trim() || isSending"
                   >
                     <LoaderCircle v-if="isSending" class="h-4 w-4 animate-spin" />

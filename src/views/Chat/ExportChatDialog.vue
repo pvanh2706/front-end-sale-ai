@@ -48,21 +48,21 @@
               type="button"
               class="relative flex cursor-pointer items-center gap-3 rounded-xl border-2 p-4 text-left transition-all"
               :class="selectedFormat === fmt.id
-                ? 'border-brand-500 bg-brand-50 dark:border-brand-400 dark:bg-brand-500/10'
-                : 'border-gray-200 bg-white hover:border-brand-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:border-brand-500/50'"
+                ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-500/10'
+                : 'border-gray-200 bg-white hover:border-primary-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:border-primary-500/50'"
               @click="selectedFormat = fmt.id"
             >
               <div
                 class="flex h-10 w-10 items-center justify-center rounded-lg"
                 :class="selectedFormat === fmt.id
-                  ? 'bg-brand-100 dark:bg-brand-500/20'
+                  ? 'bg-primary-100 dark:bg-primary-500/20'
                   : 'bg-gray-100 dark:bg-gray-700'"
               >
                 <component
                   :is="fmt.icon"
                   class="h-5 w-5"
                   :class="selectedFormat === fmt.id
-                    ? 'text-brand-500 dark:text-brand-400'
+                    ? 'text-primary-500 dark:text-primary-400'
                     : 'text-gray-500 dark:text-gray-400'"
                 />
               </div>
@@ -70,7 +70,7 @@
                 <p
                   class="text-theme-sm font-semibold"
                   :class="selectedFormat === fmt.id
-                    ? 'text-brand-500 dark:text-brand-400'
+                    ? 'text-primary-500 dark:text-primary-400'
                     : 'text-gray-900 dark:text-white'"
                 >
                   {{ fmt.label }}
@@ -79,7 +79,7 @@
               </div>
               <CheckCircle2
                 v-if="selectedFormat === fmt.id"
-                class="absolute right-3 top-3 h-5 w-5 text-brand-500 dark:text-brand-400"
+                class="absolute right-3 top-3 h-5 w-5 text-primary-500 dark:text-primary-400"
               />
             </button>
           </div>
@@ -100,13 +100,13 @@
               <div
                 class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all"
                 :class="selectedRange === range.id
-                  ? 'border-brand-500 dark:border-brand-400'
+                  ? 'border-primary-500 dark:border-primary-400'
                   : 'border-gray-300 dark:border-gray-600'"
                 @click="selectedRange = range.id"
               >
                 <div
                   v-if="selectedRange === range.id"
-                  class="h-2.5 w-2.5 rounded-full bg-brand-500 dark:bg-brand-400"
+                  class="h-2.5 w-2.5 rounded-full bg-primary-500 dark:bg-primary-400"
                 ></div>
               </div>
               <span class="text-theme-sm text-gray-700 dark:text-gray-300">{{ range.label }}</span>
@@ -158,7 +158,7 @@
             Hủy
           </Button>
           <Button
-            class="flex-1 bg-brand-500 text-white hover:bg-brand-600 md:flex-none"
+            class="flex-1 bg-primary-500 text-white hover:bg-primary-600 md:flex-none"
             :disabled="isDownloading"
             @click="handleDownload"
           >

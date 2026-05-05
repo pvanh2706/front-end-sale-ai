@@ -8,7 +8,7 @@
       aria-hidden="true"
     >
       <!-- Decorative image overlay -->
-      <div class="absolute inset-0 opacity-20 pointer-events-none bg-gradient-to-br from-purple-900/40 via-transparent to-pink-900/30"></div>
+      <div class="absolute inset-0 opacity-20 pointer-events-none bg-gradient-to-br from-primary-900/40 via-transparent to-primary-700/30"></div>
 
       <!-- Brand header -->
       <div class="relative z-10 flex items-center gap-3">
@@ -43,14 +43,14 @@
     </section>
 
     <!-- Right Column: Login Form -->
-    <section class="w-full lg:w-[40%] flex flex-col justify-center items-center px-6 md:px-8 overflow-y-auto bg-[#faf8ff] dark:bg-gray-900">
+    <section class="w-full lg:w-[40%] flex flex-col justify-center items-center px-6 md:px-8 overflow-y-auto bg-primary-50 dark:bg-gray-900">
       <div class="w-full max-w-[440px] py-12 space-y-12">
 
         <!-- Form header -->
         <div class="space-y-3 text-center lg:text-left">
           <!-- Mobile logo -->
           <div class="lg:hidden flex justify-center mb-2">
-            <div class="w-10 h-10 bg-brand-500 rounded-lg flex items-center justify-center">
+            <div class="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -60,8 +60,8 @@
           </div>
           <div class="flex flex-col items-center lg:items-start">
             <div class="flex items-center gap-2 mb-1">
-              <Sparkles class="w-5 h-5 text-brand-500" aria-hidden="true" />
-              <span class="text-sm font-semibold text-brand-500 uppercase tracking-wider">Salio</span>
+              <Sparkles class="w-5 h-5 text-primary-500" aria-hidden="true" />
+              <span class="text-sm font-semibold text-primary-500 uppercase tracking-wider">Salio</span>
             </div>
             <h1 class="text-[32px] font-bold text-gray-900 dark:text-white leading-tight">Đăng nhập</h1>
             <p class="text-base text-gray-500 dark:text-gray-400 mt-1">
@@ -88,7 +88,7 @@
                   <Input
                     v-bind="componentField"
                     type="email"
-                    class="h-11 rounded-lg border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-700 focus:border-brand-500 focus:ring-brand-500/20 transition-all"
+                    class="h-11 rounded-lg border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 transition-all"
                     placeholder="ban@congty.com"
                     autocomplete="username"
                     aria-required="true"
@@ -109,7 +109,7 @@
                     <Input
                       v-bind="componentField"
                       :type="showPassword ? 'text' : 'password'"
-                      class="h-11 pr-11 rounded-lg border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-700 focus:border-brand-500 focus:ring-brand-500/20 transition-all"
+                      class="h-11 pr-11 rounded-lg border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 transition-all"
                       placeholder="••••••••"
                       autocomplete="current-password"
                       aria-required="true"
@@ -144,7 +144,7 @@
             </label>
             <a
               href="#"
-              class="text-sm font-medium text-brand-500 hover:underline"
+              class="text-sm font-medium text-primary-500 hover:underline"
             >
               Quên mật khẩu?
             </a>
@@ -159,7 +159,7 @@
           <button
             type="submit"
             :disabled="isLoading"
-            class="w-full h-11 bg-brand-500 text-white text-sm font-semibold rounded-lg hover:bg-brand-600 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-theme-sm"
+            class="w-full h-11 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-theme-sm"
             :aria-busy="isLoading"
           >
             {{ isLoading ? 'Đang đăng nhập...' : 'Đăng nhập' }}
@@ -206,7 +206,7 @@
             Chưa có tài khoản?
             <RouterLink
               to="/register"
-              class="text-brand-500 font-semibold ml-1 hover:underline"
+              class="text-primary-500 font-semibold ml-1 hover:underline"
             >
               Đăng ký ngay
             </RouterLink>
@@ -246,9 +246,9 @@ const loginError = ref('')
 const abstractMeshStyle = {
   backgroundColor: '#004ac6',
   backgroundImage: [
-    'radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%)',
+    'radial-gradient(at 0% 0%, hsla(223, 84%, 13%, 1) 0, transparent 50%)',
     'radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%)',
-    'radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%)',
+    'radial-gradient(at 100% 0%, hsla(217, 91%, 37%, 1) 0, transparent 50%)',
   ].join(', '),
 }
 

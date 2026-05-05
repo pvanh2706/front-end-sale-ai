@@ -10,7 +10,7 @@
 
           <!-- Space header -->
           <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400 shrink-0">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-500 dark:bg-primary-500/15 dark:text-primary-400 shrink-0">
               <component :is="libraryIcon" class="h-5 w-5" />
             </div>
             <div class="min-w-0">
@@ -24,7 +24,7 @@
               type="button"
               class="w-full rounded-lg px-3 py-2 text-left text-theme-sm transition-colors"
               :class="!isPersonalLibrary
-                ? 'bg-brand-50 font-semibold text-brand-500 dark:bg-brand-500/10 dark:text-brand-400'
+                ? 'bg-primary-50 font-semibold text-primary-500 dark:bg-primary-500/10 dark:text-primary-400'
                 : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5'"
               @click="goLibrarySection('company')"
             >
@@ -34,7 +34,7 @@
               type="button"
               class="mt-1 w-full rounded-lg px-3 py-2 text-left text-theme-sm transition-colors"
               :class="isPersonalLibrary
-                ? 'bg-brand-50 font-semibold text-brand-500 dark:bg-brand-500/10 dark:text-brand-400'
+                ? 'bg-primary-50 font-semibold text-primary-500 dark:bg-primary-500/10 dark:text-primary-400'
                 : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5'"
               @click="goLibrarySection('personal')"
             >
@@ -63,10 +63,10 @@
                 <div v-for="child in node.children" :key="child.id" class="flex flex-col">
                   <button
                     type="button"
-                    class="flex items-center gap-1.5 rounded px-3 py-1.5 text-theme-sm w-full text-left transition-colors"
+                    class="flex items-center gap-1.5 rounded px-3 py-1.5 text-theme-sm w-full text-left transition-colors border-l-2"
                     :class="activePageId === child.id
-                      ? 'font-semibold text-brand-500 dark:text-brand-400'
-                      : 'text-gray-700 hover:bg-gray-200/60 dark:text-gray-300 dark:hover:bg-white/5'"
+                      ? 'bg-primary-50 border-primary-600 text-primary-700 font-medium dark:bg-primary-500/15 dark:border-primary-400 dark:text-primary-300'
+                      : 'border-transparent text-gray-700 hover:bg-gray-200/60 dark:text-gray-300 dark:hover:bg-white/5'"
                     @click="selectPage(child)"
                   >
                     <ChevronDown
@@ -151,7 +151,7 @@
               v-for="(crumb, i) in breadcrumbs"
               :key="i"
               type="button"
-              class="hover:text-brand-500 transition-colors"
+              class="hover:text-primary-500 transition-colors"
               :class="i === breadcrumbs.length - 1 ? 'font-semibold text-gray-900 dark:text-white' : ''"
             >
               {{ crumb }}
@@ -165,7 +165,7 @@
               <div
                 v-for="(avatar, i) in collaborators.slice(0, 3)"
                 :key="i"
-                class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-brand-100 text-theme-xs font-semibold text-brand-600 dark:border-gray-950 dark:bg-brand-500/20 dark:text-brand-400"
+                class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary-100 text-theme-xs font-semibold text-primary-600 dark:border-gray-950 dark:bg-primary-500/20 dark:text-primary-400"
               >
                 {{ avatar }}
               </div>
@@ -186,7 +186,7 @@
             </Button>
             <Button
               size="sm"
-              class="bg-brand-500 text-white hover:bg-brand-600"
+              class="bg-primary-500 text-white hover:bg-primary-600"
               @click="handleSave"
             >
               Lưu
@@ -207,7 +207,7 @@
             </h1>
             <div class="flex flex-wrap items-center gap-5 text-theme-sm text-gray-500 dark:text-gray-400">
               <div class="flex items-center gap-2">
-                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 text-theme-xs font-semibold text-brand-600 dark:bg-brand-500/20 dark:text-brand-400">
+                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-theme-xs font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
                   {{ currentPage.author.slice(0, 1) }}
                 </div>
                 <span>Cập nhật bởi <strong class="text-gray-900 dark:text-white">{{ currentPage.author }}</strong></span>
@@ -234,7 +234,7 @@
             <p class="mb-8 max-w-md text-theme-sm text-gray-500 dark:text-gray-400 leading-relaxed">
               {{ emptyDescription }}
             </p>
-            <Button class="gap-2 bg-brand-500 text-white hover:bg-brand-600">
+            <Button class="gap-2 bg-primary-500 text-white hover:bg-primary-600">
               <Plus class="h-4 w-4" />
               Thêm nội dung đầu tiên
             </Button>
@@ -243,7 +243,7 @@
           <!-- Trang con -->
           <section class="mt-16 border-t border-gray-200 pt-8 dark:border-gray-800">
             <h3 class="mb-5 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
-              <GitBranch class="h-5 w-5 text-brand-500" />
+              <GitBranch class="h-5 w-5 text-primary-500" />
               Trang con
             </h3>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -251,14 +251,14 @@
                 v-for="child in childPages"
                 :key="child.id"
                 type="button"
-                class="group flex items-start gap-3 rounded-xl border border-gray-200 p-4 text-left transition-all hover:border-brand-300 hover:bg-brand-50/50 dark:border-gray-800 dark:hover:border-brand-500/40 dark:hover:bg-brand-500/5"
+                class="group flex items-start gap-3 rounded-xl border border-gray-200 p-4 text-left transition-all hover:border-primary-300 hover:bg-primary-50/50 dark:border-gray-800 dark:hover:border-primary-500/40 dark:hover:bg-primary-500/5"
                 @click="selectChildPage(child)"
               >
-                <div class="shrink-0 rounded-lg bg-gray-100 p-2 text-gray-500 transition-colors group-hover:bg-brand-100 group-hover:text-brand-500 dark:bg-gray-800 dark:text-gray-400 dark:group-hover:bg-brand-500/15 dark:group-hover:text-brand-400">
+                <div class="shrink-0 rounded-lg bg-gray-100 p-2 text-gray-500 transition-colors group-hover:bg-primary-100 group-hover:text-primary-500 dark:bg-gray-800 dark:text-gray-400 dark:group-hover:bg-primary-500/15 dark:group-hover:text-primary-400">
                   <FileText class="h-5 w-5" />
                 </div>
                 <div class="min-w-0">
-                  <p class="truncate text-theme-sm font-semibold text-gray-900 transition-colors group-hover:text-brand-500 dark:text-white dark:group-hover:text-brand-400">
+                  <p class="truncate text-theme-sm font-semibold text-gray-900 transition-colors group-hover:text-primary-500 dark:text-white dark:group-hover:text-primary-400">
                     {{ child.title }}
                   </p>
                   <p class="mt-0.5 line-clamp-1 text-theme-xs text-gray-500 dark:text-gray-400">
@@ -275,13 +275,13 @@
             <div class="mb-8 flex items-center gap-6">
               <button
                 type="button"
-                class="flex items-center gap-2 text-theme-sm text-gray-500 hover:text-brand-500 transition-colors dark:text-gray-400"
+                class="flex items-center gap-2 text-theme-sm text-gray-500 hover:text-primary-500 transition-colors dark:text-gray-400"
                 @click="liked = !liked"
               >
-                <ThumbsUp class="h-5 w-5" :class="liked ? 'text-brand-500' : ''" />
+                <ThumbsUp class="h-5 w-5" :class="liked ? 'text-primary-500' : ''" />
                 <span>{{ liked ? 'Đã thích' : 'Thích' }}</span>
               </button>
-              <button type="button" class="flex items-center gap-2 text-theme-sm text-gray-500 hover:text-brand-500 transition-colors dark:text-gray-400">
+              <button type="button" class="flex items-center gap-2 text-theme-sm text-gray-500 hover:text-primary-500 transition-colors dark:text-gray-400">
                 <MessageSquare class="h-5 w-5" />
                 <span>{{ commentCount }} bình luận</span>
               </button>
@@ -293,11 +293,11 @@
 
             <!-- Ô bình luận -->
             <div class="flex gap-4">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-theme-sm font-semibold text-brand-600 dark:bg-brand-500/20 dark:text-brand-400">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-theme-sm font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
                 QT
               </div>
               <div class="flex-1">
-                <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 focus-within:border-brand-300 focus-within:ring-1 focus-within:ring-brand-500/20 transition-all dark:border-gray-700 dark:bg-gray-900">
+                <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 focus-within:border-primary-300 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all dark:border-gray-700 dark:bg-gray-900">
                   <Textarea
                     v-model="commentText"
                     :rows="3"
@@ -318,7 +318,7 @@
                     </div>
                     <Button
                       size="sm"
-                      class="bg-brand-500 text-white hover:bg-brand-600"
+                      class="bg-primary-500 text-white hover:bg-primary-600"
                       :disabled="!commentText.trim()"
                       @click="handleSendComment"
                     >

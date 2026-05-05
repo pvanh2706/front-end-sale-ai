@@ -19,7 +19,7 @@
         type="button"
         class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-theme-sm transition-colors"
         :class="lang.code === selectedLang
-          ? 'bg-brand-50 font-semibold text-brand-500 dark:bg-brand-500/10 dark:text-brand-400'
+          ? 'bg-primary-50 font-semibold text-primary-500 dark:bg-primary-500/10 dark:text-primary-400'
           : 'text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5'"
         @click="selectLang(lang.code)"
       >
@@ -27,7 +27,7 @@
         <span>{{ lang.label }}</span>
         <span
           v-if="lang.code === selectedLang"
-          class="ml-auto h-1.5 w-1.5 rounded-full bg-brand-500 dark:bg-brand-400"
+          class="ml-auto h-1.5 w-1.5 rounded-full bg-primary-500 dark:bg-primary-400"
         ></span>
       </button>
     </div>

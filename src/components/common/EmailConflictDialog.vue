@@ -54,7 +54,7 @@
               <div class="w-full space-y-3">
                 <button
                   type="button"
-                  class="w-full h-12 bg-brand-500 text-white text-sm font-semibold rounded-lg hover:bg-brand-600 active:scale-[0.98] transition-all"
+                  class="w-full h-12 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 active:scale-[0.98] transition-all"
                   @click="emit('go-to-login')"
                 >
                   Chuyển đến đăng nhập
@@ -72,7 +72,7 @@
               <div class="mt-8">
                 <a
                   href="#"
-                  class="text-sm font-medium text-brand-500 hover:underline flex items-center justify-center gap-1"
+                  class="text-sm font-medium text-primary-500 hover:underline flex items-center justify-center gap-1"
                 >
                   Quên mật khẩu?
                   <span class="font-normal text-gray-500">Khôi phục tại đây</span>
@@ -81,7 +81,7 @@
             </div>
 
             <!-- Bottom decorative gradient bar -->
-            <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 via-theme-purple-500 to-brand-500 opacity-20 flex-shrink-0"></div>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary-500 via-primary-700 to-primary-500 opacity-20 flex-shrink-0"></div>
           </div>
         </Transition>
       </div>
