@@ -202,7 +202,7 @@ watch(fontSize, (value) => {
 
 .theme-preview__line {
   height: 6px;
-  background: #e2e8f0;
+  background: var(--color-border-strong);
   border-radius: 3px;
   width: 100%;
 }

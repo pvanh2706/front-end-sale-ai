@@ -13,7 +13,7 @@
       <!-- Brand header -->
       <div class="relative z-10 flex items-center gap-3">
         <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-700" fill="none" viewBox="0 0 24 24"
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-primary-700" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.82m5.84-2.56a14.99 14.99 0 006.16-12.12A14.99 14.99 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.82m2.56-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
@@ -242,13 +242,13 @@ const rememberMe = ref(false)
 const isLoading = ref(false)
 const loginError = ref('')
 
-// Màu nền dark blue + gradient overlay từ template Stitch
+// Pastel blue mesh for softer left branding panel
 const abstractMeshStyle = {
-  backgroundColor: '#004ac6',
+  backgroundColor: '#748ddc',
   backgroundImage: [
-    'radial-gradient(at 0% 0%, hsla(223, 84%, 13%, 1) 0, transparent 50%)',
-    'radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%)',
-    'radial-gradient(at 100% 0%, hsla(217, 91%, 37%, 1) 0, transparent 50%)',
+    'radial-gradient(at 0% 0%, hsla(223, 32%, 34%, 1) 0, transparent 50%)',
+    'radial-gradient(at 50% 0%, hsla(225, 28%, 48%, 1) 0, transparent 50%)',
+    'radial-gradient(at 100% 0%, hsla(217, 44%, 58%, 1) 0, transparent 50%)',
   ].join(', '),
 }
 

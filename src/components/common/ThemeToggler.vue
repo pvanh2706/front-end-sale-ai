@@ -1,7 +1,7 @@
 <template>
   <button
     @click="themeStore.toggleColorMode"
-    class="flex items-center justify-center w-10 h-10 text-gray-500 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+    class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors text-[var(--color-sidebar-text)] hover:bg-primary-100 dark:hover:bg-white/10"
     :title="themeStore.isDarkMode ? 'Chuyen sang che do sang' : 'Chuyen sang che do toi'"
   >
     <svg

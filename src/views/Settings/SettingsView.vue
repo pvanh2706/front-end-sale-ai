@@ -1,11 +1,20 @@
 <template>
   <AdminLayout>
-    <div class="space-y-6">
-      <header>
-        <h1 class="text-2xl font-bold text-[var(--color-text-primary)]">Cài đặt</h1>
-        <p class="mt-1 text-sm text-[var(--color-text-secondary)]">
-          Tùy chỉnh trải nghiệm Salio theo ý bạn.
-        </p>
+    <div class="settings-page space-y-6">
+      <header class="flex items-start gap-3">
+        <RouterLink
+          to="/chat"
+          class="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] shadow-theme-xs transition hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"
+          title="Quay lại"
+        >
+          <ChevronLeft class="h-4 w-4" />
+        </RouterLink>
+        <div>
+          <h1 class="text-2xl font-bold text-[var(--color-text-primary)]">Cài đặt</h1>
+          <p class="mt-1 text-sm text-[var(--color-text-secondary)]">
+            Tùy chỉnh trải nghiệm Salio theo ý bạn.
+          </p>
+        </div>
       </header>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
@@ -43,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { Bell, Globe, Palette, ShieldCheck, User } from 'lucide-vue-next'
+import { Bell, ChevronLeft, Globe, Palette, ShieldCheck, User } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 </script>
 
@@ -71,5 +80,26 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
   color: var(--color-primary-700);
   font-weight: 500;
   border-left-color: var(--color-primary-600);
+}
+
+:global(.dark) .settings-page {
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #f4f7ff;
+  --color-text-tertiary: #e5ecff;
+}
+
+:global(.dark) .settings-page .settings-nav-item {
+  color: #f4f7ff;
+}
+
+:global(.dark) .settings-page .settings-nav-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+:global(.dark) .settings-page .settings-nav-item.router-link-active {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border-left-color: rgba(255, 255, 255, 0.68);
 }
 </style>

@@ -7,12 +7,48 @@ import type {
   SendChatMessageResponse,
   StreamChatMessagePayload,
 } from '@/types/chat'
+import type {
+  ChatDashboardStats,
+  DashboardSuggestion,
+  RecentChatItem,
+} from '@/types/chatDashboard'
 
 const CHAT_CONVERSATIONS_ENDPOINT = '/chat/conversations'
 const CHAT_STREAM_ENDPOINT = '/chat/stream'
+const CHAT_DASHBOARD_STATS_ENDPOINT = '/v1/chat/dashboard-stats'
+const CHAT_DASHBOARD_SESSIONS_ENDPOINT = '/v1/chats'
+const CHAT_AI_SUGGESTIONS_ENDPOINT = '/v1/chat/ai-suggestions'
+const CHAT_POPULAR_QUESTIONS_ENDPOINT = '/v1/chat/popular-questions'
 
 export function fetchChatConversations(): Promise<ApiResponse<ChatConversation[]>> {
   return get<ChatConversation[]>(CHAT_CONVERSATIONS_ENDPOINT)
+}
+
+export function getDashboardStats(): Promise<ApiResponse<ChatDashboardStats>> {
+  return get<ChatDashboardStats>(CHAT_DASHBOARD_STATS_ENDPOINT)
+}
+
+export function getRecentSessions(limit = 5): Promise<ApiResponse<{ items: RecentChatItem[] }>> {
+  return get<{ items: RecentChatItem[] }>(CHAT_DASHBOARD_SESSIONS_ENDPOINT, {
+    limit,
+    sort: 'updated_desc',
+  })
+}
+
+export function getAiSuggestions(): Promise<ApiResponse<{ items: DashboardSuggestion[] }>> {
+  return get<{ items: DashboardSuggestion[] }>(CHAT_AI_SUGGESTIONS_ENDPOINT)
+}
+
+export function getPopularQuestions(limit = 5): Promise<ApiResponse<{ items: string[] }>> {
+  return get<{ items: string[] }>(CHAT_POPULAR_QUESTIONS_ENDPOINT, { limit })
+}
+
+export function pinSession(sessionId: string): Promise<ApiResponse<{ ok: true; id: string }>> {
+  return post<{ ok: true; id: string }>(`/v1/chats/${sessionId}/pin`)
+}
+
+export function deleteSession(sessionId: string): Promise<ApiResponse<{ ok: true; id: string }>> {
+  return post<{ ok: true; id: string }>(`/v1/chats/${sessionId}/delete`)
 }
 
 export function fetchConversationMessages(conversationId: string): Promise<ApiResponse<ChatMessage[]>> {
@@ -145,4 +181,13 @@ function parseStreamLine(rawLine: string, handlers: StreamHandlers): void {
 function getStreamUrl(): string {
   const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api'
   return `${baseUrl}${CHAT_STREAM_ENDPOINT}`
+}
+
+export const chatService = {
+  getDashboardStats,
+  getRecentSessions,
+  getAiSuggestions,
+  getPopularQuestions,
+  pinSession,
+  deleteSession,
 }

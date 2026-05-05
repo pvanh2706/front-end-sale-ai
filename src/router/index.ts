@@ -21,10 +21,39 @@ const router = createRouter({
             meta: { title: 'Đăng ký', public: true },
         },
         {
+            path: '/chat-tai-lieu',
+            component: () => import('../views/Chat/ChatModuleView.vue'),
+            meta: { requiresAuth: true, title: 'Chat tai lieu' },
+            children: [
+                {
+                    path: '',
+                    name: 'chat-dashboard',
+                    component: () => import('../views/Chat/ChatDashboardView.vue'),
+                    meta: { title: 'Chat tai lieu' },
+                },
+                {
+                    path: 'chat',
+                    name: 'chat-ai',
+                    component: () => import('../views/Chat/ChatView.vue'),
+                    meta: { title: 'Chat voi AI' },
+                },
+                {
+                    path: 'library',
+                    name: 'doc-library',
+                    component: () => import('../views/DocLibrary/DocLibraryView.vue'),
+                    meta: { title: 'Thu vien tai lieu' },
+                },
+                {
+                    path: 'analytics',
+                    name: 'chat-analytics',
+                    component: () => import('../views/Chat/ChatAnalyticsView.vue'),
+                    meta: { title: 'Phan tich su dung' },
+                },
+            ],
+        },
+        {
             path: '/chat',
-            name: 'ChatView',
-            component: () => import('../views/Chat/ChatView.vue'),
-            meta: { title: 'AI Chat' },
+            redirect: '/chat-tai-lieu/chat',
         },
         {
             path: '/crm-work',
@@ -34,7 +63,7 @@ const router = createRouter({
         },
         {
             path: '/doc-library',
-            redirect: '/doc-library/company',
+            redirect: '/chat-tai-lieu/library',
         },
         {
             path: '/doc-library/company',
@@ -78,7 +107,7 @@ const router = createRouter({
         },
         {
             path: '/',
-            redirect: '/chat',
+            redirect: '/chat-tai-lieu',
         },
     ],
 })
@@ -99,7 +128,7 @@ router.beforeEach((to, from, next) => {
 
     // Prevent authenticated users from visiting auth pages
     if (authStore.isAuthenticated && (to.name === 'Login' || to.name === 'Register')) {
-        next({ name: 'ChatView' })
+        next({ name: 'chat-dashboard' })
         return
     }
 

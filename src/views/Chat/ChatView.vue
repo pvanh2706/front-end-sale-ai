@@ -6,48 +6,16 @@
           <div class="border-b border-gray-200 p-4 dark:border-gray-800">
             <div class="mb-3 flex items-center justify-between">
               <h2 class="text-theme-xl font-semibold text-gray-900 dark:text-white">Hồ sơ chat</h2>
-              <div class="flex items-center gap-1">
-                <Button variant="ghost" size="icon-sm" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
-                  <Plus class="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon-sm" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
-                  <Search class="h-4 w-4" />
-                </Button>
-              </div>
             </div>
 
-            <div class="space-y-1">
-              <button
-                v-for="node in visibleFolderNodes"
-                :key="node.id"
-                type="button"
-                class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-theme-sm transition-colors"
-                :class="[
-                  node.id === activeFolderId
-                    ? 'bg-primary-50 text-primary-500 dark:bg-primary-500/15 dark:text-primary-300'
-                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
-                  node.level === 1 ? 'ml-4' : '',
-                  node.level === 2 ? 'ml-8' : '',
-                ]"
-                @click="activeFolderId = node.id"
-              >
-                <button
-                  v-if="hasChildren(node.id)"
-                  type="button"
-                  class="inline-flex h-4 w-4 items-center justify-center rounded text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
-                  @click.stop="toggleFolderExpand(node.id)"
-                >
-                  <ChevronRight
-                    class="h-3.5 w-3.5 transition-transform"
-                    :class="isExpanded(node.id) ? 'rotate-90' : ''"
-                  />
-                </button>
-                <span v-else class="h-4 w-4"></span>
-                <FolderOpen v-if="node.id === activeFolderId || isExpanded(node.id)" class="h-4 w-4" />
-                <Folder v-else class="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                <span class="flex-1 truncate">{{ node.name }} ({{ node.count }})</span>
-              </button>
-            </div>
+            <LibraryTree
+              :data="libraryStore.tree"
+              :loading="libraryStore.loading"
+              :selected-id="selectedContextNode?.id ?? null"
+              mode="chat"
+              @select="setChatContext"
+              @expand="handleTreeExpand"
+            />
           </div>
 
           <div class="min-h-0 flex-1 overflow-y-auto p-4">
@@ -130,6 +98,7 @@
                   class="text-gray-500 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
                   aria-label="Cài đặt"
                   title="Cài đặt"
+                  @click="showSettingsDialog = true"
                 >
                   <Settings class="h-4 w-4" />
                 </Button>
@@ -165,7 +134,7 @@
                     <CardContent class="p-4 md:p-5">
                       <p class="whitespace-pre-line text-theme-sm leading-6 text-gray-700 dark:text-gray-200">{{ message.content }}</p>
 
-                      <div v-if="message.sources?.length" class="mt-4 flex flex-wrap gap-2">
+                      <div v-if="settingsShowSources && message.sources?.length" class="mt-4 flex flex-wrap gap-2">
                         <div
                           v-for="source in message.sources"
                           :key="source.id ?? source.label"
@@ -191,9 +160,12 @@
                 <div class="flex items-center justify-between gap-3 text-theme-sm">
                   <div class="inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-primary-500 dark:bg-primary-500/15 dark:text-primary-300">
                     <FileText class="h-4 w-4" />
-                    <span>Đang chat với {{ activeDocumentCount }} tài liệu</span>
+                    <span>
+                      Đang chat với:
+                      {{ selectedContextNode ? selectedContextNode.name : 'Tất cả tài liệu được phép truy cập' }}
+                    </span>
                   </div>
-                  <Button variant="link" class="h-auto p-0 text-primary-500">Quản lý</Button>
+                  <Button variant="link" class="h-auto p-0 text-primary-500" @click="clearChatContext">Đổi context</Button>
                 </div>
 
                 <form class="relative" @submit.prevent="sendMessage">
@@ -235,25 +207,57 @@
 
   <!-- Dialog chia sẻ chat -->
   <ShareChatDialog v-model:open="showShareDialog" />
+
+  <!-- Dialog cài đặt chat -->
+  <Dialog v-model:open="showSettingsDialog">
+    <DialogContent class="sm:max-w-lg">
+      <DialogHeader>
+        <DialogTitle>Cài đặt chat</DialogTitle>
+        <DialogDescription>
+          Tùy chỉnh trải nghiệm chat với AI cho phiên làm việc hiện tại.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div class="space-y-4 py-2">
+        <div class="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-3 dark:border-gray-700">
+          <div>
+            <p class="text-theme-sm font-medium text-gray-900 dark:text-gray-100">Hiển thị nguồn trích dẫn</p>
+            <p class="text-theme-xs text-gray-500 dark:text-gray-400">Ẩn/hiện danh sách tài liệu nguồn trong phản hồi AI.</p>
+          </div>
+          <Switch v-model:checked="settingsShowSources" />
+        </div>
+
+        <div class="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-3 dark:border-gray-700">
+          <div>
+            <p class="text-theme-sm font-medium text-gray-900 dark:text-gray-100">Gửi tin bằng Enter</p>
+            <p class="text-theme-xs text-gray-500 dark:text-gray-400">
+              {{ settingsSendOnEnter ? 'Enter để gửi, Shift+Enter xuống dòng.' : 'Ctrl/Cmd+Enter để gửi, Enter xuống dòng.' }}
+            </p>
+          </div>
+          <Switch v-model:checked="settingsSendOnEnter" />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" @click="showSettingsDialog = false">Đóng</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue-sonner'
 import {
   Download,
   Eye,
-  ChevronRight,
   FileText,
-  Folder,
-  FolderOpen,
   LoaderCircle,
   Paperclip,
   Pin,
-  Plus,
   Settings,
-  Search,
   Send,
   Share2,
   Sparkles,
@@ -261,6 +265,7 @@ import {
 } from 'lucide-vue-next'
 
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import LibraryTree from '@/components/library/LibraryTree.vue'
 import ExportChatDialog from '@/views/Chat/ExportChatDialog.vue'
 import ShareChatDialog from '@/views/Chat/ShareChatDialog.vue'
 import {
@@ -272,17 +277,20 @@ import {
 } from '@/services/chat'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { isSuccess } from '@/types/common'
 import type { ChatMessage, ChatSource } from '@/types/chat'
-
-interface FolderNode {
-  id: number
-  name: string
-  count: number
-  level: number
-  parentId?: number
-}
+import { useLibraryStore } from '@/stores/library'
+import type { LibraryNode } from '@/types/library'
 
 interface UiChatMessage {
   id: string
@@ -293,24 +301,20 @@ interface UiChatMessage {
   pending?: boolean
 }
 
-const folderTree = ref<FolderNode[]>([
-  { id: 1, name: 'Khách hàng', count: 12, level: 0 },
-  { id: 2, name: 'Doanh nghiệp', count: 5, level: 1, parentId: 1 },
-  { id: 3, name: 'Công ty ABC', count: 3, level: 2, parentId: 2 },
-  { id: 4, name: 'Báo giá Q2', count: 2, level: 2, parentId: 3 },
-])
-const expandedFolderIds = ref<number[]>([1, 2, 3])
-const activeFolderId = ref(4)
-
+const route = useRoute()
 const queryClient = useQueryClient()
+const libraryStore = useLibraryStore()
 const selectedConversationId = ref<string | null>(null)
+const selectedContextNode = ref<LibraryNode | null>(null)
 const displayMessages = ref<UiChatMessage[]>([])
-const activeDocumentCount = ref(3)
 const draftMessage = ref('')
 const messagesError = ref('')
 const isSending = ref(false)
 const showExportDialog = ref(false)
 const showShareDialog = ref(false)
+const showSettingsDialog = ref(false)
+const settingsShowSources = ref(true)
+const settingsSendOnEnter = ref(true)
 
 const conversationsQuery = useQuery({
   queryKey: ['chat', 'conversations'],
@@ -379,25 +383,6 @@ watch(
   },
 )
 
-const visibleFolderNodes = computed(() =>
-  folderTree.value.filter((node) => {
-    if (!node.parentId) {
-      return true
-    }
-
-    let parentId: number | undefined = node.parentId
-    while (parentId) {
-      if (!expandedFolderIds.value.includes(parentId)) {
-        return false
-      }
-
-      parentId = folderTree.value.find((item) => item.id === parentId)?.parentId
-    }
-
-    return true
-  }),
-)
-
 const fallbackMutation = useMutation({
   mutationFn: sendChatMessage,
 })
@@ -413,6 +398,27 @@ const conversationList = computed(() => {
 
 const isConversationsLoading = computed(() => conversationsQuery.isLoading.value)
 const isMessagesLoading = computed(() => messagesQuery.isLoading.value)
+
+onMounted(() => {
+  void libraryStore.fetchTree()
+  libraryStore.initRealtime()
+  
+  // Handle query parameter for auto-sending message
+  const queryMessage = route.query.q as string | undefined
+  if (queryMessage) {
+    void nextTick(() => {
+      draftMessage.value = decodeURIComponent(queryMessage)
+      // Auto-focus and send after a short delay
+      setTimeout(() => {
+        void sendMessage()
+      }, 500)
+    })
+  }
+})
+
+onUnmounted(() => {
+  libraryStore.releaseRealtime()
+})
 
 const sendMessage = async () => {
   const content = draftMessage.value.trim()
@@ -519,40 +525,31 @@ function resolveConversationId(): string {
   return 'default'
 }
 
-function hasChildren(folderId: number): boolean {
-  return folderTree.value.some((node) => node.parentId === folderId)
-}
-
-function isExpanded(folderId: number): boolean {
-  return expandedFolderIds.value.includes(folderId)
-}
-
-function toggleFolderExpand(folderId: number): void {
-  if (!hasChildren(folderId)) {
+async function setChatContext(node: LibraryNode): Promise<void> {
+  if (node.type !== 'folder' && node.type !== 'document') {
     return
   }
 
-  if (isExpanded(folderId)) {
-    collapseFolderTree(folderId)
+  const conversationId = resolveConversationId()
+  const result = await libraryStore.applyChatContext(conversationId, node.id, node.type)
+  if (!result) {
     return
   }
 
-  expandedFolderIds.value = [...expandedFolderIds.value, folderId]
+  selectedContextNode.value = {
+    ...node,
+    name: result.node_name,
+  }
 }
 
-function collapseFolderTree(folderId: number): void {
-  const descendants = getDescendantIds(folderId)
-  expandedFolderIds.value = expandedFolderIds.value.filter(
-    (id) => id !== folderId && !descendants.includes(id),
-  )
+function handleTreeExpand(node: LibraryNode): void {
+  if (node.type === 'folder' && node.has_more_children) {
+    void libraryStore.fetchChildren(node.id)
+  }
 }
 
-function getDescendantIds(folderId: number): number[] {
-  const children = folderTree.value
-    .filter((node) => node.parentId === folderId)
-    .map((node) => node.id)
-
-  return children.flatMap((childId) => [childId, ...getDescendantIds(childId)])
+function clearChatContext(): void {
+  selectedContextNode.value = null
 }
 
 function handleComposerKeydown(event: KeyboardEvent): void {
@@ -560,7 +557,22 @@ function handleComposerKeydown(event: KeyboardEvent): void {
     return
   }
 
-  if (event.shiftKey || event.isComposing) {
+  if (event.isComposing) {
+    return
+  }
+
+  if (settingsSendOnEnter.value) {
+    if (event.shiftKey) {
+      return
+    }
+  } else {
+    const withCommand = navigator.platform.toLowerCase().includes('mac') ? event.metaKey : event.ctrlKey
+    if (!withCommand) {
+      return
+    }
+  }
+
+  if (event.shiftKey && settingsSendOnEnter.value) {
     return
   }
 

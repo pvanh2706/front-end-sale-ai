@@ -309,32 +309,32 @@ function getOrCreateDashboardChats(orgId) {
     dashboardChatState.set(orgId, [
       {
         id: 'chat-1',
-        title: 'Phan tich bao gia Q2',
-        lastQuestion: 'Hay tom tat 3 diem chinh de gui khach hang.',
+        title: 'Phân tích báo giá Q2',
+        lastQuestion: 'Hãy tóm tắt 3 điểm chính để gửi khách hàng.',
         messageCount: 32,
         updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
         pinned: false,
       },
       {
         id: 'chat-2',
-        title: 'So sanh hop dong A va B',
-        lastQuestion: 'Noi dung thanh toan khac nhau nhu the nao?',
+        title: 'So sánh hợp đồng A và B',
+        lastQuestion: 'Nội dung thanh toán khác nhau như thế nào?',
         messageCount: 18,
         updatedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
         pinned: true,
       },
       {
         id: 'chat-3',
-        title: 'Goi y email follow-up',
-        lastQuestion: 'Cho minh ban email ngan gon, lich su.',
+        title: 'Gợi ý email follow-up',
+        lastQuestion: 'Cho mình bản email ngắn gọn, lịch sự.',
         messageCount: 12,
         updatedAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
         pinned: false,
       },
       {
         id: 'chat-4',
-        title: 'Tong hop chinh sach doi tra',
-        lastQuestion: 'Tao 5 FAQ ngan gon cho team sales.',
+        title: 'Tổng hợp chính sách đổi trả',
+        lastQuestion: 'Tạo 5 FAQ ngắn gọn cho team sales.',
         messageCount: 9,
         updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
         pinned: false,
@@ -342,7 +342,7 @@ function getOrCreateDashboardChats(orgId) {
       {
         id: 'chat-5',
         title: 'Checklist onboarding',
-        lastQuestion: 'Can them buoc nao de giam sai sot?',
+        lastQuestion: 'Cần thêm bước nào để giảm sai sót?',
         messageCount: 15,
         updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
         pinned: false,
@@ -1151,26 +1151,26 @@ app.get('/api/v1/chat/ai-suggestions', (req, res) => {
     items: [
       {
         type: 'new_docs',
-        title: '3 tai lieu moi chua doc',
-        description: 'Tu team Marketing tuan nay',
+        title: '3 tài liệu mới chưa đọc',
+        description: 'Từ team Marketing tuần này',
         actionUrl: '/chat-tai-lieu/library?filter=unread',
       },
       {
         type: 'deadline',
-        title: 'Bao gia ABC sap het han',
-        description: 'Het han 15/05/2026 (con 10 ngay)',
+        title: 'Báo giá ABC sắp hết hạn',
+        description: 'Hết hạn 15/05/2026 (còn 10 ngày)',
         actionUrl: '/chat-tai-lieu/chat?context=baogia_abc',
       },
       {
         type: 'trending',
-        title: 'Tai lieu Pricing Q2 hot nhat',
-        description: 'Duoc hoi 24 lan trong tuan',
+        title: 'Tài liệu Pricing Q2 hot nhất',
+        description: 'Được hỏi 24 lần trong tuần',
         actionUrl: '/chat-tai-lieu/library?doc=pricing_q2',
       },
       {
         type: 'reminder',
-        title: 'Chua chat ve Deal Vingroup',
-        description: '3 tuan qua - review lai?',
+        title: 'Chưa chat về Deal Vingroup',
+        description: '3 tuần qua - review lại?',
         actionUrl: '/chat-tai-lieu/chat?context=deal_vingroup',
       },
     ],
@@ -1180,11 +1180,11 @@ app.get('/api/v1/chat/ai-suggestions', (req, res) => {
 app.get('/api/v1/chat/popular-questions', (req, res) => {
   const limit = Number(req.query.limit ?? 5)
   const items = [
-    'Chinh sach hoan tien',
-    'Quy trinh ky hop dong dien tu',
-    'Bao gia nam 2026',
-    'Ho tro ky thuat sau ban hang',
-    'Dieu khoan bao mat du lieu',
+    'Chính sách hoàn tiền',
+    'Quy trình ký hợp đồng điện tử',
+    'Báo giá năm 2026',
+    'Hỗ trợ kỹ thuật sau bán hàng',
+    'Điều khoản bảo mật dữ liệu',
   ]
 
   res.json({ items: items.slice(0, Number.isFinite(limit) ? limit : 5) })

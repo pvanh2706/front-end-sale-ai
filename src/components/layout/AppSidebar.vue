@@ -24,7 +24,7 @@
                     <div class="flex flex-col gap-4">
                         <div v-for="(menuGroup, groupIndex) in menuGroups" :key="groupIndex">
                             <h2 :class="[
-                                'mb-4 text-xs uppercase flex leading-[20px] text-accent-200/80 dark:text-accent-200/80',
+                                'mb-4 text-xs uppercase flex leading-[20px] text-primary-700 dark:text-white/80',
                                 !isExpanded && !isHovered
                                     ? 'lg:justify-center'
                                     : 'justify-start',
@@ -36,18 +36,18 @@
                             </h2>
                             <ul class="flex flex-col gap-4">
                                 <li v-for="(item, index) in menuGroup.items" :key="item.name">
-                                    <button v-if="item.subItems" @click="toggleSubmenu(groupIndex, index)" :class="[
+                                    <button v-if="item.subItems" @click="handleParentItemClick(item.path, groupIndex, index)" :class="[
                                         'menu-item group w-full',
                                         {
-                                            'menu-item-active': isSubmenuOpen(groupIndex, index),
-                                            'menu-item-inactive': !isSubmenuOpen(groupIndex, index),
+                                            'menu-item-active': isSubmenuOpen(groupIndex, index) || (item.path && isActive(item.path)),
+                                            'menu-item-inactive': !(isSubmenuOpen(groupIndex, index) || (item.path && isActive(item.path))),
                                         },
                                         !isExpanded && !isHovered
                                             ? 'lg:justify-center'
                                             : 'lg:justify-start',
                                     ]">
                                         <span :class="[
-                                            isSubmenuOpen(groupIndex, index)
+                                            (isSubmenuOpen(groupIndex, index) || (item.path && isActive(item.path)))
                                                 ? 'menu-item-icon-active'
                                                 : 'menu-item-icon-inactive',
                                         ]">
@@ -88,7 +88,7 @@
                                             (isExpanded || isHovered || isMobileOpen)
                                             ">
                                             <ul class="mt-2 space-y-1 ml-9">
-                                                <li v-for="subItem in item.subItems" :key="subItem.name">
+                                                <li v-for="subItem in getVisibleSubItems(item.subItems)" :key="subItem.name">
                                                     <router-link :to="subItem.path" :class="[
                                                         'menu-dropdown-item',
                                                         {
@@ -143,7 +143,7 @@
             </div>
 
             <nav class="pb-5">
-                <hr class="my-2 border-white/10" />
+                <hr class="my-2 border-primary-300/70 dark:border-white/12" />
                 <router-link
                     to="/settings"
                     :class="[
@@ -173,7 +173,7 @@
 
 <script setup>
 import { onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import {
     Message2Line,
@@ -186,6 +186,7 @@ import BrandLogo from "@/components/common/BrandLogo.vue";
 import { useSidebar } from "@/composables/useSidebar";
 
 const route = useRoute();
+const router = useRouter();
 
 const { isExpanded, isMobileOpen, isHovered, openSubmenu } = useSidebar();
 
@@ -196,9 +197,11 @@ const menuGroups = [
             {
                 icon: Message2Line,
                 name: "Chat tài liệu",
+                path: "/chat-tai-lieu",
                 subItems: [
-                    { name: "Chat với AI", path: "/chat", pro: false, new: false },
-                    { name: "Thư viện tài liệu", path: "/doc-library", pro: false, new: false },
+                    { name: "Tong quan", path: "/chat-tai-lieu", pro: false, new: false },
+                    { name: "Chat với AI", path: "/chat-tai-lieu/chat", pro: false, new: false },
+                    { name: "Thư viện tài liệu", path: "/chat-tai-lieu/library", pro: false, new: false },
                 ],
             },
             {
@@ -211,8 +214,8 @@ const menuGroups = [
 ];
 
 const isActive = (path) => {
-    if (path === "/doc-library") {
-        return route.path.startsWith("/doc-library");
+    if (path === "/chat-tai-lieu") {
+        return route.path === "/chat-tai-lieu";
     }
     return route.path === path;
 };
@@ -226,6 +229,15 @@ const isSubmenuOpen = (groupIndex, itemIndex) => {
     const key = `${groupIndex}-${itemIndex}`;
     return openSubmenu.value === key;
 };
+
+const handleParentItemClick = (path, groupIndex, itemIndex) => {
+    if (path) {
+        router.push(path);
+    }
+    toggleSubmenu(groupIndex, itemIndex);
+};
+
+const getVisibleSubItems = (subItems = []) => subItems.filter((subItem) => subItem.path !== "/chat-tai-lieu");
 
 onMounted(() => {
     // Open the matching submenu on first load, but still allow manual collapse.

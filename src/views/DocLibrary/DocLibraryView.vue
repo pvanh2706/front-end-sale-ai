@@ -6,116 +6,51 @@
       <aside
         class="hidden md:flex w-64 shrink-0 flex-col border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900"
       >
-        <div class="flex flex-col gap-6 p-4 overflow-y-auto flex-1 custom-scrollbar">
+        <div class="flex flex-col gap-4 p-4 overflow-y-auto flex-1 custom-scrollbar">
 
-          <!-- Space header -->
+          <!-- Space header — generic library -->
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-500 dark:bg-primary-500/15 dark:text-primary-400 shrink-0">
-              <component :is="libraryIcon" class="h-5 w-5" />
+              <BookOpen class="h-5 w-5" />
             </div>
             <div class="min-w-0">
-              <h2 class="truncate text-theme-sm font-semibold text-gray-900 dark:text-white">{{ libraryTitle }}</h2>
-              <p class="text-theme-xs text-gray-500 dark:text-gray-400">{{ librarySubtitle }}</p>
+              <h2 class="truncate text-theme-sm font-semibold text-gray-900 dark:text-white">Thư viện tài liệu</h2>
+              <p class="text-theme-xs text-gray-500 dark:text-gray-400">Kho tri thức nội bộ</p>
             </div>
           </div>
 
-          <div class="rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-800/70">
-            <button
-              type="button"
-              class="w-full rounded-lg px-3 py-2 text-left text-theme-sm transition-colors"
-              :class="!isPersonalLibrary
-                ? 'bg-primary-50 font-semibold text-primary-500 dark:bg-primary-500/10 dark:text-primary-400'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5'"
-              @click="goLibrarySection('company')"
-            >
-              Tài liệu công ty
-            </button>
-            <button
-              type="button"
-              class="mt-1 w-full rounded-lg px-3 py-2 text-left text-theme-sm transition-colors"
-              :class="isPersonalLibrary
-                ? 'bg-primary-50 font-semibold text-primary-500 dark:bg-primary-500/10 dark:text-primary-400'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5'"
-              @click="goLibrarySection('personal')"
-            >
-              Tài liệu cá nhân
-            </button>
-          </div>
+          <Button
+            type="button"
+            size="sm"
+            class="w-full justify-start bg-primary-500 text-white hover:bg-primary-600"
+            @click="showGlobalAddFolderModal = true"
+          >
+            <Plus class="h-4 w-4" />
+            Thêm thư mục
+          </Button>
 
           <!-- Cây trang -->
-          <div class="flex flex-col gap-1">
-            <div v-for="node in pageTree" :key="node.id" class="flex flex-col">
-              <!-- Level 1 -->
-              <button
-                type="button"
-                class="flex items-center gap-1.5 rounded px-3 py-1.5 text-theme-sm text-gray-700 hover:bg-gray-200/60 dark:text-gray-300 dark:hover:bg-white/5 w-full text-left"
-                @click="toggleNode(node.id)"
-              >
-                <ChevronDown
-                  class="h-4 w-4 shrink-0 text-gray-400 transition-transform"
-                  :class="expandedNodes.includes(node.id) ? '' : '-rotate-90'"
-                />
-                <span class="truncate">{{ node.label }}</span>
-              </button>
+          <div class="flex min-h-0 flex-1 flex-col">
+            <LibraryTree
+              ref="treeRef"
+              :data="libraryStore.tree"
+              :loading="libraryStore.loading"
+              :selected-id="selectedLibraryNode?.id ?? null"
+              mode="library"
+              @select="handleTreeSelect"
+              @expand="handleTreeExpand"
+              @create-folder="handleCreateFolder"
+              @delete-node="handleDeleteNode"
+              @rename-node="handleRenameNode"
+              @move-node="handleMoveNode"
+            />
 
-              <!-- Level 2 -->
-              <div v-if="expandedNodes.includes(node.id)" class="ml-4 flex flex-col border-l border-gray-200 dark:border-gray-700 mt-1">
-                <div v-for="child in node.children" :key="child.id" class="flex flex-col">
-                  <button
-                    type="button"
-                    class="flex items-center gap-1.5 rounded px-3 py-1.5 text-theme-sm w-full text-left transition-colors border-l-2"
-                    :class="activePageId === child.id
-                      ? 'bg-primary-50 border-primary-600 text-primary-700 font-medium dark:bg-primary-500/15 dark:border-primary-400 dark:text-primary-300'
-                      : 'border-transparent text-gray-700 hover:bg-gray-200/60 dark:text-gray-300 dark:hover:bg-white/5'"
-                    @click="selectPage(child)"
-                  >
-                    <ChevronDown
-                      v-if="child.children?.length"
-                      class="h-4 w-4 shrink-0 text-gray-400 transition-transform"
-                      :class="expandedNodes.includes(child.id) ? '' : '-rotate-90'"
-                      @click.stop="toggleNode(child.id)"
-                    />
-                    <ChevronRight v-else class="h-4 w-4 shrink-0 text-gray-300" />
-                    <span class="truncate">{{ child.label }}</span>
-                  </button>
-
-                  <!-- Level 3 -->
-                  <div v-if="child.children?.length && expandedNodes.includes(child.id)"
-                    class="ml-4 flex flex-col border-l border-gray-200 dark:border-gray-700 mt-1"
-                  >
-                    <div v-for="grandchild in child.children" :key="grandchild.id" class="flex flex-col">
-                      <button
-                        type="button"
-                        class="flex items-center gap-1.5 rounded px-3 py-1.5 text-theme-sm text-gray-600 hover:bg-gray-200/60 dark:text-gray-400 dark:hover:bg-white/5 w-full text-left"
-                        @click="toggleNode(grandchild.id)"
-                      >
-                        <ChevronDown
-                          v-if="grandchild.children?.length"
-                          class="h-4 w-4 shrink-0 text-gray-400 transition-transform"
-                          :class="expandedNodes.includes(grandchild.id) ? '' : '-rotate-90'"
-                        />
-                        <ChevronRight v-else class="h-4 w-4 shrink-0 text-gray-300" />
-                        <span class="truncate">{{ grandchild.label }}</span>
-                      </button>
-
-                      <!-- Level 4 -->
-                      <div v-if="grandchild.children?.length && expandedNodes.includes(grandchild.id)"
-                        class="ml-4 flex flex-col border-l border-gray-200 dark:border-gray-700 mt-1"
-                      >
-                        <button
-                          v-for="leaf in grandchild.children"
-                          :key="leaf.id"
-                          type="button"
-                          class="flex items-center gap-1.5 rounded px-3 py-1.5 text-theme-sm text-gray-500 hover:bg-gray-200/60 dark:text-gray-400 dark:hover:bg-white/5 w-full text-left"
-                        >
-                          <StickyNote class="h-4 w-4 shrink-0 text-gray-300" />
-                          <span class="truncate">{{ leaf.label }}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div
+              v-if="libraryStore.error"
+              class="mt-3 rounded-lg border border-error-500/30 bg-error-50 px-3 py-2 text-theme-xs text-error-500 dark:bg-error-500/10"
+            >
+              Không tải được Thư viện.
+              <button type="button" class="ml-1 font-semibold underline" @click="retryFetchLibrary">Thử lại</button>
             </div>
           </div>
         </div>
@@ -176,11 +111,11 @@
 
             <Separator orientation="vertical" class="h-6 hidden sm:block" />
 
-            <Button variant="ghost" size="sm" class="gap-1.5 text-gray-600 dark:text-gray-400">
+            <Button variant="ghost" size="sm" class="gap-1.5 text-gray-600 dark:text-gray-400" @click="openEditDialog">
               <Pencil class="h-4 w-4" />
               <span class="hidden lg:inline">Chỉnh sửa</span>
             </Button>
-            <Button variant="ghost" size="sm" class="gap-1.5 text-gray-600 dark:text-gray-400">
+            <Button variant="ghost" size="sm" class="gap-1.5 text-gray-600 dark:text-gray-400" @click="openShareDialog">
               <Share2 class="h-4 w-4" />
               <span class="hidden lg:inline">Chia sẻ</span>
             </Button>
@@ -234,9 +169,9 @@
             <p class="mb-8 max-w-md text-theme-sm text-gray-500 dark:text-gray-400 leading-relaxed">
               {{ emptyDescription }}
             </p>
-            <Button class="gap-2 bg-primary-500 text-white hover:bg-primary-600">
+            <Button class="gap-2 bg-primary-500 text-white hover:bg-primary-600" @click="openAddDocumentDialog">
               <Plus class="h-4 w-4" />
-              Thêm nội dung đầu tiên
+              Thêm tài liệu
             </Button>
           </section>
 
@@ -332,20 +267,287 @@
         </article>
       </main>
     </div>
+
+    <!-- Share dialog -->
+    <Dialog v-model:open="showShareDialog">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Chia sẻ tài liệu</DialogTitle>
+          <DialogDescription>Mời thành viên hoặc sao chép liên kết để chia sẻ tài liệu này.</DialogDescription>
+        </DialogHeader>
+        <div class="space-y-5 py-2">
+          <!-- Invite by email -->
+          <div class="space-y-2">
+            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Mời qua email</Label>
+            <div class="flex gap-2">
+              <Input
+                v-model="shareEmail"
+                type="email"
+                placeholder="tên@công-ty.com"
+                class="flex-1"
+                @keydown.enter="submitShareInvite"
+              />
+              <Select v-model="shareRole">
+                <SelectTrigger class="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Xem</SelectItem>
+                  <SelectItem value="editor">Sửa</SelectItem>
+                  <SelectItem value="commenter">Bình luận</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              class="bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-60"
+              :disabled="!shareEmail.trim()"
+              @click="submitShareInvite"
+            >
+              Gửi lời mời
+            </Button>
+          </div>
+
+          <Separator />
+
+          <!-- Copy link -->
+          <div class="space-y-2">
+            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Liên kết tài liệu</Label>
+            <div class="flex gap-2">
+              <Input
+                :value="shareLink"
+                readonly
+                class="flex-1 bg-gray-50 text-gray-500 dark:bg-gray-900"
+              />
+              <Button type="button" variant="outline" class="shrink-0 gap-1.5" @click="copyShareLink">
+                <component :is="shareLinkCopied ? CheckCircle2 : Copy" class="h-4 w-4" />
+                {{ shareLinkCopied ? 'Đã sao chép' : 'Sao chép' }}
+              </Button>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" @click="showShareDialog = false">Đóng</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Share dialog -->
+    <Dialog v-model:open="showShareDialog">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Chia sẻ tài liệu</DialogTitle>
+          <DialogDescription>Mời thành viên hoặc sao chép liên kết để chia sẻ tài liệu này.</DialogDescription>
+        </DialogHeader>
+        <div class="space-y-5 py-2">
+          <div class="space-y-2">
+            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Mời qua email</Label>
+            <div class="flex gap-2">
+              <Input
+                v-model="shareEmail"
+                type="email"
+                placeholder="tên@công-ty.com"
+                class="flex-1"
+                @keydown.enter="submitShareInvite"
+              />
+              <Select v-model="shareRole">
+                <SelectTrigger class="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Xem</SelectItem>
+                  <SelectItem value="editor">Sửa</SelectItem>
+                  <SelectItem value="commenter">Bình luận</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              class="bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-60"
+              :disabled="!shareEmail.trim()"
+              @click="submitShareInvite"
+            >
+              Gửi lời mời
+            </Button>
+          </div>
+
+          <Separator />
+
+          <div class="space-y-2">
+            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Liên kết tài liệu</Label>
+            <div class="flex gap-2">
+              <Input
+                :value="shareLink"
+                readonly
+                class="flex-1 bg-gray-50 text-gray-500 dark:bg-gray-900"
+              />
+              <Button type="button" variant="outline" class="shrink-0 gap-1.5" @click="copyShareLink">
+                <component :is="shareLinkCopied ? CheckCircle2 : Copy" class="h-4 w-4" />
+                {{ shareLinkCopied ? 'Đã sao chép' : 'Sao chép' }}
+              </Button>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" @click="showShareDialog = false">Đóng</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Edit dialog -->
+    <Dialog v-model:open="showEditDialog">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Chỉnh sửa tài liệu</DialogTitle>
+          <DialogDescription>Cập nhật thông tin tài liệu đang xem.</DialogDescription>
+        </DialogHeader>
+        <div class="space-y-4 py-2">
+          <div class="space-y-2">
+            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Tiêu đề</Label>
+            <Input
+              v-model="editTitle"
+              type="text"
+              placeholder="Nhập tiêu đề tài liệu"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Trạng thái</Label>
+            <Select v-model="editStatus">
+              <SelectTrigger class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="approved">Đã duyệt</SelectItem>
+                <SelectItem value="pending">Chờ duyệt</SelectItem>
+                <SelectItem value="draft">Bản nháp</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" @click="showEditDialog = false">Hủy</Button>
+          <Button
+            type="button"
+            class="bg-primary-500 text-white hover:bg-primary-600"
+            @click="submitEdit"
+          >
+            Lưu thay đổi
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="showAddDocumentDialog">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Thêm tài liệu</DialogTitle>
+          <DialogDescription>
+            Nhập tiêu đề tài liệu để thêm vào thư mục đang chọn.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-2">
+          <div class="space-y-2">
+            <label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Tiêu đề tài liệu</label>
+            <Input
+              v-model="newDocumentTitle"
+              type="text"
+              placeholder="Ví dụ: Quy trình onboarding 2026"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" @click="showAddDocumentDialog = false">Hủy</Button>
+          <Button
+            type="button"
+            :class="[
+              'disabled:bg-primary-200 disabled:text-primary-500',
+              hasNewDocumentTitle
+                ? 'bg-primary-900 text-white hover:bg-primary-900 shadow-theme-sm'
+                : 'bg-primary-100 text-primary-700 hover:bg-primary-200',
+            ]"
+            :disabled="isCreatingDocument"
+            @click="submitNewDocument"
+          >
+            {{ isCreatingDocument ? 'Đang upload...' : 'Thêm tài liệu' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
   </AdminLayout>
+
+  <!-- ── Global "Thêm thư mục" modal ── -->
+  <Dialog v-model:open="showGlobalAddFolderModal">
+    <DialogContent class="sm:max-w-sm">
+      <DialogHeader>
+        <DialogTitle>Thêm thư mục</DialogTitle>
+        <DialogDescription>
+          Tạo thư mục mới trong Tài liệu công ty hoặc Tài liệu cá nhân.
+        </DialogDescription>
+      </DialogHeader>
+      <div class="space-y-4 py-2">
+        <div class="space-y-2">
+          <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Tên thư mục</Label>
+          <Input
+            v-model="globalNewFolderName"
+            type="text"
+            placeholder="Ví dụ: Quy trình bán hàng"
+            @keydown.enter="submitGlobalNewFolder"
+          />
+        </div>
+        <div class="space-y-2">
+          <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Tạo trong</Label>
+          <Select v-model="globalNewFolderWorkspace">
+            <SelectTrigger class="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="company">
+                <span class="flex items-center gap-2">
+                  <Building2 class="h-4 w-4 text-primary-500" />
+                  Tài liệu công ty
+                </span>
+              </SelectItem>
+              <SelectItem value="personal">
+                <span class="flex items-center gap-2">
+                  <UserRound class="h-4 w-4 text-violet-500" />
+                  Tài liệu cá nhân
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" @click="showGlobalAddFolderModal = false">Hủy</Button>
+        <Button
+          type="button"
+          :disabled="!globalNewFolderName.trim() || isCreatingGlobalFolder"
+          class="bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-60"
+          @click="submitGlobalNewFolder"
+        >
+          {{ isCreatingGlobalFolder ? 'Đang tạo...' : 'Tạo thư mục' }}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
   Bold,
-  Building2,
+  Copy,
   BookOpen,
+  Building2,
   Calendar,
   CheckCircle2,
-  ChevronDown,
   ChevronRight,
   Eye,
   FileText,
@@ -358,7 +560,6 @@ import {
   Pencil,
   Plus,
   Share2,
-  StickyNote,
   ThumbsUp,
   Trash2,
   UserRound,
@@ -366,18 +567,32 @@ import {
 } from 'lucide-vue-next'
 
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import LibraryTree from '@/components/library/LibraryTree.vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
+import { useLibraryStore } from '@/stores/library'
+import type { LibraryNode, LibraryRootType } from '@/types/library'
 
 // ─── Types ───────────────────────────────────────────────────
-
-interface TreeNode {
-  id: number
-  label: string
-  children?: TreeNode[]
-}
 
 interface ChildPage {
   id: number
@@ -395,18 +610,7 @@ interface PageInfo {
 const route = useRoute()
 const router = useRouter()
 const isPersonalLibrary = computed(() => route.path === '/doc-library/personal')
-const libraryTitle = computed(() =>
-  isPersonalLibrary.value ? 'Tài liệu cá nhân' : 'Tài liệu công ty',
-)
-const librarySubtitle = computed(() =>
-  isPersonalLibrary.value ? 'Không gian riêng của bạn' : 'Kho tri thức nội bộ',
-)
-const libraryIcon = computed(() => (isPersonalLibrary.value ? UserRound : Building2))
-const emptyDescription = computed(() =>
-  isPersonalLibrary.value
-    ? 'Tạo ghi chú cá nhân đầu tiên của bạn hoặc chọn một thư mục con để tiếp tục làm việc.'
-    : 'Bắt đầu xây dựng kho tài liệu công ty bằng cách thêm nội dung mới hoặc chọn từ các trang con bên dưới.',
-)
+const emptyDescription = 'Chọn thư mục trong cây bên trái hoặc tạo tài liệu mới.'
 
 function goLibrarySection(type: 'company' | 'personal') {
   router.push(type === 'company' ? '/doc-library/company' : '/doc-library/personal')
@@ -418,9 +622,6 @@ const footerNav = [
 ]
 
 interface LibraryCaseConfig {
-  pageTree: TreeNode[]
-  expandedNodes: number[]
-  activePageId: number | null
   breadcrumbs: string[]
   collaborators: string[]
   currentPage: PageInfo
@@ -428,41 +629,6 @@ interface LibraryCaseConfig {
 }
 
 const companyCase: LibraryCaseConfig = {
-  pageTree: [
-    {
-      id: 1,
-      label: '1. Quy trình vận hành',
-      children: [
-        {
-          id: 11,
-          label: '1.2. Tài liệu ISO/IEC 27001:2022',
-          children: [
-            {
-              id: 111,
-              label: 'Chính sách bảo mật',
-            },
-            {
-              id: 112,
-              label: 'Quản lý rủi ro',
-              children: [
-                { id: 1121, label: 'Biểu mẫu đánh giá' },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: 2,
-      label: '2. Hướng dẫn sử dụng',
-      children: [
-        { id: 21, label: '2.1. Onboarding nhân viên' },
-        { id: 22, label: '2.2. Quy trình bán hàng' },
-      ],
-    },
-  ],
-  expandedNodes: [1, 11],
-  activePageId: 11,
   breadcrumbs: ['Thư viện tài liệu', 'Tài liệu công ty'],
   collaborators: ['NA', 'MB', 'VC', 'TD', 'PH'],
   currentPage: {
@@ -491,33 +657,6 @@ const companyCase: LibraryCaseConfig = {
 }
 
 const personalCase: LibraryCaseConfig = {
-  pageTree: [
-    {
-      id: 101,
-      label: '1. Công việc cá nhân',
-      children: [
-        { id: 111, label: '1.1. Kế hoạch quý Q2' },
-        {
-          id: 112,
-          label: '1.2. Mục tiêu học tập',
-          children: [
-            { id: 1121, label: 'Lộ trình AI cho Sales' },
-            { id: 1122, label: 'Checklist thực hành hàng tuần' },
-          ],
-        },
-      ],
-    },
-    {
-      id: 102,
-      label: '2. Tài liệu tham khảo',
-      children: [
-        { id: 121, label: '2.1. Ghi chú webinar' },
-        { id: 122, label: '2.2. Tài liệu self-learning' },
-      ],
-    },
-  ],
-  expandedNodes: [101, 112],
-  activePageId: 111,
   breadcrumbs: ['Thư viện tài liệu', 'Tài liệu cá nhân'],
   collaborators: ['QT', 'NA', 'LP', 'HN'],
   currentPage: {
@@ -545,12 +684,86 @@ const personalCase: LibraryCaseConfig = {
   ],
 }
 
-// ─── Page tree ───────────────────────────────────────────────
+const libraryStore = useLibraryStore()
+const selectedLibraryNode = ref<LibraryNode | null>(null)
+const showAddDocumentDialog = ref(false)
+const treeRef = ref<InstanceType<typeof LibraryTree> | null>(null)
+const newDocumentTitle = ref('')
+const isCreatingDocument = ref(false)
+const latestCreatedDocumentId = ref<string | null>(null)
+const isAddDocumentButtonEmphasized = ref(false)
+const hasNewDocumentTitle = computed(() => newDocumentTitle.value.trim().length > 0)
 
-const pageTree = ref<TreeNode[]>([])
-const expandedNodes = ref<number[]>([])
-const activePageId = ref<number | null>(null)
-const breadcrumbs = ref<string[]>([])
+// ─── Share dialog ─────────────────────────────────────────────
+const showShareDialog = ref(false)
+const shareEmail = ref('')
+const shareRole = ref<'viewer' | 'editor' | 'commenter'>('viewer')
+const shareLink = computed(() => `${window.location.origin}/doc-library?doc=${encodeURIComponent(currentPage.value.title)}`)
+const shareLinkCopied = ref(false)
+
+function openShareDialog(): void {
+  shareEmail.value = ''
+  shareRole.value = 'viewer'
+  shareLinkCopied.value = false
+  showShareDialog.value = true
+}
+
+function submitShareInvite(): void {
+  if (!shareEmail.value.trim()) return
+  toast.success(`Đã gửi lời mời tới ${shareEmail.value.trim()}`)
+  shareEmail.value = ''
+}
+
+async function copyShareLink(): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(shareLink.value)
+    shareLinkCopied.value = true
+    setTimeout(() => { shareLinkCopied.value = false }, 2000)
+  } catch {
+    toast.error('Không thể sao chép liên kết')
+  }
+}
+
+// ─── Edit dialog ─────────────────────────────────────────────
+const showEditDialog = ref(false)
+const editTitle = ref('')
+const editStatus = ref<'approved' | 'pending' | 'draft'>('approved')
+
+function openEditDialog(): void {
+  editTitle.value = currentPage.value.title
+  const s = currentPage.value.status
+  editStatus.value = s === 'Đã duyệt' ? 'approved' : s === 'Chờ duyệt' ? 'pending' : 'draft'
+  showEditDialog.value = true
+}
+
+function submitEdit(): void {
+  const title = editTitle.value.trim()
+  if (!title) {
+    toast.error('Tiêu đề không được để trống')
+    return
+  }
+  const statusLabel = editStatus.value === 'approved' ? 'Đã duyệt' : editStatus.value === 'pending' ? 'Chờ duyệt' : 'Bản nháp'
+  currentPage.value = { ...currentPage.value, title, status: statusLabel }
+  if (selectedLibraryNode.value) {
+    selectedLibraryNode.value = { ...selectedLibraryNode.value, name: title }
+  }
+  showEditDialog.value = false
+  toast.success('Đã cập nhật tài liệu')
+}
+
+// ─── Global add folder modal ──────────────────────────────────
+const showGlobalAddFolderModal = ref(false)
+const globalNewFolderName = ref('')
+const globalNewFolderWorkspace = ref<LibraryRootType>('company')
+const isCreatingGlobalFolder = ref(false)
+
+const breadcrumbs = computed(() => {
+  if (selectedLibraryNode.value) {
+    return ['Thư viện tài liệu', selectedLibraryNode.value.name]
+  }
+  return ['Thư viện tài liệu']
+})
+
 const collaborators = ref<string[]>([])
 const currentPage = ref<PageInfo>({
   title: '',
@@ -561,29 +774,147 @@ const currentPage = ref<PageInfo>({
 const childPages = ref<ChildPage[]>([])
 
 function applyLibraryCase(config: LibraryCaseConfig) {
-  pageTree.value = config.pageTree
-  expandedNodes.value = [...config.expandedNodes]
-  activePageId.value = config.activePageId
-  breadcrumbs.value = [...config.breadcrumbs]
   collaborators.value = [...config.collaborators]
   currentPage.value = { ...config.currentPage }
   childPages.value = [...config.childPages]
 }
 
-applyLibraryCase(isPersonalLibrary.value ? personalCase : companyCase)
+applyLibraryCase(companyCase)
 
-function toggleNode(id: number) {
-  const idx = expandedNodes.value.indexOf(id)
-  if (idx >= 0) {
-    expandedNodes.value.splice(idx, 1)
-  } else {
-    expandedNodes.value.push(id)
+onMounted(() => {
+  void libraryStore.fetchTree()
+  libraryStore.initRealtime()
+})
+
+onUnmounted(() => {
+  libraryStore.releaseRealtime()
+})
+
+function handleTreeSelect(node: LibraryNode): void {
+  selectedLibraryNode.value = node
+  currentPage.value = {
+    ...currentPage.value,
+    title: node.name,
   }
 }
 
-function selectPage(node: TreeNode) {
-  activePageId.value = node.id
+function handleTreeExpand(node: LibraryNode): void {
+  if (node.type === 'folder' && node.has_more_children) {
+    void libraryStore.fetchChildren(node.id)
+  }
 }
+
+function openAddDocumentDialog(): void {
+  if (isAddDocumentButtonEmphasized.value && latestCreatedDocumentId.value) {
+    const targetNode = findNodeById(libraryStore.tree, latestCreatedDocumentId.value)
+    if (targetNode) {
+      selectedLibraryNode.value = targetNode
+      currentPage.value = {
+        ...currentPage.value,
+        title: targetNode.name,
+      }
+      isAddDocumentButtonEmphasized.value = false
+      return
+    }
+  }
+
+  showAddDocumentDialog.value = true
+}
+
+async function submitNewDocument(): Promise<void> {
+  const title = newDocumentTitle.value.trim()
+
+  if (!title) {
+    toast.error('Vui lòng nhập tiêu đề tài liệu')
+    return
+  }
+
+  const parentId = selectedLibraryNode.value?.type === 'folder'
+    ? selectedLibraryNode.value.id
+    : selectedLibraryNode.value?.parent_id ?? null
+
+  isCreatingDocument.value = true
+
+  try {
+    const node = await libraryStore.createDocument(title, parentId)
+    if (!node) {
+      return
+    }
+
+    selectedLibraryNode.value = node
+    currentPage.value = {
+      ...currentPage.value,
+      title: node.name,
+    }
+    latestCreatedDocumentId.value = node.id
+    isAddDocumentButtonEmphasized.value = true
+
+    showAddDocumentDialog.value = false
+    newDocumentTitle.value = ''
+    toast.success('Đã thêm tài liệu thành công')
+  } finally {
+    isCreatingDocument.value = false
+  }
+}
+
+function retryFetchLibrary(): void {
+  void libraryStore.fetchTree({ force: true })
+}
+
+function addFolderAtRoot(): void {
+  treeRef.value?.startAdd(null)
+}
+
+async function handleCreateFolder(payload: { name: string; parentId: string | null }): Promise<void> {
+  const folder = await libraryStore.createFolder(payload.name, payload.parentId)
+  if (folder) {
+    selectedLibraryNode.value = folder
+    toast.success('Đã thêm thư mục thành công')
+  }
+}
+
+function handleDeleteNode(node: LibraryNode): void {
+  if (node.is_system) {
+    toast.error('Không thể xóa thư mục hệ thống')
+    return
+  }
+  void libraryStore.removeNode(node.id).then(() => {
+    if (selectedLibraryNode.value?.id === node.id) {
+      selectedLibraryNode.value = null
+    }
+    toast.success('Đã xóa thành công')
+  })
+}
+
+function handleRenameNode(_payload: { node: LibraryNode; newName: string }): void {
+  toast.info('Tính năng đổi tên sẽ sớm ra mắt')
+}
+
+function handleMoveNode(_payload: { nodeId: string; newParentId: string }): void {
+  toast.info('Tính năng di chuyển thư mục sẽ sớm ra mắt')
+}
+
+async function submitGlobalNewFolder(): Promise<void> {
+  const name = globalNewFolderName.value.trim()
+  if (!name) return
+
+  // Resolve parent: root folder of the chosen workspace
+  const rootId = globalNewFolderWorkspace.value === 'company' ? 'company-root' : 'personal-root'
+
+  isCreatingGlobalFolder.value = true
+  try {
+    const folder = await libraryStore.createFolder(name, rootId)
+    if (folder) {
+      selectedLibraryNode.value = folder
+      showGlobalAddFolderModal.value = false
+      globalNewFolderName.value = ''
+      toast.success('Đã tạo thư mục thành công')
+    }
+  } finally {
+    isCreatingGlobalFolder.value = false
+  }
+}
+
 
 // ─── Toolbar ─────────────────────────────────────────────────
 
@@ -594,19 +925,24 @@ function handleSave() {
 // ─── Page content ────────────────────────────────────────────
 
 function selectChildPage(child: ChildPage) {
-  const activeCase = isPersonalLibrary.value ? personalCase : companyCase
   currentPage.value = {
     title: child.title,
-    author: activeCase.currentPage.author,
-    date: activeCase.currentPage.date,
-    status: activeCase.currentPage.status,
+    author: companyCase.currentPage.author,
+    date: companyCase.currentPage.date,
+    status: companyCase.currentPage.status,
   }
-  breadcrumbs.value = [activeCase.breadcrumbs[0], child.title]
+  selectedLibraryNode.value = {
+    id: `preview-${child.id}`,
+    name: child.title,
+    type: 'document',
+    parent_id: null,
+    children: [],
+    documents_count: 0,
+    status: 'approved',
+    has_content: true,
+    updated_at: new Date().toISOString(),
+  }
 }
-
-watch(isPersonalLibrary, (value: boolean) => {
-  applyLibraryCase(value ? personalCase : companyCase)
-})
 
 // ─── Footer ──────────────────────────────────────────────────
 
@@ -620,5 +956,22 @@ function handleSendComment() {
   commentCount.value++
   commentText.value = ''
   toast.success('Đã gửi bình luận')
+}
+
+function findNodeById(nodes: LibraryNode[], targetId: string): LibraryNode | null {
+  for (const node of nodes) {
+    if (node.id === targetId) {
+      return node
+    }
+
+    if (node.children.length) {
+      const found = findNodeById(node.children, targetId)
+      if (found) {
+        return found
+      }
+    }
+  }
+
+  return null
 }
 </script>

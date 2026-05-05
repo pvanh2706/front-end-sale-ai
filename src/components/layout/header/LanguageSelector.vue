@@ -2,7 +2,7 @@
   <div class="relative" ref="dropdownRef">
     <button
       type="button"
-      class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 lg:h-11 lg:w-11"
+      class="flex h-10 w-10 items-center justify-center rounded-lg border bg-transparent transition-colors border-[var(--color-sidebar-active-border)] text-[var(--color-sidebar-text)] hover:bg-primary-100 dark:hover:bg-white/10 lg:h-11 lg:w-11"
       :aria-label="`Ngôn ngữ: ${currentLang.label}`"
       @click="toggleDropdown"
     >
@@ -11,7 +11,7 @@
 
     <div
       v-if="isOpen"
-      class="absolute right-0 mt-2 w-44 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
+      class="absolute right-0 mt-2 w-44 rounded-2xl border p-1.5 shadow-theme-lg border-[var(--color-sidebar-active-border)] bg-[var(--color-sidebar-bg)]"
     >
       <button
         v-for="lang in languages"
@@ -19,15 +19,15 @@
         type="button"
         class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-theme-sm transition-colors"
         :class="lang.code === selectedLang
-          ? 'bg-primary-50 font-semibold text-primary-500 dark:bg-primary-500/10 dark:text-primary-400'
-          : 'text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5'"
+          ? 'bg-primary-200 font-semibold text-primary-900 dark:bg-white/12 dark:text-white'
+          : 'text-[var(--color-sidebar-text)] hover:bg-primary-100 dark:hover:bg-white/10'"
         @click="selectLang(lang.code)"
       >
         <span class="text-base">{{ lang.flag }}</span>
         <span>{{ lang.label }}</span>
         <span
           v-if="lang.code === selectedLang"
-          class="ml-auto h-1.5 w-1.5 rounded-full bg-primary-500 dark:bg-primary-400"
+          class="ml-auto h-1.5 w-1.5 rounded-full bg-primary-700 dark:bg-white"
         ></span>
       </button>
     </div>

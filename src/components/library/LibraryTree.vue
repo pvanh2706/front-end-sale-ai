@@ -5,7 +5,7 @@
       <Input
         v-model="searchText"
         type="text"
-        :placeholder="mode === 'chat' ? 'TÃ¬m há»“ sÆ¡ chat...' : 'TÃ¬m thÆ° viá»‡n...'"
+        :placeholder="mode === 'chat' ? 'Tìm hồ sơ chat...' : 'Tìm thư viện...'"
         class="h-9"
       />
       <span
@@ -32,7 +32,7 @@
     >
       <FolderOpen class="mx-auto h-8 w-8 text-gray-400" />
       <p class="mt-2 text-theme-sm text-gray-600 dark:text-gray-300">
-        ChÆ°a cÃ³ tÃ i liá»‡u nÃ o trong ThÆ° viá»‡n.
+        Chưa có tài liệu nào trong Thư viện.
       </p>
     </div>
 
@@ -46,7 +46,7 @@
         v-for="item in flattenedItems"
         :key="getItemKey(item)"
       >
-        <!-- â•â• SYSTEM ROOT NODE â•â• -->
+        <!-- SYSTEM ROOT NODE -->
         <div
           v-if="item.type === 'node' && item.node.is_system"
           class="group relative mb-1"
@@ -98,7 +98,7 @@
             >
               <button
                 type="button"
-                title="ThÃªm thÆ° má»¥c con"
+                title="Thêm thư mục con"
                 class="inline-flex h-6 w-6 items-center justify-center rounded-lg text-gray-400 hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-500/20 dark:hover:text-primary-400"
                 @click="startAdd(item.node.id)"
               >
@@ -115,15 +115,15 @@
           </button>
         </div>
 
-        <!-- â•â• ROOT EMPTY HINT â•â• -->
+        <!-- ROOT EMPTY HINT -->
         <div
-          v-else-if="item.type === 'root-empty'"
+          v-else-if="item.type === 'root-empty' && mode === 'library'"
           :style="{ paddingLeft: `${8 + item.level * 16}px` }"
           class="mb-0.5 flex items-center gap-2 rounded-lg px-2 py-2"
         >
           <span class="h-4 w-4 shrink-0"></span>
           <span class="italic text-theme-xs text-gray-400 dark:text-gray-600">
-            ChÆ°a cÃ³ thÆ° má»¥c, click
+            Chưa có thư mục, click
             <button
               type="button"
               class="inline-flex h-4 w-4 items-center justify-center rounded bg-gray-200 text-gray-500 hover:bg-primary-100 hover:text-primary-600 dark:bg-gray-700 dark:hover:bg-primary-500/20"
@@ -131,11 +131,11 @@
             >
               <Plus class="h-2.5 w-2.5" />
             </button>
-            Ä‘á»ƒ táº¡o.
+            để tạo.
           </span>
         </div>
 
-        <!-- â•â• REGULAR NODE ROW â•â• -->
+        <!-- REGULAR NODE ROW -->
         <div
           v-else-if="item.type === 'node'"
           class="group relative mb-0.5"
@@ -223,7 +223,7 @@
               <button
                 v-if="item.node.type === 'folder'"
                 type="button"
-                title="ThÃªm thÆ° má»¥c con"
+                title="Thêm thư mục con"
                 class="inline-flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-500/20 dark:hover:text-primary-400"
                 @click="startAdd(item.node.id)"
               >
@@ -231,7 +231,7 @@
               </button>
               <button
                 type="button"
-                title="TÃ¹y chá»n"
+                title="Tùy chọn"
                 class="inline-flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200"
                 @click="toggleMenu(item.node)"
               >
@@ -250,18 +250,18 @@
               <span
                 v-if="item.node.status === 'approved'"
                 class="shrink-0 text-success-500"
-                title="ÄÃ£ duyá»‡t"
+                title="Đã duyệt"
               >
                 <CheckCircle2 class="h-3.5 w-3.5" />
               </span>
               <span
                 v-else-if="item.node.status === 'pending'"
                 class="shrink-0 text-warning-500"
-                title="Chá» duyá»‡t"
+                title="Chờ duyệt"
               >
                 <Clock3 class="h-3.5 w-3.5" />
               </span>
-              <span v-else class="shrink-0 text-gray-400" title="Báº£n nhÃ¡p">
+              <span v-else class="shrink-0 text-gray-400" title="Bản nháp">
                 <CircleDot class="h-3.5 w-3.5" />
               </span>
             </template>
@@ -279,19 +279,19 @@
               @click="startRename(item.node)"
             >
               <Pencil class="h-3.5 w-3.5" />
-              Äá»•i tÃªn
+              Đổi tên
             </button>
             <button
               class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-theme-sm text-error-600 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/10"
               @click="handleDelete(item.node)"
             >
               <Trash2 class="h-3.5 w-3.5" />
-              XÃ³a
+              Xóa
             </button>
           </div>
         </div>
 
-        <!-- â•â• INLINE CREATE FOLDER INPUT â•â• -->
+        <!-- INLINE CREATE FOLDER INPUT -->
         <div
           v-else-if="item.type === 'inline-input'"
           class="mb-0.5 flex items-center gap-1.5 rounded-lg bg-primary-50/70 py-1.5 ring-1 ring-primary-200 dark:bg-primary-500/10 dark:ring-primary-500/30"
@@ -303,7 +303,7 @@
             ref="pendingInputRef"
             v-model="pendingName"
             class="flex-1 truncate bg-transparent text-theme-sm text-gray-800 placeholder-gray-400 focus:outline-none dark:text-gray-100"
-            placeholder="TÃªn thÆ° má»¥c..."
+            placeholder="Tên thư mục..."
             @keydown.enter.prevent="confirmAdd"
             @keydown.escape="cancelAdd"
           />
@@ -375,13 +375,13 @@ const emit = defineEmits<{
 
 const libraryStore = useLibraryStore()
 
-// â”€â”€ Expansion state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Expansion state
 const expanded = ref<Set<string>>(new Set())
 const searchText = ref('')
 const debouncedSearch = ref('')
 let debounceTimer: number | null = null
 
-// â”€â”€ Hover / menu / inline state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Hover / menu / inline state
 const hoveredId = ref<string | null>(null)
 const menuNodeId = ref<string | null>(null)
 const pendingParentId = ref<string | null>(null)
@@ -391,11 +391,11 @@ const renameNodeId = ref<string | null>(null)
 const renameName = ref('')
 const renameInputRef = ref<HTMLInputElement | null>(null)
 
-// â”€â”€ Drag-drop state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Drag-drop state
 const draggedNodeId = ref<string | null>(null)
 const dropTargetId = ref<string | null>(null)
 
-// â”€â”€ Watchers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Watchers
 watch(searchText, (value) => {
   if (debounceTimer !== null) window.clearTimeout(debounceTimer)
   debounceTimer = window.setTimeout(() => {
@@ -443,7 +443,7 @@ watch(debouncedSearch, (q) => {
   for (const id of ancestorIds) expanded.value.add(id)
 })
 
-// â”€â”€ Connection status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Connection status
 const connectionDotClass = computed(() => {
   if (libraryStore.connectionStatus === 'connected') return 'bg-success-500'
   if (libraryStore.connectionStatus === 'polling') return 'bg-warning-500'
@@ -451,12 +451,12 @@ const connectionDotClass = computed(() => {
 })
 
 const connectionLabel = computed(() => {
-  if (libraryStore.connectionStatus === 'connected') return 'Realtime Ä‘Ã£ káº¿t ná»‘i'
-  if (libraryStore.connectionStatus === 'polling') return 'WebSocket ngáº¯t, Ä‘ang fallback poll 30 giÃ¢y'
-  return 'Äang káº¿t ná»‘i realtime'
+  if (libraryStore.connectionStatus === 'connected') return 'Realtime đã kết nối'
+  if (libraryStore.connectionStatus === 'polling') return 'WebSocket ngắt, đang fallback poll 30 giây'
+  return 'Đang kết nối realtime'
 })
 
-// â”€â”€ Filtered + flattened items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Filtered + flattened items
 const filteredNodes = computed(() => {
   if (!debouncedSearch.value) return props.data
   return filterTree(props.data, debouncedSearch.value)
@@ -503,7 +503,7 @@ const flattenedItems = computed(() => {
   return result as FlatItem[]
 })
 
-// â”€â”€ Row helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Row helpers
 function rowClass(node: LibraryNode): string {
   const isSelected = node.id === props.selectedId
   const isDropTarget = dropTargetId.value === node.id
@@ -549,12 +549,12 @@ function closeMenu(): void {
   menuNodeId.value = null
 }
 
-// â”€â”€ Context menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Context menu
 function toggleMenu(node: LibraryNode): void {
   menuNodeId.value = menuNodeId.value === node.id ? null : node.id
 }
 
-// â”€â”€ Inline folder creation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Inline folder creation
 function startAdd(parentId: string | null): void {
   menuNodeId.value = null
   pendingParentId.value = parentId ?? WORKSPACE_ROOT
@@ -581,7 +581,7 @@ function cancelAdd(): void {
   pendingName.value = ''
 }
 
-// â”€â”€ Rename â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Rename
 function startRename(node: LibraryNode): void {
   menuNodeId.value = null
   renameNodeId.value = node.id
@@ -611,13 +611,13 @@ function cancelRename(): void {
   renameName.value = ''
 }
 
-// â”€â”€ Delete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Delete
 function handleDelete(node: LibraryNode): void {
   menuNodeId.value = null
   emit('delete-node', node)
 }
 
-// â”€â”€ Drag-drop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Drag-drop
 function onDragStart(node: LibraryNode, event: DragEvent): void {
   draggedNodeId.value = node.id
   event.dataTransfer?.setData('text/plain', node.id)
@@ -647,7 +647,7 @@ function onDrop(node: LibraryNode): void {
   emit('move-node', { nodeId: fromId, newParentId: node.id })
 }
 
-// â”€â”€ Search highlight â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Search highlight
 function highlightText(text: string): string {
   if (!debouncedSearch.value) return escapeHtml(text)
   const lc = text.toLowerCase()
@@ -664,7 +664,7 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-// â”€â”€ Tree helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Tree helpers
 function flattenTree(
   nodes: LibraryNode[],
   expandedSet: Set<string>,
