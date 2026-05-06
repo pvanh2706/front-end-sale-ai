@@ -442,20 +442,67 @@
     <Dialog v-model:open="showAddDocumentDialog">
       <DialogContent class="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Thêm tài liệu</DialogTitle>
+          <DialogTitle>Tải tài liệu lên</DialogTitle>
           <DialogDescription>
-            Nhập tiêu đề tài liệu để thêm vào thư mục đang chọn.
+            Chọn tệp để tải lên thư mục đang chọn.
           </DialogDescription>
         </DialogHeader>
 
         <div class="space-y-4 py-2">
           <div class="space-y-2">
-            <label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Tiêu đề tài liệu</label>
-            <Input
-              v-model="newDocumentTitle"
-              type="text"
-              placeholder="Ví dụ: Quy trình onboarding 2026"
+            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Tệp tài liệu</Label>
+            <input
+              ref="documentFileInputRef"
+              type="file"
+              class="hidden"
+              :accept="acceptedFileExtensions"
+              @change="onDocumentFileSelected"
             />
+            <div
+              class="rounded-lg border border-dashed p-4 transition-colors"
+              :class="isDocumentDropzoneActive
+                ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-500/10'
+                : 'border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'"
+              @dragover.prevent="onDocumentDragOver"
+              @dragleave.prevent="onDocumentDragLeave"
+              @drop.prevent="onDocumentDrop"
+            >
+              <div v-if="selectedDocumentFile" class="space-y-2">
+                <p class="text-theme-sm font-medium text-gray-900 dark:text-white">{{ selectedDocumentFile.name }}</p>
+                <p class="text-theme-xs text-gray-500 dark:text-gray-400">Dung lượng: {{ formatFileSize(selectedDocumentFile.size) }}</p>
+                <div class="flex gap-2">
+                  <Button type="button" variant="outline" size="sm" @click="openDocumentFilePicker">Chọn lại tệp</Button>
+                  <Button type="button" variant="ghost" size="sm" class="text-error-500 hover:text-error-500" @click="clearSelectedDocumentFile">
+                    Bỏ chọn
+                  </Button>
+                </div>
+              </div>
+              <div v-else class="space-y-2">
+                <p class="text-theme-sm text-gray-700 dark:text-gray-300">Chưa có tệp nào được chọn.</p>
+                <p class="text-theme-xs text-gray-500 dark:text-gray-400">Kéo thả tệp vào đây hoặc chọn từ máy tính.</p>
+                <Button type="button" variant="outline" size="sm" @click="openDocumentFilePicker">Chọn tệp từ máy tính</Button>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Mô tả, hướng dẫn hoặc nội dung tài liệu</Label>
+            <Textarea
+              v-model="newDocumentDescription"
+              :rows="4"
+              placeholder="Nhập mô tả ngắn, hướng dẫn sử dụng hoặc nội dung tóm tắt của tài liệu"
+              class="resize-none"
+            />
+          </div>
+
+          <div class="rounded-lg border border-warning-500/30 bg-warning-50 p-3 dark:bg-warning-500/10">
+            <p class="text-theme-sm font-semibold text-warning-500">Yêu cầu tệp tải lên</p>
+            <p class="mt-1 text-theme-xs text-gray-700 dark:text-gray-300">
+              Định dạng hỗ trợ: {{ allowedDocumentExtensions.join(', ') }}.
+            </p>
+            <p class="text-theme-xs text-gray-700 dark:text-gray-300">
+              Dung lượng tối đa: {{ maxDocumentSizeMB }}MB mỗi tệp.
+            </p>
           </div>
         </div>
 
@@ -465,11 +512,11 @@
             type="button"
             :class="[
               'disabled:bg-primary-200 disabled:text-primary-500',
-              hasNewDocumentTitle
+              canSubmitDocumentUpload
                 ? 'bg-primary-900 text-white hover:bg-primary-900 shadow-theme-sm'
                 : 'bg-primary-100 text-primary-700 hover:bg-primary-200',
             ]"
-            :disabled="isCreatingDocument"
+            :disabled="isCreatingDocument || !canSubmitDocumentUpload"
             @click="submitNewDocument"
           >
             {{ isCreatingDocument ? 'Đang upload...' : 'Thêm tài liệu' }}
@@ -694,11 +741,18 @@ const libraryStore = useLibraryStore()
 const selectedLibraryNode = ref<LibraryNode | null>(null)
 const showAddDocumentDialog = ref(false)
 const treeRef = ref<InstanceType<typeof LibraryTree> | null>(null)
-const newDocumentTitle = ref('')
 const isCreatingDocument = ref(false)
 const latestCreatedDocumentId = ref<string | null>(null)
 const isAddDocumentButtonEmphasized = ref(false)
-const hasNewDocumentTitle = computed(() => newDocumentTitle.value.trim().length > 0)
+const newDocumentDescription = ref('')
+const documentFileInputRef = ref<HTMLInputElement | null>(null)
+const selectedDocumentFile = ref<File | null>(null)
+const allowedDocumentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt']
+const acceptedFileExtensions = allowedDocumentExtensions.map((ext) => `.${ext}`).join(',')
+const maxDocumentSizeMB = 25
+const maxDocumentSizeBytes = maxDocumentSizeMB * 1024 * 1024
+const canSubmitDocumentUpload = computed(() => selectedDocumentFile.value !== null)
+const isDocumentDropzoneActive = ref(false)
 
 // ─── Share dialog ─────────────────────────────────────────────
 const showShareDialog = ref(false)
@@ -824,16 +878,95 @@ function openAddDocumentDialog(): void {
     }
   }
 
+  newDocumentDescription.value = ''
   showAddDocumentDialog.value = true
 }
 
-async function submitNewDocument(): Promise<void> {
-  const title = newDocumentTitle.value.trim()
+function openDocumentFilePicker(): void {
+  documentFileInputRef.value?.click()
+}
 
-  if (!title) {
-    toast.error('Vui lòng nhập tiêu đề tài liệu')
+function onDocumentFileSelected(event: Event): void {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0] ?? null
+  if (!file) {
+    selectedDocumentFile.value = null
     return
   }
+  if (!isAllowedDocumentFile(file)) {
+    toast.error(`Định dạng không hỗ trợ. Chỉ chấp nhận: ${allowedDocumentExtensions.join(', ')}`)
+    return
+  }
+  if (file.size > maxDocumentSizeBytes) {
+    toast.error(`Tệp vượt quá ${maxDocumentSizeMB}MB. Vui lòng chọn tệp nhỏ hơn.`)
+    return
+  }
+  selectedDocumentFile.value = file
+}
+
+function onDocumentDragOver(): void {
+  isDocumentDropzoneActive.value = true
+}
+
+function onDocumentDragLeave(): void {
+  isDocumentDropzoneActive.value = false
+}
+
+function onDocumentDrop(event: DragEvent): void {
+  isDocumentDropzoneActive.value = false
+  const file = event.dataTransfer?.files?.[0] ?? null
+  if (!file) {
+    return
+  }
+  if (!isAllowedDocumentFile(file)) {
+    toast.error(`Định dạng không hỗ trợ. Chỉ chấp nhận: ${allowedDocumentExtensions.join(', ')}`)
+    return
+  }
+  if (file.size > maxDocumentSizeBytes) {
+    toast.error(`Tệp vượt quá ${maxDocumentSizeMB}MB. Vui lòng chọn tệp nhỏ hơn.`)
+    return
+  }
+  selectedDocumentFile.value = file
+}
+
+function clearSelectedDocumentFile(): void {
+  selectedDocumentFile.value = null
+  isDocumentDropzoneActive.value = false
+  if (documentFileInputRef.value) {
+    documentFileInputRef.value.value = ''
+  }
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+  }
+  return `${(bytes / 1024).toFixed(2)} KB`
+}
+
+function isAllowedDocumentFile(file: File): boolean {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
+  return allowedDocumentExtensions.includes(extension)
+}
+
+async function submitNewDocument(): Promise<void> {
+  const file = selectedDocumentFile.value
+  if (!file) {
+    toast.error('Vui lòng chọn tệp tài liệu để tải lên')
+    return
+  }
+
+  if (!isAllowedDocumentFile(file)) {
+    toast.error(`Định dạng không hỗ trợ. Chỉ chấp nhận: ${allowedDocumentExtensions.join(', ')}`)
+    return
+  }
+
+  if (file.size > maxDocumentSizeBytes) {
+    toast.error(`Tệp vượt quá ${maxDocumentSizeMB}MB. Vui lòng chọn tệp nhỏ hơn.`)
+    return
+  }
+
+  const title = file.name
 
   const parentId = selectedLibraryNode.value?.type === 'folder'
     ? selectedLibraryNode.value.id
@@ -856,7 +989,8 @@ async function submitNewDocument(): Promise<void> {
     isAddDocumentButtonEmphasized.value = true
 
     showAddDocumentDialog.value = false
-    newDocumentTitle.value = ''
+    newDocumentDescription.value = ''
+    clearSelectedDocumentFile()
     toast.success('Đã thêm tài liệu thành công')
   } finally {
     isCreatingDocument.value = false

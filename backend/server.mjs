@@ -55,6 +55,7 @@ const wsClientsByOrg = new Map()
 
 const dashboardChatState = new Map()
 const conversationMessagesState = new Map()
+const crmDashboardState = new Map()
 
 const COMPANY_ROOT_ID = 'company-root'
 const PERSONAL_ROOT_ID = 'personal-root'
@@ -384,6 +385,64 @@ function getOrCreateDashboardChats(orgId) {
   }
 
   return dashboardChatState.get(orgId)
+}
+
+function seedCrmDashboard() {
+  return {
+    kpis: [
+      {
+        id: 'leads-new',
+        label: 'Leads moi',
+        value: '24',
+        trend: 'up',
+        changeText: '+12%',
+        tone: 'brand',
+      },
+      {
+        id: 'deals-tracked',
+        label: 'Deal theo doi',
+        value: '8',
+        trend: 'up',
+        changeText: '+5%',
+        tone: 'success',
+      },
+      {
+        id: 'tasks-today',
+        label: 'Cong viec hom nay',
+        value: '11',
+        trend: 'up',
+        changeText: 'Han chot 18:00',
+        tone: 'warning',
+      },
+      {
+        id: 'conversion-rate',
+        label: 'Ty le chuyen doi',
+        value: '32%',
+        trend: 'down',
+        changeText: '-2%',
+        tone: 'error',
+      },
+    ],
+    pipeline: [
+      { id: 'new', name: 'New', count: 3, percent: 60, value: '450tr VND', tone: 'brand' },
+      { id: 'qualified', name: 'Qualified', count: 2, percent: 40, value: '820tr VND', tone: 'brand' },
+      { id: 'proposal', name: 'Proposal', count: 1, percent: 25, value: '300tr VND', tone: 'warning' },
+      { id: 'negotiation', name: 'Negotiation', count: 1, percent: 20, value: '280tr VND', tone: 'warning' },
+      { id: 'won', name: 'Won', count: 1, percent: 100, value: '550tr VND', tone: 'success' },
+    ],
+    tasks: [
+      { id: 'task-1', title: 'Gui bao gia cho Cong ty ABC', meta: 'Truoc 10:30 · Quan trong', done: false },
+      { id: 'task-2', title: 'Goi dien xac nhan lich hen voi Mr. Tung', meta: 'Truoc 14:00', done: false },
+      { id: 'task-3', title: 'Cap nhat tai lieu ky thuat cho deal TechPro', meta: 'Truoc 16:30', done: false },
+    ],
+  }
+}
+
+function getOrCreateCrmDashboard(orgId) {
+  if (!crmDashboardState.has(orgId)) {
+    crmDashboardState.set(orgId, seedCrmDashboard())
+  }
+  return crmDashboardState.get(orgId)
 }
 
 function getOrCreateConversationMessages(conversationId) {
@@ -1221,6 +1280,28 @@ app.get('/api/v1/chat/popular-questions', (req, res) => {
   ]
 
   res.json({ items: items.slice(0, Number.isFinite(limit) ? limit : 5) })
+})
+
+app.get('/api/v1/crm/dashboard', (req, res) => {
+  const auth = getAuthContext(req)
+  const dashboard = getOrCreateCrmDashboard(auth.orgId)
+  res.json(dashboard)
+})
+
+app.put('/api/v1/crm/tasks/:taskId', (req, res) => {
+  const auth = getAuthContext(req)
+  const taskId = String(req.params.taskId)
+  const done = Boolean(req.body?.done)
+  const dashboard = getOrCreateCrmDashboard(auth.orgId)
+
+  const task = dashboard.tasks.find((item) => item.id === taskId)
+  if (!task) {
+    res.status(404).json({ message: 'Task not found' })
+    return
+  }
+
+  task.done = done
+  res.json(task)
 })
 
 app.get('/api/v1/chats/:chatId/context', (req, res) => {
