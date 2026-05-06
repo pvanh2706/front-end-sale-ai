@@ -1,6 +1,6 @@
 export type LibraryNodeType = 'folder' | 'document'
 export type LibraryNodeStatus = 'approved' | 'draft' | 'pending'
-export type LibraryRootType = 'company' | 'personal'
+export type LibraryRootType = 'company' | 'personal' | 'shared'
 
 export interface LibraryNode {
   id: string

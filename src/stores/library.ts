@@ -17,6 +17,7 @@ const RECONNECT_DELAY_MS = 3 * 1000
 
 const COMPANY_ROOT_ID = 'company-root'
 const PERSONAL_ROOT_ID = 'personal-root'
+const SHARED_ROOT_ID = 'shared-root'
 
 interface FetchTreeOptions {
   force?: boolean
@@ -429,8 +430,9 @@ function ensureSystemRoots(input: LibraryNode[]): LibraryNode[] {
   const source = Array.isArray(input) ? input : []
   const companyRootFromApi = source.find((node) => node.id === COMPANY_ROOT_ID || (node.is_system && node.root_type === 'company'))
   const personalRootFromApi = source.find((node) => node.id === PERSONAL_ROOT_ID || (node.is_system && node.root_type === 'personal'))
+  const sharedRootFromApi = source.find((node) => node.id === SHARED_ROOT_ID || (node.is_system && node.root_type === 'shared'))
 
-  if (!companyRootFromApi || !personalRootFromApi) {
+  if (!companyRootFromApi || !personalRootFromApi || !sharedRootFromApi) {
     console.warn('[library] API tree missing system roots, fallback placeholders are being used')
   }
 
@@ -462,14 +464,28 @@ function ensureSystemRoots(input: LibraryNode[]): LibraryNode[] {
     root_type: 'personal',
   }
 
+  const sharedRoot: LibraryNode = {
+    id: SHARED_ROOT_ID,
+    name: 'Tài liệu được chia sẻ với tôi',
+    type: 'folder',
+    parent_id: null,
+    children: sharedRootFromApi?.children ?? [],
+    documents_count: sharedRootFromApi?.documents_count ?? 0,
+    status: sharedRootFromApi?.status ?? 'approved',
+    has_content: sharedRootFromApi?.has_content ?? true,
+    updated_at: sharedRootFromApi?.updated_at ?? new Date().toISOString(),
+    is_system: true,
+    root_type: 'shared',
+  }
+
   const nonSystemTopLevel = source.filter((node) => !node.is_system && node.parent_id === null)
   if (nonSystemTopLevel.length > 0) {
     companyRoot.children = [...companyRoot.children, ...nonSystemTopLevel]
   }
 
   const trailingNodes = source.filter(
-    (node) => node.id !== companyRootFromApi?.id && node.id !== personalRootFromApi?.id && !(node.parent_id === null && !node.is_system),
+    (node) => node.id !== companyRootFromApi?.id && node.id !== personalRootFromApi?.id && node.id !== sharedRootFromApi?.id && !(node.parent_id === null && !node.is_system),
   )
 
-  return [companyRoot, personalRoot, ...trailingNodes.filter((node) => node.parent_id !== null)]
+  return [companyRoot, personalRoot, sharedRoot, ...trailingNodes.filter((node) => node.parent_id !== null)]
 }

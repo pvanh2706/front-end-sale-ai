@@ -518,6 +518,12 @@
                   Tài liệu cá nhân
                 </span>
               </SelectItem>
+              <SelectItem value="shared">
+                <span class="flex items-center gap-2">
+                  <Share2 class="h-4 w-4 text-orange-500" />
+                  Tài liệu được chia sẻ với tôi
+                </span>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -899,7 +905,14 @@ async function submitGlobalNewFolder(): Promise<void> {
   if (!name) return
 
   // Resolve parent: root folder of the chosen workspace
-  const rootId = globalNewFolderWorkspace.value === 'company' ? 'company-root' : 'personal-root'
+  let rootId: string
+  if (globalNewFolderWorkspace.value === 'company') {
+    rootId = 'company-root'
+  } else if (globalNewFolderWorkspace.value === 'personal') {
+    rootId = 'personal-root'
+  } else {
+    rootId = 'shared-root'
+  }
 
   isCreatingGlobalFolder.value = true
   try {

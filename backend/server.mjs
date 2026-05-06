@@ -58,10 +58,12 @@ const conversationMessagesState = new Map()
 
 const COMPANY_ROOT_ID = 'company-root'
 const PERSONAL_ROOT_ID = 'personal-root'
-const ROOT_TYPES = new Set(['company', 'personal'])
+const SHARED_ROOT_ID = 'shared-root'
+const ROOT_TYPES = new Set(['company', 'personal', 'shared'])
 
 const COMPANY_ROOT_NAME = 'Tài liệu công ty'
 const PERSONAL_ROOT_NAME = 'Tài liệu cá nhân'
+const SHARED_ROOT_NAME = 'Tài liệu được chia sẻ với tôi'
 
 let idCounter = 1
 
@@ -188,6 +190,12 @@ function seedLibraryTree() {
     workspace_type: 'personal',
     is_system: true,
   })
+  const sharedRoot = createFolderNode(SHARED_ROOT_NAME, null, {
+    id: SHARED_ROOT_ID,
+    root_type: 'shared',
+    workspace_type: 'shared',
+    is_system: true,
+  })
 
   const sales = createFolderNode('Sales Playbook', companyRoot.id)
   const onboarding = createFolderNode('Onboarding', companyRoot.id)
@@ -196,10 +204,12 @@ function seedLibraryTree() {
   const policy = createFolderNode('Policy', companyRoot.id)
   const nested = createFolderNode('Q2 Documents', scripts.id)
   const personalNotes = createFolderNode('Ghi chú cá nhân', personalRoot.id)
+  const sharedDocs = createFolderNode('Tài liệu dự án chung', sharedRoot.id)
 
   const nodes = [
     companyRoot,
     personalRoot,
+    sharedRoot,
     sales,
     onboarding,
     scripts,
@@ -213,6 +223,8 @@ function seedLibraryTree() {
     createDocumentNode('Security Policy.pdf', policy.id, 'pending'),
     personalNotes,
     createDocumentNode('Ke hoach cong viec tuan.md', personalNotes.id, 'approved'),
+    sharedDocs,
+    createDocumentNode('Project Charter.pdf', sharedDocs.id, 'approved'),
   ]
 
   return nodes
@@ -243,6 +255,9 @@ function getRootByType(nodes, rootType) {
   if (rootType === 'personal') {
     return findNodeById(nodes, PERSONAL_ROOT_ID)
   }
+  if (rootType === 'shared') {
+    return findNodeById(nodes, SHARED_ROOT_ID)
+  }
   return null
 }
 
@@ -250,6 +265,7 @@ function ensureLibraryRoots(library) {
   const nodes = library.nodes
   let companyRoot = findNodeById(nodes, COMPANY_ROOT_ID)
   let personalRoot = findNodeById(nodes, PERSONAL_ROOT_ID)
+  let sharedRoot = findNodeById(nodes, SHARED_ROOT_ID)
 
   if (!companyRoot) {
     companyRoot = createFolderNode(COMPANY_ROOT_NAME, null, {
@@ -285,9 +301,26 @@ function ensureLibraryRoots(library) {
     personalRoot.is_system = true
   }
 
+  if (!sharedRoot) {
+    sharedRoot = createFolderNode(SHARED_ROOT_NAME, null, {
+      id: SHARED_ROOT_ID,
+      root_type: 'shared',
+      workspace_type: 'shared',
+      is_system: true,
+    })
+    nodes.push(sharedRoot)
+  } else {
+    sharedRoot.name = SHARED_ROOT_NAME
+    sharedRoot.parent_id = null
+    sharedRoot.type = 'folder'
+    sharedRoot.root_type = 'shared'
+    sharedRoot.workspace_type = 'shared'
+    sharedRoot.is_system = true
+  }
+
   // Migration: move all orphan nodes under company system root.
   for (const node of nodes) {
-    if (!node.parent_id && node.id !== COMPANY_ROOT_ID && node.id !== PERSONAL_ROOT_ID) {
+    if (!node.parent_id && node.id !== COMPANY_ROOT_ID && node.id !== PERSONAL_ROOT_ID && node.id !== SHARED_ROOT_ID) {
       node.parent_id = COMPANY_ROOT_ID
     }
   }
