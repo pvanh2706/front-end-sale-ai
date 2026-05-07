@@ -67,7 +67,7 @@ export async function createLibraryDocument(payload: {
     if (!response.ok) {
       return {
         isSuccess: false,
-        error: data.message ?? 'Khong the tao tai lieu',
+        error: data.message ?? 'Không thể tạo tài liệu',
       }
     }
 
@@ -75,7 +75,7 @@ export async function createLibraryDocument(payload: {
   } catch {
     return {
       isSuccess: false,
-      error: 'Khong the tao tai lieu',
+      error: 'Không thể tạo tài liệu',
     }
   }
 }

@@ -23,31 +23,31 @@ const router = createRouter({
         {
             path: '/chat-tai-lieu',
             component: () => import('../views/Chat/ChatModuleView.vue'),
-            meta: { requiresAuth: true, title: 'Chat tai lieu' },
+            meta: { requiresAuth: true, title: 'Chat tài liệu' },
             children: [
                 {
                     path: '',
                     name: 'chat-dashboard',
                     component: () => import('../views/Chat/ChatDashboardView.vue'),
-                    meta: { title: 'Chat tai lieu' },
+                    meta: { title: 'Chat tài liệu' },
                 },
                 {
                     path: 'chat',
                     name: 'chat-ai',
                     component: () => import('../views/Chat/ChatView.vue'),
-                    meta: { title: 'Chat voi AI' },
+                    meta: { title: 'Chat với AI' },
                 },
                 {
                     path: 'library',
                     name: 'doc-library',
                     component: () => import('../views/DocLibrary/DocLibraryView.vue'),
-                    meta: { title: 'Thu vien tai lieu' },
+                    meta: { title: 'Thư viện tài liệu' },
                 },
                 {
                     path: 'analytics',
                     name: 'chat-analytics',
                     component: () => import('../views/Chat/ChatAnalyticsView.vue'),
-                    meta: { title: 'Phan tich su dung' },
+                    meta: { title: 'Phân tích sử dụng' },
                 },
             ],
         },
@@ -59,7 +59,19 @@ const router = createRouter({
             path: '/crm-work',
             name: 'CrmWorkView',
             component: () => import('../views/Crm/CrmWorkView.vue'),
-            meta: { title: 'CRM & Công việc' },
+            meta: { title: 'CRM & Công việc', public: true },
+        },
+        {
+            path: '/crm-deals',
+            name: 'CrmDealsKanban',
+            component: () => import('../views/Crm/CrmDealsKanbanView.vue'),
+            meta: { title: 'Deals Kanban' },
+        },
+        {
+            path: '/crm-deals/:dealId',
+            name: 'CrmDealDetail',
+            component: () => import('../views/Crm/CrmDealDetailView.vue'),
+            meta: { title: 'Chi tiết Deal' },
         },
         {
             path: '/doc-library',
@@ -107,7 +119,7 @@ const router = createRouter({
         },
         {
             path: '/',
-            redirect: '/chat-tai-lieu',
+            redirect: '/crm-work',
         },
     ],
 })

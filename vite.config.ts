@@ -19,6 +19,9 @@ export default defineConfig({
   },
   // Cấu hình proxy nếu cần
   server: {
+    headers: {
+      'Cache-Control': 'no-store',
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:4000',

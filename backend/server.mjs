@@ -2,7 +2,18 @@ import cors from 'cors'
 import express from 'express'
 import http from 'node:http'
 import multer from 'multer'
+import { Server as SocketIOServer } from 'socket.io'
 import { WebSocketServer } from 'ws'
+import {
+  createDeal,
+  deleteDeal,
+  getDealById,
+  listDeals,
+  listDealsForKanban,
+  updateDeal,
+  updateDealStage,
+  validateStage,
+} from './deals.mjs'
 
 const app = express()
 const port = Number(process.env.PORT ?? 4000)
@@ -56,6 +67,7 @@ const wsClientsByOrg = new Map()
 const dashboardChatState = new Map()
 const conversationMessagesState = new Map()
 const crmDashboardState = new Map()
+const crmDealsKanbanState = new Map()
 
 const COMPANY_ROOT_ID = 'company-root'
 const PERSONAL_ROOT_ID = 'personal-root'
@@ -143,6 +155,52 @@ function getAuthContext(req) {
   } catch {
     return defaultContext
   }
+}
+
+function getAuthContextFromToken(tokenRaw, fallbackOrgId = 'demo-org') {
+  const token = String(tokenRaw ?? '')
+  if (!token.includes('.')) {
+    return {
+      orgId: fallbackOrgId,
+      role: 'admin',
+      userId: 'demo-user',
+    }
+  }
+
+  const parts = token.split('.')
+  if (parts.length < 2) {
+    return {
+      orgId: fallbackOrgId,
+      role: 'admin',
+      userId: 'demo-user',
+    }
+  }
+
+  try {
+    const payloadText = decodeBase64Url(parts[1])
+    const payload = JSON.parse(payloadText)
+    return {
+      orgId: String(payload.org_id ?? payload.orgId ?? fallbackOrgId),
+      role: String(payload.role ?? 'admin'),
+      userId: String(payload.sub ?? payload.user_id ?? 'demo-user'),
+    }
+  } catch {
+    return {
+      orgId: fallbackOrgId,
+      role: 'admin',
+      userId: 'demo-user',
+    }
+  }
+}
+
+function sendApiError(res, error) {
+  console.error(error)
+  const message = String(error?.message ?? '')
+  if (message.includes('DATABASE_URL')) {
+    res.status(500).json({ message: 'DATABASE_URL is missing. Please configure PostgreSQL connection in .env' })
+    return
+  }
+  res.status(500).json({ message: 'Internal server error' })
 }
 
 function nowIso() {
@@ -443,6 +501,202 @@ function getOrCreateCrmDashboard(orgId) {
     crmDashboardState.set(orgId, seedCrmDashboard())
   }
   return crmDashboardState.get(orgId)
+}
+
+function seedCrmDealsKanban() {
+  return {
+    selectedPipeline: 'Ban hang B2B',
+    kpis: [
+      { label: 'Tong deal dang mo', value: '124' },
+      { label: 'Doanh thu du kien', value: '4.8 ty' },
+      { label: 'Ty le chuyen doi', value: '28%', valueClass: 'text-primary-500' },
+      { label: 'Deal sap het han', value: '7', valueClass: 'text-error-500' },
+    ],
+    columns: [
+      {
+        id: 'new',
+        name: 'Moi',
+        color: '#6B7280',
+        total: '₫ 1.2B',
+        cards: [
+          {
+            id: 'card-1',
+            title: 'Trien khai ERP Giai doan 1',
+            company: 'Cong ty CP TechNova',
+            value: '₫ 450.000.000',
+            source: 'WEBSITE',
+            aiScore: 92,
+            daysLeft: '3 ngay',
+            assignees: [1],
+            hasActions: true,
+          },
+          {
+            id: 'card-ai-1',
+            title: 'Goi tu van Chuyen doi so',
+            company: 'Logistics Global JSC',
+            value: '₫ 820.000.000',
+            source: 'INBOUND',
+            aiScore: 98,
+            isAiSuggested: true,
+            aiNote: 'Khach hang vua xem bao gia',
+            assignees: [1],
+          },
+        ],
+      },
+      {
+        id: 'preparing',
+        name: 'Dang chuan bi',
+        color: '#3B82F6',
+        total: '₫ 2.1B',
+        cards: [
+          {
+            id: 'card-3',
+            title: 'Cung cap thiet bi IoT',
+            company: 'Nong nghiep Xanh',
+            value: '₫ 250.000.000',
+            source: 'DIRECT',
+            daysLeft: 'Tre 2 ngay',
+            statusClass: 'text-error-500',
+            assignees: [1],
+          },
+        ],
+      },
+      {
+        id: 'contacted',
+        name: 'Da lien he',
+        color: '#06B6D4',
+        total: '₫ 3.4B',
+        cards: [],
+      },
+      {
+        id: 'negotiating',
+        name: 'Dam phan',
+        color: '#F59E0B',
+        total: '₫ 850M',
+        cards: [],
+      },
+      {
+        id: 'quoted',
+        name: 'Bao gia',
+        color: '#8B5CF6',
+        total: '₫ 1.1B',
+        cards: [],
+      },
+      {
+        id: 'won',
+        name: 'Thang',
+        color: '#10B981',
+        total: '₫ 3.5B',
+        cards: [
+          {
+            id: 'card-won-1',
+            title: 'He thong Quan ly Nhan su',
+            company: 'Tap doan Vingroup',
+            value: '₫ 2.100.000.000',
+            source: 'PROJECT',
+            aiScore: 95,
+            statusLabel: 'Da chot',
+            statusClass: 'text-success-500',
+            assignees: [1],
+            isWon: true,
+          },
+          {
+            id: 'card-won-2',
+            title: 'Bao tri ha tang Network',
+            company: 'FPT Software',
+            value: '₫ 750.000.000',
+            source: 'SERVICE',
+            aiScore: 88,
+            statusLabel: 'Thanh cong',
+            statusClass: 'text-success-500',
+            isWon: true,
+          },
+        ],
+      },
+      {
+        id: 'lost',
+        name: 'Thua',
+        color: '#EF4444',
+        total: '₫ 120M',
+        cards: [
+          {
+            id: 'card-lost-1',
+            title: 'Landing Page Marketing',
+            company: 'Shopify VN',
+            value: '₫ 120.000.000',
+            source: 'WEBSITE',
+            statusLabel: 'Gia cao',
+            statusClass: 'text-error-500',
+            isLost: true,
+            lostReason: 'Mat vao tay doi thu B',
+          },
+        ],
+      },
+    ],
+  }
+}
+
+function getOrCreateCrmDealsKanban(orgId) {
+  if (!crmDealsKanbanState.has(orgId)) {
+    crmDealsKanbanState.set(orgId, seedCrmDealsKanban())
+  }
+  return crmDealsKanbanState.get(orgId)
+}
+
+function parseMoneyValueToNumber(value) {
+  const digits = String(value ?? '').replace(/[^0-9]/g, '')
+  if (!digits) {
+    return 0
+  }
+  return Number(digits)
+}
+
+function formatMoneyCompactVnd(value) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '₫ 0'
+  }
+  if (value >= 1_000_000_000) {
+    return `₫ ${(value / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B`
+  }
+  if (value >= 1_000_000) {
+    return `₫ ${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+  }
+  return `₫ ${value.toLocaleString('vi-VN')}`
+}
+
+function isUrgentDeal(card) {
+  const value = String(card?.daysLeft ?? '').toLowerCase()
+  return value.includes('trễ') || value.includes('tre') || value.includes('ngày') || value.includes('ngay')
+}
+
+function buildCrmDealsKanbanResponse(kanban) {
+  const columns = kanban.columns.map((column) => {
+    const totalValue = column.cards.reduce((sum, card) => sum + parseMoneyValueToNumber(card.value), 0)
+    return {
+      ...column,
+      total: formatMoneyCompactVnd(totalValue),
+    }
+  })
+
+  const allCards = columns.flatMap((column) => column.cards)
+  const wonCards = columns.find((column) => column.id === 'won')?.cards ?? []
+  const lostCards = columns.find((column) => column.id === 'lost')?.cards ?? []
+  const openCards = allCards.filter((card) => !card.isWon && !card.isLost)
+  const openRevenue = openCards.reduce((sum, card) => sum + parseMoneyValueToNumber(card.value), 0)
+  const urgentCount = openCards.filter((card) => isUrgentDeal(card)).length
+  const resolvedCount = wonCards.length + lostCards.length
+  const winRate = resolvedCount > 0 ? Math.round((wonCards.length / resolvedCount) * 100) : 0
+
+  return {
+    selectedPipeline: kanban.selectedPipeline,
+    kpis: [
+      { label: 'Tổng deal đang mở', value: String(openCards.length) },
+      { label: 'Doanh thu dự kiến', value: formatMoneyCompactVnd(openRevenue) },
+      { label: 'Tỷ lệ chuyển đổi', value: `${winRate}%`, valueClass: 'text-primary-500' },
+      { label: 'Deal sắp hết hạn', value: String(urgentCount), valueClass: 'text-error-500' },
+    ],
+    columns,
+  }
 }
 
 function getOrCreateConversationMessages(conversationId) {
@@ -1304,6 +1558,213 @@ app.put('/api/v1/crm/tasks/:taskId', (req, res) => {
   res.json(task)
 })
 
+app.get('/api/v1/crm/deals/kanban', async (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const kanban = await listDealsForKanban({ orgId: auth.orgId })
+    res.json(kanban)
+  } catch (error) {
+    sendApiError(res, error)
+  }
+})
+
+app.post('/api/v1/crm/deals', async (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const title = String(req.body?.title ?? '').trim()
+    const stage = String(req.body?.stage ?? '').trim()
+
+    if (!title || !stage || !validateStage(stage)) {
+      res.status(400).json({ message: 'title and valid stage are required' })
+      return
+    }
+
+    const deal = await createDeal({
+      orgId: auth.orgId,
+      userId: auth.userId,
+      payload: {
+        ...req.body,
+        title,
+        stage,
+      },
+    })
+
+    const kanban = await listDealsForKanban({ orgId: auth.orgId })
+
+    io.to(`org:${auth.orgId}`).emit('deal.created', {
+      deal,
+      orgId: auth.orgId,
+      actorId: auth.userId,
+    })
+
+    res.status(201).json({
+      card: deal
+        ? {
+            id: deal.id,
+            title: deal.title,
+            company: deal.company ?? deal.contact ?? '—',
+            value: `₫ ${Number(deal.value).toLocaleString('vi-VN')}`,
+            source: (deal.source ?? 'manual').toUpperCase(),
+            hasActions: true,
+            assignees: [1],
+          }
+        : null,
+      stage,
+      kanban,
+      deal,
+    })
+  } catch (error) {
+    sendApiError(res, error)
+  }
+})
+
+app.get('/api/deals', async (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const result = await listDeals({ orgId: auth.orgId, query: req.query })
+    res.json(result)
+  } catch (error) {
+    sendApiError(res, error)
+  }
+})
+
+app.post('/api/deals', async (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const title = String(req.body?.title ?? '').trim()
+    if (!title) {
+      res.status(400).json({ message: 'title is required' })
+      return
+    }
+
+    const deal = await createDeal({
+      orgId: auth.orgId,
+      userId: auth.userId,
+      payload: {
+        ...req.body,
+        title,
+      },
+    })
+
+    io.to(`org:${auth.orgId}`).emit('deal.created', {
+      deal,
+      orgId: auth.orgId,
+      actorId: auth.userId,
+    })
+
+    res.status(201).json(deal)
+  } catch (error) {
+    sendApiError(res, error)
+  }
+})
+
+app.get('/api/deals/:id', async (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const deal = await getDealById({ orgId: auth.orgId, dealId: String(req.params.id) })
+    if (!deal) {
+      res.status(404).json({ message: 'Deal not found' })
+      return
+    }
+    res.json(deal)
+  } catch (error) {
+    sendApiError(res, error)
+  }
+})
+
+app.patch('/api/deals/:id', async (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const dealId = String(req.params.id)
+    const updated = await updateDeal({
+      orgId: auth.orgId,
+      userId: auth.userId,
+      dealId,
+      patch: req.body ?? {},
+    })
+
+    if (!updated) {
+      res.status(404).json({ message: 'Deal not found' })
+      return
+    }
+
+    io.to(`org:${auth.orgId}`).emit('deal.updated', {
+      dealId,
+      changes: req.body ?? {},
+      newStage: updated.stage,
+      actorId: auth.userId,
+      deal: updated,
+    })
+
+    res.json(updated)
+  } catch (error) {
+    sendApiError(res, error)
+  }
+})
+
+app.patch('/api/deals/:id/stage', async (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const dealId = String(req.params.id)
+    const stage = String(req.body?.stage ?? '').trim()
+
+    if (!validateStage(stage)) {
+      res.status(400).json({ message: 'Invalid stage' })
+      return
+    }
+
+    const updated = await updateDealStage({
+      orgId: auth.orgId,
+      userId: auth.userId,
+      dealId,
+      stage,
+    })
+
+    if (!updated) {
+      res.status(404).json({ message: 'Deal not found' })
+      return
+    }
+
+    io.to(`org:${auth.orgId}`).emit('deal.updated', {
+      dealId,
+      changes: { stage },
+      newStage: stage,
+      actorId: auth.userId,
+      deal: updated,
+    })
+
+    res.json(updated)
+  } catch (error) {
+    sendApiError(res, error)
+  }
+})
+
+app.delete('/api/deals/:id', async (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const dealId = String(req.params.id)
+    const deleted = await deleteDeal({
+      orgId: auth.orgId,
+      userId: auth.userId,
+      dealId,
+    })
+
+    if (!deleted) {
+      res.status(404).json({ message: 'Deal not found' })
+      return
+    }
+
+    io.to(`org:${auth.orgId}`).emit('deal.deleted', {
+      dealId,
+      actorId: auth.userId,
+    })
+
+    res.status(204).send()
+  } catch (error) {
+    sendApiError(res, error)
+  }
+})
+
 app.get('/api/v1/chats/:chatId/context', (req, res) => {
   const chatId = String(req.params.chatId)
   const context = chatContexts.get(chatId)
@@ -1335,6 +1796,23 @@ app.use((err, req, res, next) => {
 })
 
 const server = http.createServer(app)
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: '*',
+  },
+})
+
+io.on('connection', (socket) => {
+  const tokenFromAuth = socket.handshake.auth?.token
+  const tokenFromHeader = String(socket.handshake.headers.authorization ?? '').replace(/^Bearer\s+/i, '')
+  const token = tokenFromAuth || tokenFromHeader
+  const auth = getAuthContextFromToken(token)
+
+  socket.join(`org:${auth.orgId}`)
+  socket.join(`user:${auth.userId}`)
+  socket.emit('socket.ready', { orgId: auth.orgId, userId: auth.userId })
+})
+
 const wsServer = new WebSocketServer({ server, path: '/ws/library' })
 
 wsServer.on('connection', (ws, req) => {

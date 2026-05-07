@@ -85,6 +85,29 @@ git clone https://github.com/TailAdmin/vue-tailwind-admin-dashboard.git
    yarn build
    ```
 
+## Troubleshooting
+
+### Browser shows stale app version during development
+
+If one browser tab or another machine shows an older version, clear Service Worker and site data for your dev origin:
+
+1. Open DevTools.
+2. Go to Application.
+3. Open Service Workers and click Unregister.
+4. Click Clear site data.
+
+### Access dev server from another machine
+
+`localhost` on another machine points to that machine itself, not your host dev server.
+
+To expose Vite on LAN:
+
+```bash
+npm run dev -- --host
+```
+
+Then open the host machine IP from the other device, for example `http://192.168.x.x:5174`.
+
 ## Feature Comparison
 
 ### Free Version

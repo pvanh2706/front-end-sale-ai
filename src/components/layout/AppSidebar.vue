@@ -208,6 +208,9 @@ const menuGroups = [
                 icon: TaskIcon,
                 name: "CRM & Công việc",
                 path: "/crm-work",
+                subItems: [
+                    { name: "Deals Kanban", path: "/crm-deals", pro: false, new: false },
+                ],
             },
         ],
     },

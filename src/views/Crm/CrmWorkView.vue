@@ -1,22 +1,16 @@
 <template>
   <AdminLayout>
-    <PageBreadcrumb :pageTitle="pageTitle" />
-
     <div class="space-y-6 rounded-xl bg-gray-50 p-4 dark:bg-gray-950 md:p-6">
       <header class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 class="text-title-xs font-semibold text-gray-900 dark:text-white">Chao buoi sang, Vien!</h1>
-          <p class="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">Hom nay ban co {{ totalTasksToday }} cong viec can xu ly</p>
+          <h1 class="text-title-xs font-semibold text-gray-900 dark:text-white">Chào buổi sáng, Viên!</h1>
+          <p class="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">Hôm nay bạn có {{ totalTasksToday }} công việc cần xử lý</p>
           <p v-if="error" class="mt-1 text-theme-xs text-error-500">{{ error }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" class="gap-1.5 border-gray-300 text-gray-700 dark:border-gray-700 dark:text-gray-200" @click="handleAddTask">
             <ClipboardList class="h-4 w-4" />
-            Them cong viec
-          </Button>
-          <Button type="button" class="gap-1.5 bg-brand-500 text-white hover:bg-brand-600" @click="handleAddDeal">
-            <CirclePlus class="h-4 w-4" />
-            Them deal moi
+            Thêm công việc
           </Button>
         </div>
       </header>
@@ -42,8 +36,8 @@
 
       <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
         <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 class="text-theme-xl font-semibold text-gray-900 dark:text-white">Pipeline tong quan</h2>
-          <Badge class="bg-brand-50 text-brand-500 dark:bg-brand-500/10 dark:text-brand-300">8 deals · 2.4 ty VND</Badge>
+          <h2 class="text-theme-xl font-semibold text-gray-900 dark:text-white">Pipeline tổng quan</h2>
+          <Badge class="bg-brand-50 text-brand-500 dark:bg-brand-500/10 dark:text-brand-300">8 deals · 2,4 tỷ VND</Badge>
         </div>
         <div class="overflow-x-auto custom-scrollbar pb-2">
           <div class="flex min-w-[780px] gap-4">
@@ -67,9 +61,9 @@
             <div class="mb-4 flex items-center justify-between">
               <h3 class="flex items-center gap-2 text-theme-xl font-semibold text-gray-900 dark:text-white">
                 <ListTodo class="h-5 w-5 text-brand-500" />
-                Cong viec hom nay
+                Công việc hôm nay
               </h3>
-              <Button type="button" variant="ghost" size="sm" class="text-brand-500 hover:text-brand-600" @click="handleViewAllTasks">Xem tat ca</Button>
+              <Button type="button" variant="ghost" size="sm" class="text-brand-500 hover:text-brand-600" @click="handleViewAllTasks">Xem tất cả</Button>
             </div>
 
             <div class="space-y-2">
@@ -90,7 +84,7 @@
             <div class="mb-4 flex items-center justify-between">
               <h3 class="flex items-center gap-2 text-theme-xl font-semibold text-gray-900 dark:text-white">
                 <Flame class="h-5 w-5 text-error-500" />
-                Deal can uu tien
+                Deal cần ưu tiên
               </h3>
             </div>
             <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -104,7 +98,7 @@
                   <span class="pb-0.5 text-theme-xs text-gray-500 dark:text-gray-400">VND</span>
                 </div>
                 <Button type="button" variant="outline" size="sm" class="mt-3 w-full border-gray-300 text-brand-500 hover:bg-brand-500 hover:text-white dark:border-gray-700" @click="handleContactDeal(deal.name)">
-                  Lien he ngay
+                  Liên hệ ngay
                 </Button>
               </article>
             </div>
@@ -115,7 +109,7 @@
           <article class="relative overflow-hidden rounded-xl border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-success-50 p-5 dark:border-brand-500/30 dark:from-brand-500/10 dark:via-gray-900 dark:to-success-500/10">
             <div class="relative z-10 mb-4 flex items-center gap-2">
               <Sparkles class="h-5 w-5 text-brand-500" />
-              <h3 class="text-theme-xl font-semibold text-brand-500">Goi y AI</h3>
+              <h3 class="text-theme-xl font-semibold text-brand-500">Gợi ý AI</h3>
             </div>
             <div class="relative z-10 space-y-3">
               <article v-for="advice in aiSuggestions" :key="advice.title" class="rounded-lg border border-white/70 bg-white/90 p-3 shadow-theme-xs backdrop-blur-sm dark:border-white/10 dark:bg-gray-900/80">
@@ -127,7 +121,7 @@
           </article>
 
           <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
-            <h3 class="mb-4 text-theme-xl font-semibold text-gray-900 dark:text-white">Thong bao gan day</h3>
+            <h3 class="mb-4 text-theme-xl font-semibold text-gray-900 dark:text-white">Thông báo gần đây</h3>
             <div class="space-y-4">
               <div v-for="notice in notifications" :key="notice.id" class="flex gap-3 border-b border-gray-100 pb-3 last:border-0 last:pb-0 dark:border-gray-800">
                 <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" :class="notice.iconBgClass">
@@ -161,7 +155,6 @@ import {
   BarChart3,
   Bell,
   CalendarPlus,
-  CirclePlus,
   ClipboardList,
   Flame,
   Handshake,
@@ -177,7 +170,6 @@ import {
   TrendingUp,
 } from 'lucide-vue-next'
 
-import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -232,7 +224,7 @@ interface QuickAction {
   icon: unknown
 }
 
-const pageTitle = ref('CRM & Cong viec')
+const pageTitle = ref('CRM & Công việc')
 const crmStore = useCrmStore()
 const { kpis, pipeline, tasks, loading, error, totalTasksToday } = storeToRefs(crmStore)
 
@@ -295,13 +287,13 @@ const todayTasks = computed(() => tasks.value)
 
 const priorityDeals = ref<PriorityDeal[]>([
   {
-    name: 'Du an SmartCity',
+    name: 'Dự án SmartCity',
     stage: 'Negotiation',
-    value: '1.2 ty',
+    value: '1,2 tỷ',
     stageClass: 'bg-warning-50 text-warning-500 dark:bg-warning-500/20 dark:text-warning-300',
   },
   {
-    name: 'Van tai Hung Cuong',
+    name: 'Vận tải Hùng Cường',
     stage: 'Proposal',
     value: '350tr',
     stageClass: 'bg-brand-50 text-brand-500 dark:bg-brand-500/20 dark:text-brand-300',
@@ -310,28 +302,28 @@ const priorityDeals = ref<PriorityDeal[]>([
 
 const aiSuggestions = ref<AiSuggestion[]>([
   {
-    title: 'Nhac nho follow-up',
-    content: 'Mr. Nam chua phan hoi email 3 ngay. Goi y gui them tin nhan Zalo.',
+    title: 'Nhắc nhở follow-up',
+    content: 'Mr. Nam chưa phản hồi email 3 ngày. Gợi ý gửi thêm tin nhắn Zalo.',
   },
   {
-    title: 'Co hoi chot deal',
-    content: 'Deal TechPro o stage Proposal qua lau. Ban co the de xuat uu dai 5%.',
+    title: 'Cơ hội chốt deal',
+    content: 'Deal TechPro ở stage Proposal quá lâu. Bạn có thể đề xuất ưu đãi 5%.',
   },
 ])
 
 const notifications = ref<NotificationItem[]>([
   {
     id: 1,
-    content: 'Ban co email moi tu khach hang Hoa Phat',
-    time: '15 phut truoc',
+    content: 'Bạn có email mới từ khách hàng Hòa Phát',
+    time: '15 phút trước',
     icon: Mail,
     iconBgClass: 'bg-brand-50 dark:bg-brand-500/15',
     iconClass: 'text-brand-500 dark:text-brand-300',
   },
   {
     id: 2,
-    content: 'Du an Vinhomes da chuyen sang stage Won',
-    time: '2 gio truoc',
+    content: 'Dự án Vinhomes đã chuyển sang stage Won',
+    time: '2 giờ trước',
     icon: Bell,
     iconBgClass: 'bg-success-50 dark:bg-success-500/15',
     iconClass: 'text-success-500 dark:text-success-300',
@@ -339,9 +331,9 @@ const notifications = ref<NotificationItem[]>([
 ])
 
 const quickActions = ref<QuickAction[]>([
-  { label: 'Hoi dap AI', icon: MessageCircle },
-  { label: 'Mo lich hen', icon: CalendarPlus },
-  { label: 'Bao cao nhanh', icon: BarChart3 },
+  { label: 'Hỏi đáp AI', icon: MessageCircle },
+  { label: 'Mở lịch hẹn', icon: CalendarPlus },
+  { label: 'Báo cáo nhanh', icon: BarChart3 },
   { label: 'Config Pipeline', icon: Settings2 },
 ])
 
@@ -350,15 +342,11 @@ onMounted(() => {
 })
 
 function handleAddTask(): void {
-  toast.success('Mo form them cong viec')
-}
-
-function handleAddDeal(): void {
-  toast.success('Mo form them deal moi')
+  toast.success('Mở form thêm công việc')
 }
 
 function handleViewAllTasks(): void {
-  toast.info('Dang mo danh sach cong viec')
+  toast.info('Đang mở danh sách công việc')
 }
 
 function handleToggleTask(taskId: string, checked: boolean | 'indeterminate'): void {
@@ -366,10 +354,10 @@ function handleToggleTask(taskId: string, checked: boolean | 'indeterminate'): v
 }
 
 function handleContactDeal(dealName: string): void {
-  toast.success(`Da tao nhac lich lien he cho ${dealName}`)
+  toast.success(`Đã tạo nhắc lịch liên hệ cho ${dealName}`)
 }
 
 function handleQuickAction(actionName: string): void {
-  toast.info(`Dang mo: ${actionName}`)
+  toast.info(`Đang mở: ${actionName}`)
 }
 </script>

@@ -30,16 +30,18 @@ interface CachedTreePayload {
 }
 
 export const useLibraryStore = defineStore('library', () => {
-  const tree = ref<LibraryNode[]>([])
+  const tree = ref<LibraryNode[]>(ensureSystemRoots([]))
   const loading = ref(false)
   const error = ref<string | null>(null)
   const lastFetchedAt = ref<number>(0)
+  const cacheHydrated = ref(false)
   const connectionStatus = ref<'idle' | 'connected' | 'disconnected' | 'polling'>('idle')
 
   const wsClient = ref<WebSocket | null>(null)
   const reconnectTimer = ref<number | null>(null)
   const pollTimer = ref<number | null>(null)
   const realtimeConsumers = ref(0)
+  let fetchTreeInFlight: Promise<void> | null = null
 
   const orgId = computed(() => resolveOrgIdFromToken())
   const cacheKey = computed(() => `library.tree.cache.${orgId.value}`)
@@ -67,44 +69,69 @@ export const useLibraryStore = defineStore('library', () => {
   function hydrateFromCache(): void {
     const cached = readCache()
     if (!cached) {
+      tree.value = ensureSystemRoots(tree.value)
       return
     }
 
     tree.value = ensureSystemRoots(cached.tree)
     lastFetchedAt.value = cached.fetchedAt
+    cacheHydrated.value = true
   }
 
   async function fetchTree(options: FetchTreeOptions = {}): Promise<void> {
     const { force = false, background = false } = options
 
-    if (!tree.value.length) {
-      hydrateFromCache()
+    if (force && fetchTreeInFlight) {
+      await fetchTreeInFlight
+    } else if (!force && fetchTreeInFlight) {
+      return fetchTreeInFlight
     }
 
-    const isCacheFresh = Date.now() - lastFetchedAt.value < CACHE_TTL_MS
-    if (!force && isCacheFresh && tree.value.length) {
-      return
-    }
+    fetchTreeInFlight = (async () => {
+      if (!tree.value.length) {
+        hydrateFromCache()
+      }
 
-    if (!background) {
-      loading.value = true
-    }
+      const isCacheFresh = Date.now() - lastFetchedAt.value < CACHE_TTL_MS
+      if (!force && isCacheFresh && tree.value.length) {
+        // Keep fast local render, but always revalidate once from API after cache hydration.
+        if (cacheHydrated.value) {
+          cacheHydrated.value = false
+          void fetchTree({ force: true, background: true })
+        }
+        return
+      }
 
-    const result = await fetchLibraryTree({ include_counts: true })
+      if (!background) {
+        loading.value = true
+      }
 
-    if (isSuccess(result)) {
-      const normalizedTree = ensureSystemRoots(result.data)
-      tree.value = normalizedTree
-      lastFetchedAt.value = Date.now()
-      error.value = null
-      writeCache({ tree: normalizedTree, fetchedAt: lastFetchedAt.value })
+      const result = await fetchLibraryTree({ include_counts: true })
+
+      if (isSuccess(result)) {
+        const normalizedTree = ensureSystemRoots(result.data)
+        tree.value = normalizedTree
+        lastFetchedAt.value = Date.now()
+        cacheHydrated.value = false
+        error.value = null
+        writeCache({ tree: normalizedTree, fetchedAt: lastFetchedAt.value })
+        loading.value = false
+        return
+      }
+
+      error.value = result.error
+      tree.value = ensureSystemRoots(tree.value)
       loading.value = false
-      return
-    }
+      if (!background) {
+        toast.error('Không tải được Thư viện. [Thử lại]')
+      }
+    })()
 
-    error.value = result.error
-    loading.value = false
-    toast.error('Khong tai duoc Thu vien. [Thu lai]')
+    try {
+      await fetchTreeInFlight
+    } finally {
+      fetchTreeInFlight = null
+    }
   }
 
   async function fetchChildren(parentId: string): Promise<void> {

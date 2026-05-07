@@ -315,9 +315,16 @@ const showShareDialog = ref(false)
 const showSettingsDialog = ref(false)
 const settingsShowSources = ref(true)
 const settingsSendOnEnter = ref(true)
+const CHAT_CONVERSATIONS_STALE_TIME_MS = 30_000
+const CHAT_MESSAGES_STALE_TIME_MS = 20_000
 
 const conversationsQuery = useQuery({
   queryKey: ['chat', 'conversations'],
+  staleTime: CHAT_CONVERSATIONS_STALE_TIME_MS,
+  gcTime: 5 * 60_000,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+  retry: 1,
   queryFn: async () => {
     const result = await fetchChatConversations()
     if (!isSuccess(result)) {
@@ -349,6 +356,12 @@ watch(
 const messagesQuery = useQuery({
   queryKey: computed(() => ['chat', 'messages', selectedConversationId.value]),
   enabled: computed(() => Boolean(selectedConversationId.value)),
+  staleTime: CHAT_MESSAGES_STALE_TIME_MS,
+  gcTime: 5 * 60_000,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+  retry: 1,
+  placeholderData: (previousData) => previousData,
   queryFn: async () => {
     messagesError.value = ''
     const result = await fetchConversationMessages(selectedConversationId.value as string)

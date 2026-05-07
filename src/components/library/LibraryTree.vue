@@ -66,9 +66,12 @@
               class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
               :class="item.node.root_type === 'company'
                 ? 'bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-400'
-                : 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400'"
+                : item.node.root_type === 'shared'
+                  ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
+                  : 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400'"
             >
               <Building2 v-if="item.node.root_type === 'company'" class="h-4 w-4" />
+              <Share2 v-else-if="item.node.root_type === 'shared'" class="h-4 w-4" />
               <UserRound v-else class="h-4 w-4" />
             </span>
 
@@ -342,13 +345,14 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  Share2,
   Trash2,
   UserRound,
   X,
 } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { useLibraryStore } from '@/stores/library'
-import type { LibraryNode } from '@/types/library'
+import type { LibraryNode, LibraryRootType } from '@/types/library'
 
 type FlatItem =
   | { type: 'node'; node: LibraryNode; level: number }
@@ -356,6 +360,7 @@ type FlatItem =
   | { type: 'root-empty'; rootId: string; level: number }
 
 const WORKSPACE_ROOT = '__workspace_root__'
+const SYSTEM_ROOT_ORDER: LibraryRootType[] = ['company', 'personal', 'shared']
 
 const props = defineProps<{
   data: LibraryNode[]
@@ -406,19 +411,15 @@ watch(searchText, (value) => {
 watch(
   () => props.data,
   (nodes) => {
-    // Default: company root expanded, personal root collapsed.
-    const companyRoot = nodes.find((node) => node.is_system && node.root_type === 'company')
-    const personalRoot = nodes.find((node) => node.is_system && node.root_type === 'personal')
+    const orderedNodes = orderSystemRoots(nodes)
 
-    if (companyRoot) {
-      expanded.value.add(companyRoot.id)
-    }
-    if (personalRoot && !props.selectedId) {
-      expanded.value.delete(personalRoot.id)
+    // Keep all system roots visible by default.
+    for (const rootId of getSystemRootIds(orderedNodes)) {
+      expanded.value.add(rootId)
     }
 
     if (expanded.value.size === 0) {
-      const firstFolder = nodes.find((n) => n.type === 'folder')
+      const firstFolder = orderedNodes.find((n) => n.type === 'folder')
       if (firstFolder) expanded.value.add(firstFolder.id)
     }
   },
@@ -457,16 +458,19 @@ const connectionLabel = computed(() => {
 })
 
 // Filtered + flattened items
+const orderedNodes = computed(() => orderSystemRoots(props.data))
+
 const filteredNodes = computed(() => {
-  if (!debouncedSearch.value) return props.data
-  return filterTree(props.data, debouncedSearch.value)
+  if (!debouncedSearch.value) return orderedNodes.value
+  return filterTree(orderedNodes.value, debouncedSearch.value)
 })
 
 const flattenedItems = computed(() => {
+  const rootIds = getSystemRootIds(filteredNodes.value)
   const effectiveExpanded =
     pendingParentId.value && pendingParentId.value !== WORKSPACE_ROOT
-      ? new Set([...expanded.value, pendingParentId.value])
-      : expanded.value
+      ? new Set([...expanded.value, ...rootIds, pendingParentId.value])
+      : new Set([...expanded.value, ...rootIds])
 
   const nodes = flattenTree(filteredNodes.value, effectiveExpanded)
 
@@ -528,6 +532,11 @@ function isExpanded(nodeId: string): boolean {
 }
 
 function toggleExpand(node: LibraryNode): void {
+  if (node.is_system) {
+    expanded.value.add(node.id)
+    return
+  }
+
   if (expanded.value.has(node.id)) {
     expanded.value.delete(node.id)
   } else {
@@ -713,6 +722,32 @@ function findNodeByIdInTree(nodes: LibraryNode[], id: string): LibraryNode | nul
     }
   }
   return null
+}
+
+function orderSystemRoots(nodes: LibraryNode[]): LibraryNode[] {
+  const source = Array.isArray(nodes) ? nodes : []
+  const rootByType = new Map<LibraryRootType, LibraryNode>()
+  const nonSystemNodes: LibraryNode[] = []
+
+  for (const node of source) {
+    if (node.parent_id === null && node.is_system && node.root_type && SYSTEM_ROOT_ORDER.includes(node.root_type)) {
+      if (!rootByType.has(node.root_type)) {
+        rootByType.set(node.root_type, node)
+      }
+      continue
+    }
+    nonSystemNodes.push(node)
+  }
+
+  const orderedRoots = SYSTEM_ROOT_ORDER
+    .map((rootType) => rootByType.get(rootType))
+    .filter((node): node is LibraryNode => Boolean(node))
+
+  return [...orderedRoots, ...nonSystemNodes]
+}
+
+function getSystemRootIds(nodes: LibraryNode[]): string[] {
+  return nodes.filter((node) => node.is_system && node.type === 'folder').map((node) => node.id)
 }
 
 function collectMatchedAncestors(nodes: LibraryNode[], query: string): string[] {

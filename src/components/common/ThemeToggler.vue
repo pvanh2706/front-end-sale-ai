@@ -2,7 +2,7 @@
   <button
     @click="themeStore.toggleColorMode"
     class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors text-[var(--color-sidebar-text)] hover:bg-primary-100 dark:hover:bg-white/10"
-    :title="themeStore.isDarkMode ? 'Chuyen sang che do sang' : 'Chuyen sang che do toi'"
+    :title="themeStore.isDarkMode ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'"
   >
     <svg
       v-if="themeStore.isDarkMode"

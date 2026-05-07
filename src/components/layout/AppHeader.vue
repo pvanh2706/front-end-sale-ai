@@ -1,6 +1,6 @@
 <template>
   <header
-    class="sticky top-0 flex w-full z-99999 lg:border-b bg-[var(--color-sidebar-bg)] border-[var(--color-sidebar-active-border)] dark:bg-[var(--color-sidebar-bg)] dark:border-[var(--color-sidebar-active-border)]"
+    class="sticky top-0 relative isolate flex w-full z-99999 lg:border-b bg-[var(--color-sidebar-bg)] border-[var(--color-sidebar-active-border)] dark:bg-[var(--color-sidebar-bg)] dark:border-[var(--color-sidebar-active-border)] before:pointer-events-none before:content-[''] before:absolute before:inset-y-0 before:-left-[100vw] before:-right-[100vw] before:-z-10 before:bg-[var(--color-sidebar-bg)] dark:before:bg-[var(--color-sidebar-bg)]"
   >
     <div class="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
       <div

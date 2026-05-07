@@ -62,6 +62,15 @@ export async function put<T>(url: string, body?: unknown): Promise<ApiResponse<T
   }
 }
 
+export async function patch<T>(url: string, body?: unknown): Promise<ApiResponse<T>> {
+  try {
+    const { data } = await api.patch<T>(url, body)
+    return { isSuccess: true, data }
+  } catch (e: unknown) {
+    return { isSuccess: false, error: getErrorMessage(e) }
+  }
+}
+
 export async function del<T>(url: string): Promise<ApiResponse<T>> {
   try {
     const { data } = await api.delete<T>(url)

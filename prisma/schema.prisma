@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DealStage {
+  new
+  preparing
+  contacted
+  negotiating
+  quoted
+  won
+  lost
+}
+
+model Deal {
+  id                String       @id @default(uuid()) @db.Uuid
+  orgId             String       @map("org_id") @db.Uuid
+  title             String       @db.VarChar(255)
+  description       String?
+  stage             DealStage    @default(new)
+  pipelineId        String       @map("pipeline_id") @db.Uuid
+  value             Decimal      @default(0) @db.Decimal(15, 2)
+  currency          String       @default("VND") @db.VarChar(3)
+  probability       Int          @default(0)
+  source            String?      @db.VarChar(50)
+  contactId         String?      @map("contact_id") @db.Uuid
+  companyId         String?      @map("company_id") @db.Uuid
+  contactName       String?      @map("contact_name") @db.VarChar(255)
+  companyName       String?      @map("company_name") @db.VarChar(255)
+  assigneeId        String       @map("assignee_id") @db.Uuid
+  expectedCloseDate DateTime?    @map("expected_close_date") @db.Date
+  aiScore           Int?         @map("ai_score")
+  tags              String[]     @default([])
+  lastActivityAt    DateTime     @map("last_activity_at") @default(now())
+  createdBy         String       @map("created_by") @db.Uuid
+  createdAt         DateTime     @map("created_at") @default(now())
+  updatedAt         DateTime     @map("updated_at") @updatedAt
+  deletedAt         DateTime?    @map("deleted_at")
+  crmId             String?      @map("crm_id") @db.VarChar(255)
+  activities        DealActivity[]
+
+  @@index([orgId, stage])
+  @@index([orgId, assigneeId])
+  @@index([orgId, pipelineId])
+  @@index([orgId, lastActivityAt(sort: Desc)])
+  @@map("crm_deals")
+}
+
+model DealActivity {
+  id         String   @id @default(uuid()) @db.Uuid
+  dealId     String   @map("deal_id") @db.Uuid
+  orgId      String   @map("org_id") @db.Uuid
+  type       String   @db.VarChar(50)
+  title      String   @db.VarChar(255)
+  metadata   Json?
+  createdBy  String   @map("created_by") @db.Uuid
+  createdAt  DateTime @map("created_at") @default(now())
+  deal       Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, dealId, createdAt(sort: Desc)])
+  @@map("deal_activities")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  orgId      String   @map("org_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  entity     String   @db.VarChar(50)
+  entityId   String   @map("entity_id") @db.Uuid
+  action     String   @db.VarChar(50)
+  metadata   Json?
+  createdAt  DateTime @map("created_at") @default(now())
+
+  @@index([orgId, entity, entityId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
