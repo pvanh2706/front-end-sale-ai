@@ -210,6 +210,7 @@ const menuGroups = [
                 path: "/crm-work",
                 subItems: [
                     { name: "Deals Kanban", path: "/crm-deals", pro: false, new: false },
+                    { name: "Kiểm tra trùng", path: "/crm-duplicate-check", pro: false, new: false },
                 ],
             },
         ],

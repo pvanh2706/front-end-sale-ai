@@ -37,7 +37,9 @@
       <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
         <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 class="text-theme-xl font-semibold text-gray-900 dark:text-white">Pipeline tổng quan</h2>
-          <Badge class="bg-brand-50 text-brand-500 dark:bg-brand-500/10 dark:text-brand-300">8 deals · 2,4 tỷ VND</Badge>
+          <RouterLink to="/crm-deals" class="text-xs text-brand-500 hover:underline dark:text-brand-400">
+            Mở Kanban →
+          </RouterLink>
         </div>
         <div class="overflow-x-auto custom-scrollbar pb-2">
           <div class="flex min-w-[780px] gap-4">
@@ -149,6 +151,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { toast } from 'vue-sonner'
 import {
@@ -170,6 +173,7 @@ import {
   TrendingUp,
 } from 'lucide-vue-next'
 
+import { RouterLink } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -224,6 +228,7 @@ interface QuickAction {
   icon: unknown
 }
 
+const router = useRouter()
 const pageTitle = ref('CRM & Công việc')
 const crmStore = useCrmStore()
 const { kpis, pipeline, tasks, loading, error, totalTasksToday } = storeToRefs(crmStore)
@@ -346,7 +351,7 @@ function handleAddTask(): void {
 }
 
 function handleViewAllTasks(): void {
-  toast.info('Đang mở danh sách công việc')
+  void router.push('/crm-deals')
 }
 
 function handleToggleTask(taskId: string, checked: boolean | 'indeterminate'): void {

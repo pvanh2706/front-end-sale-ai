@@ -74,6 +74,12 @@ const router = createRouter({
             meta: { title: 'Chi tiết Deal' },
         },
         {
+            path: '/crm-duplicate-check',
+            name: 'CrmDuplicateCheck',
+            component: () => import('../views/Crm/CrmDuplicateCheckView.vue'),
+            meta: { title: 'Kiểm tra trùng dữ liệu' },
+        },
+        {
             path: '/doc-library',
             redirect: '/chat-tai-lieu/library',
         },
@@ -114,6 +120,16 @@ const router = createRouter({
                 {
                     path: 'security',
                     component: () => import('@/views/Settings/SecuritySettings.vue'),
+                },
+                {
+                    path: 'api-integration',
+                    name: 'ApiIntegrationSettings',
+                    component: () => import('@/views/Settings/ApiIntegrationSettings.vue'),
+                },
+                {
+                    path: 'webhook-logs',
+                    name: 'WebhookLogs',
+                    component: () => import('@/views/Settings/WebhookLogsView.vue'),
                 },
             ],
         },

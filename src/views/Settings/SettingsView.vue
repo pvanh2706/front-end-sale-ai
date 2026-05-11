@@ -40,6 +40,14 @@
               <ShieldCheck class="h-4 w-4" />
               <span>Bảo mật</span>
             </RouterLink>
+            <RouterLink to="/settings/api-integration" class="settings-nav-item">
+              <Plug class="h-4 w-4" />
+              <span>Tích hợp &amp; API</span>
+            </RouterLink>
+            <RouterLink to="/settings/webhook-logs" class="settings-nav-item">
+              <FileWarning class="h-4 w-4" />
+              <span>Webhook Logs</span>
+            </RouterLink>
           </nav>
         </aside>
 
@@ -52,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { Bell, ChevronLeft, Globe, Palette, ShieldCheck, User } from 'lucide-vue-next'
+import { Bell, ChevronLeft, FileWarning, Globe, Palette, Plug, ShieldCheck, User } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 </script>
 

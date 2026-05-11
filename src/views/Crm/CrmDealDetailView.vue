@@ -343,6 +343,22 @@ async function fetchDeal(): Promise<void> {
   }
 
   dealData.value = result.data
+
+  // Cập nhật timeline từ activities thực của backend
+  if (result.data.activities && result.data.activities.length > 0) {
+    timeline.value = result.data.activities.map((act) => ({
+      id: act.id,
+      title: act.title,
+      detail: act.metadata ? JSON.stringify(act.metadata) : '',
+      time: new Date(act.createdAt).toLocaleString('vi-VN'),
+      badge: act.type === 'stage_change' ? 'Stage' : act.type === 'created' ? 'Tạo mới' : 'Hoạt động',
+      badgeClass: act.type === 'stage_change'
+        ? 'bg-warning-50 text-warning-500 dark:bg-warning-500/15 dark:text-warning-300'
+        : act.type === 'created'
+          ? 'bg-success-50 text-success-500 dark:bg-success-500/15 dark:text-success-300'
+          : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
+    }))
+  }
 }
 
 function handleAskAi(): void {

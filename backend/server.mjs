@@ -1835,6 +1835,334 @@ wsServer.on('connection', (ws, req) => {
   })
 })
 
+// ─── Profile API ──────────────────────────────────────────────────────────────
+// In-memory profile store (keyed by userId extracted from auth context)
+const profileStore = new Map()
+
+function getDefaultProfile(userId) {
+  return {
+    userId,
+    fullName: 'Người dùng',
+    email: 'user@example.com',
+    phone: '',
+    jobTitle: '',
+    department: '',
+    bio: '',
+    timezone: 'Asia/Ho_Chi_Minh',
+    language: 'vi',
+    avatarUrl: '',
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+function getProfile(userId) {
+  if (!profileStore.has(userId)) {
+    profileStore.set(userId, getDefaultProfile(userId))
+  }
+  return profileStore.get(userId)
+}
+
+// GET /api/v1/profile — fetch current user profile
+app.get('/api/v1/profile', (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const profile = getProfile(auth.userId ?? auth.orgId ?? 'default')
+    res.json({ success: true, data: profile })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// PATCH /api/v1/profile — update profile fields
+app.patch('/api/v1/profile', (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const userId = auth.userId ?? auth.orgId ?? 'default'
+    const allowed = ['fullName', 'phone', 'jobTitle', 'department', 'bio', 'timezone', 'language']
+    const current = getProfile(userId)
+    const update = {}
+    for (const key of allowed) {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        const val = req.body[key]
+        if (typeof val !== 'string') {
+          return res.status(400).json({ success: false, error: `Field "${key}" must be a string` })
+        }
+        if (val.length > 500) {
+          return res.status(400).json({ success: false, error: `Field "${key}" is too long` })
+        }
+        update[key] = val.trim()
+      }
+    }
+    const updated = { ...current, ...update, updatedAt: new Date().toISOString() }
+    profileStore.set(userId, updated)
+    res.json({ success: true, data: updated })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// POST /api/v1/profile/avatar — upload avatar (multipart/form-data, field "avatar")
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed'))
+    }
+    cb(null, true)
+  },
+})
+
+app.post('/api/v1/profile/avatar', avatarUpload.single('avatar'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No image file provided' })
+    }
+    const auth = getAuthContext(req)
+    const userId = auth.userId ?? auth.orgId ?? 'default'
+    const profile = getProfile(userId)
+    // Store as base64 data URL (in-memory; swap with S3/GCS in production)
+    const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
+    profile.avatarUrl = dataUrl
+    profile.updatedAt = new Date().toISOString()
+    profileStore.set(userId, profile)
+    res.json({ success: true, data: { avatarUrl: dataUrl } })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// DELETE /api/v1/profile/avatar — remove avatar
+app.delete('/api/v1/profile/avatar', (req, res) => {
+  try {
+    const auth = getAuthContext(req)
+    const userId = auth.userId ?? auth.orgId ?? 'default'
+    const profile = getProfile(userId)
+    profile.avatarUrl = ''
+    profile.updatedAt = new Date().toISOString()
+    profileStore.set(userId, profile)
+    res.json({ success: true })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// ─── Locale / Language & Region settings ─────────────────────────────────────
+
+const localeStore = new Map()
+
+const SUPPORTED_LANGUAGES = [
+  { code: 'vi', name: 'Tiếng Việt', nativeName: 'Tiếng Việt', flag: '🇻🇳', region: 'Việt Nam' },
+  { code: 'en-US', name: 'English (US)', nativeName: 'English', flag: '🇺🇸', region: 'United States' },
+  { code: 'en-GB', name: 'English (UK)', nativeName: 'English', flag: '🇬🇧', region: 'United Kingdom' },
+  { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '中文（简体）', flag: '🇨🇳', region: 'China' },
+  { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵', region: 'Japan' },
+  { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷', region: 'Korea' },
+  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷', region: 'France' },
+  { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪', region: 'Germany' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', region: 'Spain' },
+  { code: 'th', name: 'Thai', nativeName: 'ภาษาไทย', flag: '🇹🇭', region: 'Thailand' },
+]
+
+const ALLOWED_LOCALE_FIELDS = [
+  'language', 'timezone', 'dateFormat', 'timeFormat', 'firstDayOfWeek',
+  'numberFormat', 'currency',
+]
+
+function getDefaultLocale(userId) {
+  return {
+    userId,
+    language: 'vi',
+    timezone: 'Asia/Ho_Chi_Minh',
+    dateFormat: 'DD/MM/YYYY',
+    timeFormat: '24h',
+    firstDayOfWeek: 'Mon',
+    numberFormat: 'dot-comma',
+    currency: 'VND',
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+function getLocale(userId) {
+  if (!localeStore.has(userId)) {
+    localeStore.set(userId, getDefaultLocale(userId))
+  }
+  return localeStore.get(userId)
+}
+
+// GET /api/v1/locale
+app.get('/api/v1/locale', (req, res) => {
+  try {
+    const { userId } = getAuthContext(req)
+    const locale = getLocale(userId)
+    res.json({ success: true, data: { ...locale, supportedLanguages: SUPPORTED_LANGUAGES } })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// PATCH /api/v1/locale
+app.patch('/api/v1/locale', (req, res) => {
+  try {
+    const { userId } = getAuthContext(req)
+    const locale = getLocale(userId)
+    const updates = {}
+    for (const field of ALLOWED_LOCALE_FIELDS) {
+      if (req.body[field] !== undefined) updates[field] = String(req.body[field]).slice(0, 50)
+    }
+    if (updates.language && !SUPPORTED_LANGUAGES.find((l) => l.code === updates.language)) {
+      return res.status(400).json({ success: false, error: 'Unsupported language code' })
+    }
+    if (updates.timeFormat && !['12h', '24h'].includes(updates.timeFormat)) {
+      return res.status(400).json({ success: false, error: 'Invalid timeFormat' })
+    }
+    const updated = { ...locale, ...updates, updatedAt: new Date().toISOString() }
+    localeStore.set(userId, updated)
+    res.json({ success: true, data: { ...updated, supportedLanguages: SUPPORTED_LANGUAGES } })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Security settings ────────────────────────────────────────────────────────
+
+const securityStore = new Map()   // userId → { twoFactorEnabled, trustedDevices, sessions }
+const activeSessions = new Map()  // userId → session[]
+
+function getDefaultSecurity(userId) {
+  return {
+    userId,
+    twoFactorEnabled: false,
+    twoFactorMethod: 'app',  // 'app' | 'sms' | 'email'
+    loginNotifications: true,
+    sessionTimeout: 30,      // minutes, 0 = never
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+function getSecurity(userId) {
+  if (!securityStore.has(userId)) securityStore.set(userId, getDefaultSecurity(userId))
+  return securityStore.get(userId)
+}
+
+function getDefaultSessions(userId) {
+  return [
+    {
+      id: 'sess-current',
+      device: 'Chrome trên Windows 11',
+      browser: 'Chrome 124',
+      os: 'Windows 11',
+      ip: '203.113.152.41',
+      location: 'Hồ Chí Minh, Việt Nam',
+      lastActive: new Date().toISOString(),
+      isCurrent: true,
+    },
+    {
+      id: 'sess-mobile',
+      device: 'Safari trên iPhone 15',
+      browser: 'Safari 17',
+      os: 'iOS 17',
+      ip: '203.113.152.42',
+      location: 'Hà Nội, Việt Nam',
+      lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      isCurrent: false,
+    },
+    {
+      id: 'sess-tablet',
+      device: 'Chrome trên iPad Pro',
+      browser: 'Chrome 123',
+      os: 'iPadOS 17',
+      ip: '115.78.220.10',
+      location: 'Đà Nẵng, Việt Nam',
+      lastActive: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      isCurrent: false,
+    },
+  ]
+}
+
+// GET /api/v1/security
+app.get('/api/v1/security', (req, res) => {
+  try {
+    const { userId } = getAuthContext(req)
+    const settings = getSecurity(userId)
+    if (!activeSessions.has(userId)) activeSessions.set(userId, getDefaultSessions(userId))
+    const sessions = activeSessions.get(userId)
+    res.json({ success: true, data: { ...settings, sessions } })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// PATCH /api/v1/security — update settings (twoFactorEnabled, twoFactorMethod, loginNotifications, sessionTimeout)
+app.patch('/api/v1/security', (req, res) => {
+  try {
+    const { userId } = getAuthContext(req)
+    const settings = getSecurity(userId)
+    const allowed = ['twoFactorEnabled', 'twoFactorMethod', 'loginNotifications', 'sessionTimeout']
+    const updates = {}
+    for (const field of allowed) {
+      if (req.body[field] !== undefined) updates[field] = req.body[field]
+    }
+    const updated = { ...settings, ...updates, updatedAt: new Date().toISOString() }
+    securityStore.set(userId, updated)
+    if (!activeSessions.has(userId)) activeSessions.set(userId, getDefaultSessions(userId))
+    const sessions = activeSessions.get(userId)
+    res.json({ success: true, data: { ...updated, sessions } })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// POST /api/v1/security/change-password
+app.post('/api/v1/security/change-password', (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, error: 'Thiếu mật khẩu' })
+    }
+    if (typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({ success: false, error: 'Mật khẩu mới phải có ít nhất 8 ký tự' })
+    }
+    // In-memory demo: accept any currentPassword
+    res.json({ success: true, message: 'Đã đổi mật khẩu thành công' })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// DELETE /api/v1/security/sessions/:sessionId — revoke a session
+app.delete('/api/v1/security/sessions/:sessionId', (req, res) => {
+  try {
+    const { userId } = getAuthContext(req)
+    const { sessionId } = req.params
+    if (!activeSessions.has(userId)) activeSessions.set(userId, getDefaultSessions(userId))
+    const sessions = activeSessions.get(userId)
+    const session = sessions.find((s) => s.id === sessionId)
+    if (!session) return res.status(404).json({ success: false, error: 'Session không tồn tại' })
+    if (session.isCurrent) return res.status(400).json({ success: false, error: 'Không thể thu hồi phiên hiện tại' })
+    const filtered = sessions.filter((s) => s.id !== sessionId)
+    activeSessions.set(userId, filtered)
+    res.json({ success: true })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// DELETE /api/v1/security/sessions — revoke all other sessions
+app.delete('/api/v1/security/sessions', (req, res) => {
+  try {
+    const { userId } = getAuthContext(req)
+    if (!activeSessions.has(userId)) activeSessions.set(userId, getDefaultSessions(userId))
+    const sessions = activeSessions.get(userId)
+    activeSessions.set(userId, sessions.filter((s) => s.isCurrent))
+    res.json({ success: true })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+// ─────────────────────────────────────────────────────────────────────────────
+
 server.listen(port, () => {
   console.log(`Doc Library backend running on http://localhost:${port}`)
   console.log(`Library websocket running on ws://localhost:${port}/ws/library?org_id=demo-org`)
