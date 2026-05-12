@@ -48,6 +48,10 @@
               <FileWarning class="h-4 w-4" />
               <span>Webhook Logs</span>
             </RouterLink>
+            <RouterLink to="/settings/permission-groups" class="settings-nav-item">
+              <UsersRound class="h-4 w-4" />
+              <span>Nhóm quyền</span>
+            </RouterLink>
           </nav>
         </aside>
 
@@ -60,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { Bell, ChevronLeft, FileWarning, Globe, Palette, Plug, ShieldCheck, User } from 'lucide-vue-next'
+import { Bell, ChevronLeft, FileWarning, Globe, Palette, Plug, ShieldCheck, User, UsersRound } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 </script>
 

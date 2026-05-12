@@ -2162,11 +2162,310 @@ app.delete('/api/v1/security/sessions', (req, res) => {
   }
 })
 // ─────────────────────────────────────────────────────────────────────────────
+// DOCUMENT PERMISSIONS API
+// ─────────────────────────────────────────────────────────────────────────────
+
+const docPermissionsState = new Map()
+
+function getDefaultDocPermissions(docId) {
+  return {
+    docId,
+    docName: 'Hợp đồng_KH_ACME_2026.pdf',
+    docType: 'Hợp đồng',
+    securityLevel: 'high',
+    conflictStrategy: 'highest',
+    roles: [
+      { id: 'admin', name: 'Quản trị viên (Admin)', description: 'Toàn quyền hệ thống', icon: 'admin', canView: true, canDownload: true, canEdit: true, isLocked: true },
+      { id: 'sales', name: 'Nhân viên Sales', description: 'Đội ngũ bán hàng trực tiếp', icon: 'sales', canView: true, canDownload: false, canEdit: false, isLocked: false },
+      { id: 'marketing', name: 'Marketing', description: 'Truyền thông & Thương hiệu', icon: 'marketing', canView: true, canDownload: true, canEdit: false, isLocked: false },
+      { id: 'accounting', name: 'Kế toán', description: 'Bộ phận tài chính', icon: 'accounting', canView: true, canDownload: false, canEdit: false, isLocked: false },
+    ],
+    departments: [
+      { id: 'kinh-doanh', name: 'Phòng Kinh doanh', title: 'Trưởng phòng & Nhân viên', canView: true, canDownload: true, canEdit: false, isLocked: false },
+      { id: 'ky-thuat', name: 'Phòng Kỹ thuật', title: 'Kỹ sư & Lập trình viên', canView: false, canDownload: false, canEdit: false, isLocked: false },
+      { id: 'nhan-su', name: 'Phòng Nhân sự', title: 'HR Team', canView: true, canDownload: false, canEdit: false, isLocked: false },
+    ],
+    advancedOptions: { watermark: true, otp: false },
+    emailShares: ['minh.nguyen@salio.vn', 'huong.le@acme.com'],
+    holders: [
+      { id: '1', name: 'Lê Thu Hà', avatar: null, initials: 'LH', source: 'role', sourceLabel: 'Từ Vai trò Admin', level: 'full' },
+      { id: '2', name: 'Nguyễn Văn Minh', avatar: null, initials: 'NM', source: 'email', sourceLabel: 'Mời qua Email', level: 'view' },
+      { id: '3', name: 'Phạm Thị Lan', avatar: null, initials: 'PL', source: 'title', sourceLabel: 'Trưởng phòng Sales', level: 'download' },
+      { id: '4', name: 'Trần Quốc Anh', avatar: null, initials: 'TA', source: 'role', sourceLabel: 'Từ Vai trò Marketing', level: 'view' },
+    ],
+    history: [
+      { id: '1', actor: 'Hệ thống', action: 'đã tự động cập nhật quyền cho nhóm', target: 'Marketing', time: '10:45 • Hôm nay', isPrimary: true },
+      { id: '2', actor: 'Quốc Anh', action: 'đã mời', target: 'huong.le@acme.com', time: 'Hôm qua', isPrimary: false },
+      { id: '3', actor: 'Lê Thu Hà', action: 'đã thay đổi quyền của', target: 'Nhân viên Sales', time: '2 ngày trước', isPrimary: false },
+    ],
+  }
+}
+
+// GET /api/v1/doc-permissions/:docId
+app.get('/api/v1/doc-permissions/:docId', (req, res) => {
+  try {
+    const { docId } = req.params
+    if (!docPermissionsState.has(docId)) {
+      docPermissionsState.set(docId, getDefaultDocPermissions(docId))
+    }
+    res.json({ success: true, data: docPermissionsState.get(docId) })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// PUT /api/v1/doc-permissions/:docId
+app.put('/api/v1/doc-permissions/:docId', (req, res) => {
+  try {
+    const { docId } = req.params
+    const body = req.body
+    if (!docPermissionsState.has(docId)) {
+      docPermissionsState.set(docId, getDefaultDocPermissions(docId))
+    }
+    const current = docPermissionsState.get(docId)
+    const updated = {
+      ...current,
+      conflictStrategy: body.conflictStrategy ?? current.conflictStrategy,
+      roles: body.roles ?? current.roles,
+      departments: body.departments ?? current.departments,
+      advancedOptions: body.advancedOptions ?? current.advancedOptions,
+      emailShares: body.emailShares ?? current.emailShares,
+    }
+    // append history entry
+    updated.history = [
+      {
+        id: String(Date.now()),
+        actor: 'Bạn',
+        action: 'đã cập nhật cài đặt phân quyền',
+        target: '',
+        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' • Hôm nay',
+        isPrimary: true,
+      },
+      ...updated.history,
+    ]
+    docPermissionsState.set(docId, updated)
+    res.json({ success: true, data: updated })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// GET /api/v1/doc-permissions/:docId/holders
+app.get('/api/v1/doc-permissions/:docId/holders', (req, res) => {
+  try {
+    const { docId } = req.params
+    if (!docPermissionsState.has(docId)) {
+      docPermissionsState.set(docId, getDefaultDocPermissions(docId))
+    }
+    const data = docPermissionsState.get(docId)
+    res.json({ success: true, data: data.holders, total: data.holders.length })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+// ─── Permission Groups API ────────────────────────────────────────────────────
+
+const permissionGroupsState = {
+  teams: [
+    {
+      id: 'team-sales',
+      name: 'Sales Team',
+      description: 'Nhóm kinh doanh & bán hàng',
+      color: '#465fff',
+      members: [
+        { id: 'm1', name: 'Minh Nguyễn', email: 'minh.nguyen@salio.vn', avatar: 'MN', role: 'admin' },
+        { id: 'm2', name: 'Hương Lê', email: 'huong.le@salio.vn', avatar: 'HL', role: 'member' },
+        { id: 'm3', name: 'Tuấn Trần', email: 'tuan.tran@salio.vn', avatar: 'TT', role: 'member' },
+      ],
+    },
+    {
+      id: 'team-marketing',
+      name: 'Marketing Team',
+      description: 'Nhóm marketing & truyền thông',
+      color: '#12b76a',
+      members: [
+        { id: 'm4', name: 'Lan Phạm', email: 'lan.pham@salio.vn', avatar: 'LP', role: 'admin' },
+        { id: 'm5', name: 'Dũng Hoàng', email: 'dung.hoang@salio.vn', avatar: 'DH', role: 'member' },
+      ],
+    },
+    {
+      id: 'team-product',
+      name: 'Product Team',
+      description: 'Nhóm sản phẩm & kỹ thuật',
+      color: '#f79009',
+      members: [
+        { id: 'm6', name: 'An Vũ', email: 'an.vu@salio.vn', avatar: 'AV', role: 'admin' },
+      ],
+    },
+  ],
+  roles: [
+    {
+      id: 'role-admin',
+      name: 'Admin',
+      description: 'Toàn quyền quản trị hệ thống',
+      color: '#f04438',
+      permissions: ['view', 'edit', 'download', 'share', 'delete', 'manage'],
+      members: [
+        { id: 'm1', name: 'Minh Nguyễn', email: 'minh.nguyen@salio.vn', avatar: 'MN', role: 'admin' },
+      ],
+    },
+    {
+      id: 'role-sales',
+      name: 'Sales',
+      description: 'Quyền xem và tải tài liệu bán hàng',
+      color: '#465fff',
+      permissions: ['view', 'download', 'share'],
+      members: [
+        { id: 'm2', name: 'Hương Lê', email: 'huong.le@salio.vn', avatar: 'HL', role: 'member' },
+        { id: 'm3', name: 'Tuấn Trần', email: 'tuan.tran@salio.vn', avatar: 'TT', role: 'member' },
+      ],
+    },
+    {
+      id: 'role-marketing',
+      name: 'Marketing',
+      description: 'Quyền xem, tải và chỉnh sửa tài liệu marketing',
+      color: '#12b76a',
+      permissions: ['view', 'edit', 'download'],
+      members: [
+        { id: 'm4', name: 'Lan Phạm', email: 'lan.pham@salio.vn', avatar: 'LP', role: 'member' },
+        { id: 'm5', name: 'Dũng Hoàng', email: 'dung.hoang@salio.vn', avatar: 'DH', role: 'member' },
+      ],
+    },
+    {
+      id: 'role-viewer',
+      name: 'Viewer',
+      description: 'Chỉ được xem tài liệu',
+      color: '#667085',
+      permissions: ['view'],
+      members: [
+        { id: 'm6', name: 'An Vũ', email: 'an.vu@salio.vn', avatar: 'AV', role: 'member' },
+      ],
+    },
+  ],
+}
+
+// GET /api/v1/permission-groups
+app.get('/api/v1/permission-groups', (req, res) => {
+  res.json({ success: true, data: permissionGroupsState })
+})
+
+// POST /api/v1/permission-groups/teams — create team
+app.post('/api/v1/permission-groups/teams', (req, res) => {
+  try {
+    const { name, description, color } = req.body
+    if (!name) return res.status(400).json({ success: false, error: 'name required' })
+    const group = {
+      id: `team-${Date.now()}`,
+      name,
+      description: description || '',
+      color: color || '#465fff',
+      members: [],
+    }
+    permissionGroupsState.teams.push(group)
+    res.json({ success: true, data: group })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// POST /api/v1/permission-groups/roles — create role
+app.post('/api/v1/permission-groups/roles', (req, res) => {
+  try {
+    const { name, description, color, permissions } = req.body
+    if (!name) return res.status(400).json({ success: false, error: 'name required' })
+    const group = {
+      id: `role-${Date.now()}`,
+      name,
+      description: description || '',
+      color: color || '#667085',
+      permissions: permissions || ['view'],
+      members: [],
+    }
+    permissionGroupsState.roles.push(group)
+    res.json({ success: true, data: group })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// DELETE /api/v1/permission-groups/teams/:id
+app.delete('/api/v1/permission-groups/teams/:id', (req, res) => {
+  const idx = permissionGroupsState.teams.findIndex((g) => g.id === req.params.id)
+  if (idx === -1) return res.status(404).json({ success: false, error: 'Not found' })
+  permissionGroupsState.teams.splice(idx, 1)
+  res.json({ success: true })
+})
+
+// DELETE /api/v1/permission-groups/roles/:id
+app.delete('/api/v1/permission-groups/roles/:id', (req, res) => {
+  const idx = permissionGroupsState.roles.findIndex((g) => g.id === req.params.id)
+  if (idx === -1) return res.status(404).json({ success: false, error: 'Not found' })
+  permissionGroupsState.roles.splice(idx, 1)
+  res.json({ success: true })
+})
+
+// POST /api/v1/permission-groups/teams/:id/members
+app.post('/api/v1/permission-groups/teams/:id/members', (req, res) => {
+  try {
+    const group = permissionGroupsState.teams.find((g) => g.id === req.params.id)
+    if (!group) return res.status(404).json({ success: false, error: 'Not found' })
+    const { name, email } = req.body
+    if (!email) return res.status(400).json({ success: false, error: 'email required' })
+    if (group.members.some((m) => m.email === email))
+      return res.status(409).json({ success: false, error: 'Already a member' })
+    const initials = (name || email).split(/[\s@]/)[0].slice(0, 2).toUpperCase()
+    const member = { id: `m-${Date.now()}`, name: name || email, email, avatar: initials, role: 'member' }
+    group.members.push(member)
+    res.json({ success: true, data: member })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// DELETE /api/v1/permission-groups/teams/:id/members/:memberId
+app.delete('/api/v1/permission-groups/teams/:id/members/:memberId', (req, res) => {
+  const group = permissionGroupsState.teams.find((g) => g.id === req.params.id)
+  if (!group) return res.status(404).json({ success: false, error: 'Not found' })
+  const idx = group.members.findIndex((m) => m.id === req.params.memberId)
+  if (idx === -1) return res.status(404).json({ success: false, error: 'Member not found' })
+  group.members.splice(idx, 1)
+  res.json({ success: true })
+})
+
+// POST /api/v1/permission-groups/roles/:id/members
+app.post('/api/v1/permission-groups/roles/:id/members', (req, res) => {
+  try {
+    const group = permissionGroupsState.roles.find((g) => g.id === req.params.id)
+    if (!group) return res.status(404).json({ success: false, error: 'Not found' })
+    const { name, email } = req.body
+    if (!email) return res.status(400).json({ success: false, error: 'email required' })
+    if (group.members.some((m) => m.email === email))
+      return res.status(409).json({ success: false, error: 'Already a member' })
+    const initials = (name || email).split(/[\s@]/)[0].slice(0, 2).toUpperCase()
+    const member = { id: `m-${Date.now()}`, name: name || email, email, avatar: initials, role: 'member' }
+    group.members.push(member)
+    res.json({ success: true, data: member })
+  } catch {
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// DELETE /api/v1/permission-groups/roles/:id/members/:memberId
+app.delete('/api/v1/permission-groups/roles/:id/members/:memberId', (req, res) => {
+  const group = permissionGroupsState.roles.find((g) => g.id === req.params.id)
+  if (!group) return res.status(404).json({ success: false, error: 'Not found' })
+  const idx = group.members.findIndex((m) => m.id === req.params.memberId)
+  if (idx === -1) return res.status(404).json({ success: false, error: 'Member not found' })
+  group.members.splice(idx, 1)
+  res.json({ success: true })
+})
+// ─────────────────────────────────────────────────────────────────────────────
 
 server.listen(port, () => {
   console.log(`Doc Library backend running on http://localhost:${port}`)
   console.log(`Library websocket running on ws://localhost:${port}/ws/library?org_id=demo-org`)
 })
+
 
 function extractFormat(filename) {
   const idx = filename.lastIndexOf('.')

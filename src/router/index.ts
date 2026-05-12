@@ -52,6 +52,12 @@ const router = createRouter({
             ],
         },
         {
+            path: '/chat-tai-lieu/permissions/:nodeId',
+            name: 'DocumentPermissions',
+            component: () => import('@/views/Settings/DocumentPermissionsView.vue'),
+            meta: { title: 'Phân quyền tài liệu' },
+        },
+        {
             path: '/chat',
             redirect: '/chat-tai-lieu/chat',
         },
@@ -130,6 +136,11 @@ const router = createRouter({
                     path: 'webhook-logs',
                     name: 'WebhookLogs',
                     component: () => import('@/views/Settings/WebhookLogsView.vue'),
+                },
+                {
+                    path: 'permission-groups',
+                    name: 'PermissionGroups',
+                    component: () => import('@/views/Settings/PermissionGroupsSettings.vue'),
                 },
             ],
         },

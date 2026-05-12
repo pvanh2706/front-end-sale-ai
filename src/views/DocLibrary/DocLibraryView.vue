@@ -43,6 +43,7 @@
               @delete-node="handleDeleteNode"
               @rename-node="handleRenameNode"
               @move-node="handleMoveNode"
+              @permissions="handleNodePermissions"
             />
 
             <div
@@ -270,31 +271,61 @@
 
     <!-- Share dialog -->
     <Dialog v-model:open="showShareDialog">
-      <DialogContent class="sm:max-w-lg">
+      <DialogContent class="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Chia sẻ tài liệu</DialogTitle>
-          <DialogDescription>Mời thành viên hoặc sao chép liên kết để chia sẻ tài liệu này.</DialogDescription>
+          <DialogDescription>Chia sẻ theo Team, Role hoặc Email cá nhân.</DialogDescription>
         </DialogHeader>
-        <div class="space-y-5 py-2">
-          <!-- Invite by email -->
-          <div class="space-y-2">
-            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Mời qua email</Label>
-            <div class="flex gap-2">
-              <Input
-                v-model="shareEmail"
-                type="email"
-                placeholder="tên@công-ty.com"
-                class="flex-1"
-                @keydown.enter="submitShareInvite"
-              />
-              <Select v-model="shareRole">
-                <SelectTrigger class="w-32">
+
+        <!-- Share Tabs -->
+        <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 -mx-1 px-1">
+          <button
+            v-for="tab in shareTabs"
+            :key="tab.id"
+            type="button"
+            class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors"
+            :class="shareActiveTab === tab.id
+              ? 'border-primary-500 text-primary-500'
+              : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'"
+            @click="shareActiveTab = tab.id"
+          >
+            <component :is="tab.icon" class="h-3.5 w-3.5" />
+            {{ tab.label }}
+          </button>
+        </div>
+
+        <div class="space-y-4 py-2">
+
+          <!-- Tab: Team -->
+          <template v-if="shareActiveTab === 'team'">
+            <div class="space-y-1.5">
+              <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Chọn Team</Label>
+              <Select v-model="shareTeamId">
+                <SelectTrigger class="w-full">
+                  <SelectValue placeholder="-- Chọn một Team --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="team in shareGroups?.teams ?? []"
+                    :key="team.id"
+                    :value="team.id"
+                  >
+                    {{ team.name }} ({{ team.members.length }} thành viên)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="space-y-1.5">
+              <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Mức quyền</Label>
+              <Select v-model="sharePermLevel">
+                <SelectTrigger class="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">Xem</SelectItem>
-                  <SelectItem value="editor">Sửa</SelectItem>
-                  <SelectItem value="commenter">Bình luận</SelectItem>
+                  <SelectItem value="viewer">Chỉ xem</SelectItem>
+                  <SelectItem value="downloader">Xem & Tải xuống</SelectItem>
+                  <SelectItem value="editor">Xem & Chỉnh sửa</SelectItem>
+                  <SelectItem value="full">Toàn quyền</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -302,16 +333,143 @@
               type="button"
               size="sm"
               class="bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-60"
-              :disabled="!shareEmail.trim()"
-              @click="submitShareInvite"
+              :disabled="!shareTeamId"
+              @click="submitShareByTeam"
             >
-              Gửi lời mời
+              Chia sẻ cho Team
             </Button>
+          </template>
+
+          <!-- Tab: Role -->
+          <template v-else-if="shareActiveTab === 'role'">
+            <div class="space-y-1.5">
+              <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Chọn Role</Label>
+              <Select v-model="shareRoleId">
+                <SelectTrigger class="w-full">
+                  <SelectValue placeholder="-- Chọn một Role --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="role in shareGroups?.roles ?? []"
+                    :key="role.id"
+                    :value="role.id"
+                  >
+                    {{ role.name }} — {{ role.description }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="space-y-1.5">
+              <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Mức quyền</Label>
+              <Select v-model="sharePermLevel">
+                <SelectTrigger class="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Chỉ xem</SelectItem>
+                  <SelectItem value="downloader">Xem & Tải xuống</SelectItem>
+                  <SelectItem value="editor">Xem & Chỉnh sửa</SelectItem>
+                  <SelectItem value="full">Toàn quyền</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              class="bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-60"
+              :disabled="!shareRoleId"
+              @click="submitShareByRole"
+            >
+              Chia sẻ cho Role
+            </Button>
+          </template>
+
+          <!-- Tab: Email -->
+          <template v-else>
+            <div class="space-y-2">
+              <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Email cá nhân</Label>
+              <div class="flex gap-2">
+                <Input
+                  v-model="shareEmail"
+                  type="email"
+                  placeholder="tên@công-ty.com"
+                  class="flex-1"
+                  @keydown.enter="submitShareInvite"
+                />
+                <Select v-model="shareRole">
+                  <SelectTrigger class="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="viewer">Xem</SelectItem>
+                    <SelectItem value="editor">Sửa</SelectItem>
+                    <SelectItem value="commenter">Bình luận</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                class="bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-60"
+                :disabled="!shareEmail.trim()"
+                @click="submitShareInvite"
+              >
+                Gửi lời mời
+              </Button>
+            </div>
+          </template>
+
+          <!-- Current access list -->
+          <div v-if="shareAccessList.length > 0" class="space-y-2">
+            <div class="flex items-center justify-between">
+              <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Đang chia sẻ với</Label>
+              <span class="text-[11px] text-gray-400 dark:text-gray-500">{{ shareAccessList.length }} đối tượng</span>
+            </div>
+            <div class="max-h-44 overflow-y-auto space-y-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-2">
+              <div
+                v-for="entry in shareAccessList"
+                :key="entry.id"
+                class="flex items-center justify-between rounded-lg px-3 py-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700"
+              >
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div
+                    class="h-7 w-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+                    :style="{ backgroundColor: entry.color }"
+                  >
+                    <Users v-if="entry.type === 'team'" class="h-3.5 w-3.5" />
+                    <Shield v-else-if="entry.type === 'role'" class="h-3.5 w-3.5" />
+                    <Mail v-else class="h-3.5 w-3.5" />
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ entry.name }}</p>
+                    <p class="text-[11px] text-gray-400 dark:text-gray-500 capitalize">
+                      {{ entry.type === 'team' ? 'Team' : entry.type === 'role' ? 'Role' : 'Email' }}
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <span
+                    class="rounded-full px-2 py-0.5 text-[11px] font-medium border"
+                    :class="sharePermLevelClass[entry.level]"
+                  >
+                    {{ sharePermLevelLabel[entry.level] ?? entry.level }}
+                  </span>
+                  <button
+                    type="button"
+                    class="text-gray-400 hover:text-error-500 transition-colors"
+                    title="Thu hồi quyền"
+                    @click="revokeAccess(entry.id)"
+                  >
+                    <X class="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <Separator />
 
-          <!-- Copy link -->
+          <!-- Copy link (always visible) -->
           <div class="space-y-2">
             <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Liên kết tài liệu</Label>
             <div class="flex gap-2">
@@ -327,69 +485,7 @@
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" @click="showShareDialog = false">Đóng</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
 
-    <!-- Share dialog -->
-    <Dialog v-model:open="showShareDialog">
-      <DialogContent class="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Chia sẻ tài liệu</DialogTitle>
-          <DialogDescription>Mời thành viên hoặc sao chép liên kết để chia sẻ tài liệu này.</DialogDescription>
-        </DialogHeader>
-        <div class="space-y-5 py-2">
-          <div class="space-y-2">
-            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Mời qua email</Label>
-            <div class="flex gap-2">
-              <Input
-                v-model="shareEmail"
-                type="email"
-                placeholder="tên@công-ty.com"
-                class="flex-1"
-                @keydown.enter="submitShareInvite"
-              />
-              <Select v-model="shareRole">
-                <SelectTrigger class="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="viewer">Xem</SelectItem>
-                  <SelectItem value="editor">Sửa</SelectItem>
-                  <SelectItem value="commenter">Bình luận</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              class="bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-60"
-              :disabled="!shareEmail.trim()"
-              @click="submitShareInvite"
-            >
-              Gửi lời mời
-            </Button>
-          </div>
-
-          <Separator />
-
-          <div class="space-y-2">
-            <Label class="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Liên kết tài liệu</Label>
-            <div class="flex gap-2">
-              <Input
-                :value="shareLink"
-                readonly
-                class="flex-1 bg-gray-50 text-gray-500 dark:bg-gray-900"
-              />
-              <Button type="button" variant="outline" class="shrink-0 gap-1.5" @click="copyShareLink">
-                <component :is="shareLinkCopied ? CheckCircle2 : Copy" class="h-4 w-4" />
-                {{ shareLinkCopied ? 'Đã sao chép' : 'Sao chép' }}
-              </Button>
-            </div>
-          </div>
-        </div>
         <DialogFooter>
           <Button type="button" variant="outline" @click="showShareDialog = false">Đóng</Button>
         </DialogFooter>
@@ -593,6 +689,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue-sonner'
 import {
   Bold,
@@ -607,18 +704,23 @@ import {
   GitBranch,
   HelpCircle,
   Italic,
+  Mail,
   MessageSquare,
   MoreVertical,
   Paperclip,
   Pencil,
   Plus,
   Share2,
+  Shield,
   ThumbsUp,
   Trash2,
   UserRound,
+  Users,
   UserPlus,
+  X,
 } from 'lucide-vue-next'
 
+import { get } from '@/services/api'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import LibraryTree from '@/components/library/LibraryTree.vue'
 import { Button } from '@/components/ui/button'
@@ -760,18 +862,134 @@ const shareEmail = ref('')
 const shareRole = ref<'viewer' | 'editor' | 'commenter'>('viewer')
 const shareLink = computed(() => `${window.location.origin}/doc-library?doc=${encodeURIComponent(currentPage.value.title)}`)
 const shareLinkCopied = ref(false)
+const shareActiveTab = ref<'team' | 'role' | 'email'>('team')
+const shareTeamId = ref('')
+const shareRoleId = ref('')
+const sharePermLevel = ref<'viewer' | 'downloader' | 'editor' | 'full'>('viewer')
+
+interface ShareGroup { id: string; name: string; description: string; color: string; members: { id: string }[] }
+interface ShareGroupsData { teams: ShareGroup[]; roles: (ShareGroup & { permissions: string[] })[] }
+
+interface ShareAccessEntry {
+  id: string
+  type: 'team' | 'role' | 'email'
+  name: string
+  level: string
+  color: string
+}
+
+const shareAccessList = ref<ShareAccessEntry[]>([])
+
+const sharePermLevelLabel: Record<string, string> = {
+  viewer: 'Chỉ xem',
+  downloader: 'Xem & Tải',
+  editor: 'Xem & Sửa',
+  full: 'Toàn quyền',
+  commenter: 'Bình luận',
+}
+
+const sharePermLevelClass: Record<string, string> = {
+  viewer: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600',
+  downloader: 'bg-brand-50 text-brand-500 border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20',
+  editor: 'bg-success-50 text-success-500 border-success-100 dark:bg-success-500/10 dark:border-success-500/20',
+  full: 'bg-warning-50 text-warning-500 border-warning-100 dark:bg-warning-500/10 dark:border-warning-500/20',
+  commenter: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600',
+}
+
+const shareTabs = [
+  { id: 'team', label: 'Theo Team', icon: Users },
+  { id: 'role', label: 'Theo Role', icon: Shield },
+  { id: 'email', label: 'Theo Email', icon: Mail },
+]
+
+const { data: shareGroupsResult } = useQuery({
+  queryKey: ['permission-groups'],
+  queryFn: () => get<{ success: boolean; data: ShareGroupsData }>('/v1/permission-groups'),
+  enabled: showShareDialog,
+})
+
+const shareGroups = computed<ShareGroupsData | null>(() => {
+  const apiRes = shareGroupsResult.value
+  if (!apiRes?.isSuccess || !apiRes.data) return null
+  const backendRes = apiRes.data as unknown as { success: boolean; data: ShareGroupsData }
+  return backendRes?.data ?? null
+})
 
 function openShareDialog(): void {
   shareEmail.value = ''
   shareRole.value = 'viewer'
   shareLinkCopied.value = false
+  shareActiveTab.value = 'team'
+  shareTeamId.value = ''
+  shareRoleId.value = ''
+  sharePermLevel.value = 'viewer'
+  // Seed with some initial mock access entries
+  shareAccessList.value = [
+    { id: 'init-1', type: 'team', name: 'Sales Team', level: 'viewer', color: '#465fff' },
+    { id: 'init-2', type: 'email', name: 'huong.le@acme.com', level: 'downloader', color: '#667085' },
+  ]
   showShareDialog.value = true
 }
 
 function submitShareInvite(): void {
-  if (!shareEmail.value.trim()) return
-  toast.success(`Đã gửi lời mời tới ${shareEmail.value.trim()}`)
+  const email = shareEmail.value.trim()
+  if (!email) return
+  if (shareAccessList.value.some((e) => e.name === email)) {
+    toast.error('Email này đã được thêm')
+    return
+  }
+  shareAccessList.value.push({
+    id: `email-${Date.now()}`,
+    type: 'email',
+    name: email,
+    level: shareRole.value,
+    color: '#667085',
+  })
+  toast.success(`Đã thêm ${email}`)
   shareEmail.value = ''
+}
+
+function submitShareByTeam(): void {
+  const team = shareGroups.value?.teams.find((t) => t.id === shareTeamId.value)
+  if (!team) return
+  if (shareAccessList.value.some((e) => e.id === team.id)) {
+    toast.error('Team này đã được thêm')
+    return
+  }
+  shareAccessList.value.push({
+    id: team.id,
+    type: 'team',
+    name: team.name,
+    level: sharePermLevel.value,
+    color: team.color ?? '#465fff',
+  })
+  toast.success(`Đã chia sẻ cho team "${team.name}"`)
+  shareTeamId.value = ''
+}
+
+function submitShareByRole(): void {
+  const role = shareGroups.value?.roles.find((r) => r.id === shareRoleId.value)
+  if (!role) return
+  if (shareAccessList.value.some((e) => e.id === role.id)) {
+    toast.error('Role này đã được thêm')
+    return
+  }
+  shareAccessList.value.push({
+    id: role.id,
+    type: 'role',
+    name: role.name,
+    level: sharePermLevel.value,
+    color: role.color ?? '#12b76a',
+  })
+  toast.success(`Đã chia sẻ cho role "${role.name}"`)
+  shareRoleId.value = ''
+}
+
+function revokeAccess(entryId: string): void {
+  const entry = shareAccessList.value.find((e) => e.id === entryId)
+  if (!entry) return
+  shareAccessList.value = shareAccessList.value.filter((e) => e.id !== entryId)
+  toast.success(`Đã thu hồi quyền của "${entry.name}"`)
 }
 
 async function copyShareLink(): Promise<void> {
@@ -1032,6 +1250,10 @@ function handleRenameNode(_payload: { node: LibraryNode; newName: string }): voi
 
 function handleMoveNode(_payload: { nodeId: string; newParentId: string }): void {
   toast.info('Tính năng di chuyển thư mục sẽ sớm ra mắt')
+}
+
+function handleNodePermissions(node: LibraryNode): void {
+  void router.push(`/chat-tai-lieu/permissions/${node.id}?type=${node.type}&name=${encodeURIComponent(node.name)}`)
 }
 
 async function submitGlobalNewFolder(): Promise<void> {

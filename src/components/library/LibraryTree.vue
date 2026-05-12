@@ -285,6 +285,13 @@
               Đổi tên
             </button>
             <button
+              class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-theme-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+              @click="handlePermissions(item.node)"
+            >
+              <ShieldCheck class="h-3.5 w-3.5 text-brand-500" />
+              Phân quyền
+            </button>
+            <button
               class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-theme-sm text-error-600 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/10"
               @click="handleDelete(item.node)"
             >
@@ -346,6 +353,7 @@ import {
   Pencil,
   Plus,
   Share2,
+  ShieldCheck,
   Trash2,
   UserRound,
   X,
@@ -376,6 +384,7 @@ const emit = defineEmits<{
   'delete-node': [node: LibraryNode]
   'rename-node': [payload: { node: LibraryNode; newName: string }]
   'move-node': [payload: { nodeId: string; newParentId: string }]
+  'permissions': [node: LibraryNode]
 }>()
 
 const libraryStore = useLibraryStore()
@@ -624,6 +633,12 @@ function cancelRename(): void {
 function handleDelete(node: LibraryNode): void {
   menuNodeId.value = null
   emit('delete-node', node)
+}
+
+// Permissions
+function handlePermissions(node: LibraryNode): void {
+  menuNodeId.value = null
+  emit('permissions', node)
 }
 
 // Drag-drop
