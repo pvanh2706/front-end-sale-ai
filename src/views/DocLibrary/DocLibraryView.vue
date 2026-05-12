@@ -96,22 +96,6 @@
           </nav>
 
           <div class="flex items-center gap-2">
-            <!-- Cộng tác viên -->
-            <div class="hidden sm:flex items-center -space-x-2 mr-1">
-              <div
-                v-for="(avatar, i) in collaborators.slice(0, 3)"
-                :key="i"
-                class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary-100 text-theme-xs font-semibold text-primary-600 dark:border-gray-950 dark:bg-primary-500/20 dark:text-primary-400"
-              >
-                {{ avatar }}
-              </div>
-              <div class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gray-200 text-theme-xs font-semibold text-gray-600 dark:border-gray-950 dark:bg-gray-700 dark:text-gray-300">
-                +{{ collaborators.length - 3 }}
-              </div>
-            </div>
-
-            <Separator orientation="vertical" class="h-6 hidden sm:block" />
-
             <Button variant="ghost" size="sm" class="gap-1.5 text-gray-600 dark:text-gray-400" @click="openEditDialog">
               <Pencil class="h-4 w-4" />
               <span class="hidden lg:inline">Chỉnh sửa</span>
@@ -137,32 +121,65 @@
         <article class="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
 
           <!-- Tiêu đề & meta -->
-          <header class="mb-10">
-            <h1 class="mb-5 text-3xl font-bold leading-tight text-gray-900 dark:text-white">
-              {{ currentPage.title }}
+          <header v-if="selectedLibraryNode" class="mb-10">
+            <h1 class="mb-3 text-3xl font-bold leading-tight text-gray-900 dark:text-white">
+              {{ selectedLibraryNode.name }}
             </h1>
-            <div class="flex flex-wrap items-center gap-5 text-theme-sm text-gray-500 dark:text-gray-400">
-              <div class="flex items-center gap-2">
-                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-theme-xs font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
-                  {{ currentPage.author.slice(0, 1) }}
-                </div>
-                <span>Cập nhật bởi <strong class="text-gray-900 dark:text-white">{{ currentPage.author }}</strong></span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <Calendar class="h-4 w-4" />
-                <span>{{ currentPage.date }}</span>
-              </div>
-              <Badge
-                class="gap-1 bg-success-50 text-success-500 dark:bg-success-500/10 dark:text-success-400"
-              >
-                <CheckCircle2 class="h-3.5 w-3.5" />
-                {{ currentPage.status }}
-              </Badge>
+            <div v-if="currentPage.date" class="flex items-center gap-1.5 text-theme-sm text-gray-500 dark:text-gray-400">
+              <Calendar class="h-4 w-4" />
+              <span>Cập nhật: {{ currentPage.date }}</span>
             </div>
           </header>
 
+          <!-- ── File viewer (khi tài liệu đã được upload) ──────────────────── -->
+          <section
+            v-if="selectedLibraryNode?.type === 'document' && currentFileUrl"
+            class="mb-10 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800"
+          >
+            <!-- Image viewer -->
+            <template v-if="currentFileMime?.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(currentFileUrl ?? '')">
+              <img
+                :src="currentFileUrl!"
+                :alt="selectedLibraryNode!.name"
+                class="max-h-[640px] w-full object-contain bg-gray-100 dark:bg-gray-900"
+              />
+            </template>
+            <!-- PDF inline viewer -->
+            <template v-else-if="currentFileMime === 'application/pdf' || /\.pdf$/i.test(currentFileUrl ?? '')">
+              <iframe
+                :src="currentFileUrl!"
+                class="h-[700px] w-full border-0"
+                title="PDF viewer"
+              />
+            </template>
+            <!-- Other: download card -->
+            <template v-else>
+              <div class="flex flex-col items-center justify-center gap-5 py-16 bg-gray-50 dark:bg-gray-900">
+                <div class="flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+                  <FileText class="h-10 w-10 text-gray-400 dark:text-gray-500" />
+                </div>
+                <div class="text-center space-y-1">
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ selectedLibraryNode!.name }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Tệp đã được lưu trữ trên máy chủ</p>
+                </div>
+                <a
+                  :href="currentFileUrl!"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-600 transition-colors shadow-sm"
+                >
+                  <Download class="h-4 w-4" />
+                  Tải xuống / Xem tệp
+                </a>
+              </div>
+            </template>
+          </section>
+
           <!-- Empty state -->
-          <section class="flex flex-col items-center justify-center py-16 text-center">
+          <section
+            v-if="!selectedLibraryNode || selectedLibraryNode.type === 'folder' || !currentFileUrl"
+            class="flex flex-col items-center justify-center py-16 text-center"
+          >
             <div class="mb-6 flex h-52 w-52 items-center justify-center rounded-3xl border-2 border-dashed border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
               <FileText class="h-20 w-20 text-gray-300 dark:text-gray-600" />
             </div>
@@ -170,43 +187,18 @@
             <p class="mb-8 max-w-md text-theme-sm text-gray-500 dark:text-gray-400 leading-relaxed">
               {{ emptyDescription }}
             </p>
-            <Button class="gap-2 bg-primary-500 text-white hover:bg-primary-600" @click="openAddDocumentDialog">
+            <Button
+              v-if="selectedLibraryNode"
+              class="gap-2 bg-primary-500 text-white hover:bg-primary-600"
+              @click="openAddDocumentDialog"
+            >
               <Plus class="h-4 w-4" />
               Thêm tài liệu
             </Button>
           </section>
 
-          <!-- Trang con -->
-          <section class="mt-16 border-t border-gray-200 pt-8 dark:border-gray-800">
-            <h3 class="mb-5 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
-              <GitBranch class="h-5 w-5 text-primary-500" />
-              Trang con
-            </h3>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
-                v-for="child in childPages"
-                :key="child.id"
-                type="button"
-                class="group flex items-start gap-3 rounded-xl border border-gray-200 p-4 text-left transition-all hover:border-primary-300 hover:bg-primary-50/50 dark:border-gray-800 dark:hover:border-primary-500/40 dark:hover:bg-primary-500/5"
-                @click="selectChildPage(child)"
-              >
-                <div class="shrink-0 rounded-lg bg-gray-100 p-2 text-gray-500 transition-colors group-hover:bg-primary-100 group-hover:text-primary-500 dark:bg-gray-800 dark:text-gray-400 dark:group-hover:bg-primary-500/15 dark:group-hover:text-primary-400">
-                  <FileText class="h-5 w-5" />
-                </div>
-                <div class="min-w-0">
-                  <p class="truncate text-theme-sm font-semibold text-gray-900 transition-colors group-hover:text-primary-500 dark:text-white dark:group-hover:text-primary-400">
-                    {{ child.title }}
-                  </p>
-                  <p class="mt-0.5 line-clamp-1 text-theme-xs text-gray-500 dark:text-gray-400">
-                    {{ child.excerpt }}
-                  </p>
-                </div>
-              </button>
-            </div>
-          </section>
-
           <!-- Footer bài viết -->
-          <footer class="mt-16 border-t border-gray-200 pt-10 dark:border-gray-800">
+          <footer v-if="selectedLibraryNode" class="mt-16 border-t border-gray-200 pt-10 dark:border-gray-800">
             <!-- Like / Comment / View -->
             <div class="mb-8 flex items-center gap-6">
               <button
@@ -602,6 +594,29 @@
           </div>
         </div>
 
+        <!-- Upload progress bar -->
+        <div v-if="isCreatingDocument" class="space-y-2 px-1">
+          <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <span>{{ uploadProgress < 100 ? 'Đang tải lên máy chủ...' : 'Đang xử lý...' }}</span>
+            <span class="font-medium">{{ uploadProgress }}%</span>
+          </div>
+          <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+            <div
+              class="h-full rounded-full bg-primary-500 transition-all duration-300"
+              :style="{ width: `${uploadProgress}%` }"
+            />
+          </div>
+        </div>
+
+        <!-- Upload error -->
+        <div
+          v-if="uploadError"
+          class="mx-1 rounded-lg border border-error-500/30 bg-error-50 px-3 py-2.5 dark:bg-error-500/10"
+        >
+          <p class="text-xs font-semibold text-error-500">Lỗi kết nối API</p>
+          <p class="mt-0.5 text-xs text-error-500/80">{{ uploadError }}</p>
+        </div>
+
         <DialogFooter>
           <Button type="button" variant="outline" @click="showAddDocumentDialog = false">Hủy</Button>
           <Button
@@ -615,6 +630,7 @@
             :disabled="isCreatingDocument || !canSubmitDocumentUpload"
             @click="submitNewDocument"
           >
+            <Loader2 v-if="isCreatingDocument" class="mr-2 h-4 w-4 animate-spin" />
             {{ isCreatingDocument ? 'Đang upload...' : 'Thêm tài liệu' }}
           </Button>
         </DialogFooter>
@@ -688,7 +704,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue-sonner'
 import {
@@ -699,11 +715,13 @@ import {
   Calendar,
   CheckCircle2,
   ChevronRight,
+  Download,
   Eye,
   FileText,
   GitBranch,
   HelpCircle,
   Italic,
+  Loader2,
   Mail,
   MessageSquare,
   MoreVertical,
@@ -721,6 +739,11 @@ import {
 } from 'lucide-vue-next'
 
 import { get } from '@/services/api'
+import {
+  uploadFileExternal,
+  extractExternalFileUrl,
+  extractExternalFileId,
+} from '@/services/library'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import LibraryTree from '@/components/library/LibraryTree.vue'
 import { Button } from '@/components/ui/button'
@@ -749,107 +772,52 @@ import type { LibraryNode, LibraryRootType } from '@/types/library'
 
 // ─── Types ───────────────────────────────────────────────────
 
-interface ChildPage {
-  id: number
-  title: string
-  excerpt: string
-}
-
 interface PageInfo {
   title: string
-  author: string
   date: string
-  status: string
 }
 
-const route = useRoute()
 const router = useRouter()
-const isPersonalLibrary = computed(() => route.path === '/doc-library/personal')
-const emptyDescription = 'Chọn thư mục trong cây bên trái hoặc tạo tài liệu mới.'
-
-function goLibrarySection(type: 'company' | 'personal') {
-  router.push(type === 'company' ? '/doc-library/company' : '/doc-library/personal')
-}
+const emptyDescription = computed(() => {
+  if (!selectedLibraryNode.value) return 'Chọn thư mục hoặc tài liệu trong cây bên trái để xem nội dung.'
+  if (selectedLibraryNode.value.type === 'folder') return 'Thư mục này chưa có tài liệu nào. Bấm "Thêm tài liệu" để tải lên.'
+  return 'Tài liệu này chưa có tệp đính kèm. Bấm "Thêm tài liệu" để tải lên.'
+})
 
 const footerNav = [
   { label: 'Trung tâm hỗ trợ', icon: HelpCircle },
   { label: 'Thùng rác', icon: Trash2 },
 ]
 
-interface LibraryCaseConfig {
-  breadcrumbs: string[]
-  collaborators: string[]
-  currentPage: PageInfo
-  childPages: ChildPage[]
-}
-
-const companyCase: LibraryCaseConfig = {
-  breadcrumbs: ['Thư viện tài liệu', 'Tài liệu công ty'],
-  collaborators: ['NA', 'MB', 'VC', 'TD', 'PH'],
-  currentPage: {
-    title: '1.2. Tài liệu ISO/IEC 27001:2022',
-    author: 'Nguyễn Văn A',
-    date: '24 thg 5, 2024',
-    status: 'Đã duyệt',
-  },
-  childPages: [
-    {
-      id: 1,
-      title: '01. Chính sách Hệ thống QLTT',
-      excerpt: 'Các quy định chung về bảo mật và vận hành...',
-    },
-    {
-      id: 2,
-      title: '02. Phạm vi áp dụng ISO',
-      excerpt: 'Xác định ranh giới và khả năng áp dụng của hệ thống...',
-    },
-    {
-      id: 3,
-      title: '03. Đánh giá rủi ro bảo mật',
-      excerpt: 'Quy trình nhận diện và xử lý rủi ro ATTT...',
-    },
-  ],
-}
-
-const personalCase: LibraryCaseConfig = {
-  breadcrumbs: ['Thư viện tài liệu', 'Tài liệu cá nhân'],
-  collaborators: ['QT', 'NA', 'LP', 'HN'],
-  currentPage: {
-    title: '1.1. Kế hoạch quý Q2',
-    author: 'Bạn',
-    date: '02 thg 5, 2026',
-    status: 'Bản nháp',
-  },
-  childPages: [
-    {
-      id: 101,
-      title: '01. Checklist công việc tuần',
-      excerpt: 'Danh sách đầu việc cá nhân cần theo dõi trong tuần...',
-    },
-    {
-      id: 102,
-      title: '02. Ghi chú buổi họp 1:1',
-      excerpt: 'Tổng hợp ý chính và action items sau buổi họp...',
-    },
-    {
-      id: 103,
-      title: '03. Mẫu email chăm sóc khách hàng',
-      excerpt: 'Mẫu email theo từng tình huống chăm sóc sau bán...',
-    },
-  ],
-}
-
 const libraryStore = useLibraryStore()
 const selectedLibraryNode = ref<LibraryNode | null>(null)
 const showAddDocumentDialog = ref(false)
 const treeRef = ref<InstanceType<typeof LibraryTree> | null>(null)
 const isCreatingDocument = ref(false)
+const uploadProgress = ref(0)
+const uploadError = ref<string | null>(null)
+// fileUrlMap: nodeId → external file URL (populated from backend node or after upload)
+const fileUrlMap = ref<Record<string, string>>({})
+const fileMimeMap = ref<Record<string, string>>({})
+
+// Derived: always prefer fileUrlMap (in-session), fall back to node.file_url (persisted in backend)
+const currentFileUrl = computed<string | null>(() => {
+  const node = selectedLibraryNode.value
+  if (!node || node.type !== 'document') return null
+  return fileUrlMap.value[node.id] ?? node.file_url ?? null
+})
+
+const currentFileMime = computed<string | null>(() => {
+  const node = selectedLibraryNode.value
+  if (!node || node.type !== 'document') return null
+  return fileMimeMap.value[node.id] ?? node.file_mime ?? null
+})
 const latestCreatedDocumentId = ref<string | null>(null)
 const isAddDocumentButtonEmphasized = ref(false)
 const newDocumentDescription = ref('')
 const documentFileInputRef = ref<HTMLInputElement | null>(null)
 const selectedDocumentFile = ref<File | null>(null)
-const allowedDocumentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt']
+const allowedDocumentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'png', 'jpg', 'jpeg']
 const acceptedFileExtensions = allowedDocumentExtensions.map((ext) => `.${ext}`).join(',')
 const maxDocumentSizeMB = 25
 const maxDocumentSizeBytes = maxDocumentSizeMB * 1024 * 1024
@@ -1008,9 +976,8 @@ const editTitle = ref('')
 const editStatus = ref<'approved' | 'pending' | 'draft'>('approved')
 
 function openEditDialog(): void {
-  editTitle.value = currentPage.value.title
-  const s = currentPage.value.status
-  editStatus.value = s === 'Đã duyệt' ? 'approved' : s === 'Chờ duyệt' ? 'pending' : 'draft'
+  editTitle.value = selectedLibraryNode.value?.name ?? currentPage.value.title
+  editStatus.value = 'approved'
   showEditDialog.value = true
 }
 
@@ -1020,8 +987,7 @@ function submitEdit(): void {
     toast.error('Tiêu đề không được để trống')
     return
   }
-  const statusLabel = editStatus.value === 'approved' ? 'Đã duyệt' : editStatus.value === 'pending' ? 'Chờ duyệt' : 'Bản nháp'
-  currentPage.value = { ...currentPage.value, title, status: statusLabel }
+  currentPage.value = { ...currentPage.value, title }
   if (selectedLibraryNode.value) {
     selectedLibraryNode.value = { ...selectedLibraryNode.value, name: title }
   }
@@ -1042,22 +1008,20 @@ const breadcrumbs = computed(() => {
   return ['Thư viện tài liệu']
 })
 
-const collaborators = ref<string[]>([])
+const collaborators = ref<string[]>([]) // kept for future real-time collaborator feature
+
 const currentPage = ref<PageInfo>({
   title: '',
-  author: '',
   date: '',
-  status: '',
 })
-const childPages = ref<ChildPage[]>([])
 
-function applyLibraryCase(config: LibraryCaseConfig) {
-  collaborators.value = [...config.collaborators]
-  currentPage.value = { ...config.currentPage }
-  childPages.value = [...config.childPages]
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' })
+  } catch {
+    return ''
+  }
 }
-
-applyLibraryCase(companyCase)
 
 onMounted(() => {
   void libraryStore.fetchTree()
@@ -1065,14 +1029,29 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // Revoke any object URLs created for local file viewing
+  for (const url of Object.values(fileUrlMap.value)) {
+    if (url.startsWith('blob:')) {
+      URL.revokeObjectURL(url)
+    }
+  }
   libraryStore.releaseRealtime()
 })
 
 function handleTreeSelect(node: LibraryNode): void {
   selectedLibraryNode.value = node
   currentPage.value = {
-    ...currentPage.value,
     title: node.name,
+    date: node.updated_at ? formatDate(node.updated_at) : '',
+  }
+  // Restore file URL from backend node data (persisted)
+  if (node.type === 'document') {
+    if (node.file_url) {
+      fileUrlMap.value[node.id] = node.file_url
+    }
+    if (node.file_mime) {
+      fileMimeMap.value[node.id] = node.file_mime
+    }
   }
 }
 
@@ -1088,8 +1067,8 @@ function openAddDocumentDialog(): void {
     if (targetNode) {
       selectedLibraryNode.value = targetNode
       currentPage.value = {
-        ...currentPage.value,
         title: targetNode.name,
+        date: targetNode.updated_at ? formatDate(targetNode.updated_at) : '',
       }
       isAddDocumentButtonEmphasized.value = false
       return
@@ -1184,32 +1163,66 @@ async function submitNewDocument(): Promise<void> {
     return
   }
 
-  const title = file.name
-
   const parentId = selectedLibraryNode.value?.type === 'folder'
     ? selectedLibraryNode.value.id
     : selectedLibraryNode.value?.parent_id ?? null
 
   isCreatingDocument.value = true
+  uploadProgress.value = 0
+  uploadError.value = null
 
   try {
-    const node = await libraryStore.createDocument(title, parentId)
-    if (!node) {
+    // ── Step 1: Upload to external API ────────────────────────────────────────
+    const uploadResult = await uploadFileExternal(file, (pct) => {
+      uploadProgress.value = pct
+    })
+
+    let externalFileUrl: string | null = null
+    let externalFileId: string | null = null
+
+    if (uploadResult.isSuccess && uploadResult.data) {
+      console.log('[DocLibrary] Upload API raw response:', uploadResult.data)
+      externalFileUrl = extractExternalFileUrl(uploadResult.data)
+      externalFileId = extractExternalFileId(uploadResult.data)
+      uploadProgress.value = 100
+      if (!externalFileUrl) {
+        console.warn('[DocLibrary] URL not found in response. Using object URL as fallback. Keys:', Object.keys(uploadResult.data))
+      }
+    } else {
+      uploadError.value = uploadResult.error ?? 'Tải tệp lên thất bại'
+      toast.error(uploadError.value)
       return
     }
 
-    selectedLibraryNode.value = node
-    currentPage.value = {
-      ...currentPage.value,
-      title: node.name,
+    // Fallback: nếu không lấy được URL từ API, tạo object URL local (chỉ tồn tại trong session)
+    const viewUrl = externalFileUrl ?? URL.createObjectURL(file)
+
+    // ── Step 2: Create library node (lưu file_url vào backend) ───────────────
+    const node = await libraryStore.createDocument(file.name, parentId, externalFileUrl, file.type || null)
+    if (!node) return
+
+    // ── Step 3: Store file URL locally (để hiển thị ngay, không cần refetch) ─
+    fileUrlMap.value[node.id] = viewUrl
+    if (file.type) {
+      fileMimeMap.value[node.id] = file.type
     }
+
+    selectedLibraryNode.value = node
+    currentPage.value = { title: node.name, date: node.updated_at ? formatDate(node.updated_at) : '' }
     latestCreatedDocumentId.value = node.id
     isAddDocumentButtonEmphasized.value = true
 
     showAddDocumentDialog.value = false
     newDocumentDescription.value = ''
     clearSelectedDocumentFile()
-    toast.success('Đã thêm tài liệu thành công')
+    uploadProgress.value = 0
+    uploadError.value = null
+
+    toast.success(
+      externalFileUrl
+        ? 'Đã tải tài liệu lên thành công'
+        : 'Đã thêm tài liệu (tệp chưa được lưu trữ ngoài)',
+    )
   } finally {
     isCreatingDocument.value = false
   }
@@ -1292,26 +1305,6 @@ function handleSave() {
 }
 
 // ─── Page content ────────────────────────────────────────────
-
-function selectChildPage(child: ChildPage) {
-  currentPage.value = {
-    title: child.title,
-    author: companyCase.currentPage.author,
-    date: companyCase.currentPage.date,
-    status: companyCase.currentPage.status,
-  }
-  selectedLibraryNode.value = {
-    id: `preview-${child.id}`,
-    name: child.title,
-    type: 'document',
-    parent_id: null,
-    children: [],
-    documents_count: 0,
-    status: 'approved',
-    has_content: true,
-    updated_at: new Date().toISOString(),
-  }
-}
 
 // ─── Footer ──────────────────────────────────────────────────
 

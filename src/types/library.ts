@@ -18,6 +18,12 @@ export interface LibraryNode {
   is_system?: boolean
   /** Which workspace root this node belongs to */
   root_type?: LibraryRootType
+  /** External file URL after uploading via codeonlabs API */
+  file_url?: string | null
+  /** External file ID from codeonlabs API */
+  file_id?: string | null
+  /** MIME type of the uploaded file */
+  file_mime?: string | null
 }
 
 export interface ChatContextPayload {

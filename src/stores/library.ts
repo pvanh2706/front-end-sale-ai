@@ -190,6 +190,8 @@ export const useLibraryStore = defineStore('library', () => {
   async function createDocument(
     title: string,
     parentId?: string | null,
+    fileUrl?: string | null,
+    fileMime?: string | null,
   ): Promise<LibraryNode | null> {
     const trimmed = title.trim()
     if (!trimmed) {
@@ -214,6 +216,8 @@ export const useLibraryStore = defineStore('library', () => {
     const result = await createLibraryDocument({
       title: trimmed,
       parent_id: parentId ?? null,
+      file_url: fileUrl ?? null,
+      file_mime: fileMime ?? null,
     })
 
     if (!isSuccess(result)) {

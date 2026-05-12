@@ -1,6 +1,7 @@
 import cors from 'cors'
 import express from 'express'
 import http from 'node:http'
+import https from 'node:https'
 import multer from 'multer'
 import { Server as SocketIOServer } from 'socket.io'
 import { WebSocketServer } from 'ws'
@@ -222,7 +223,7 @@ function createFolderNode(name, parentId = null, extra = {}) {
   }
 }
 
-function createDocumentNode(name, parentId, status = 'approved') {
+function createDocumentNode(name, parentId, status = 'approved', extra = {}) {
   return {
     id: nextId(),
     name,
@@ -233,6 +234,7 @@ function createDocumentNode(name, parentId, status = 'approved') {
     status,
     has_content: status === 'approved',
     updated_at: nowIso(),
+    ...extra,
   }
 }
 
@@ -256,37 +258,7 @@ function seedLibraryTree() {
     is_system: true,
   })
 
-  const sales = createFolderNode('Sales Playbook', companyRoot.id)
-  const onboarding = createFolderNode('Onboarding', companyRoot.id)
-  const scripts = createFolderNode('Call Scripts', companyRoot.id)
-  const companyOverview = createFolderNode('Company Overview', companyRoot.id)
-  const policy = createFolderNode('Policy', companyRoot.id)
-  const nested = createFolderNode('Q2 Documents', scripts.id)
-  const personalNotes = createFolderNode('Ghi chú cá nhân', personalRoot.id)
-  const sharedDocs = createFolderNode('Tài liệu dự án chung', sharedRoot.id)
-
-  const nodes = [
-    companyRoot,
-    personalRoot,
-    sharedRoot,
-    sales,
-    onboarding,
-    scripts,
-    companyOverview,
-    policy,
-    nested,
-    createDocumentNode('Company Overview.pdf', companyOverview.id, 'approved'),
-    createDocumentNode('New Joiner Checklist.docx', onboarding.id, 'approved'),
-    createDocumentNode('Cold Call Script.md', scripts.id, 'approved'),
-    createDocumentNode('Quarterly Pricing.docx', nested.id, 'draft'),
-    createDocumentNode('Security Policy.pdf', policy.id, 'pending'),
-    personalNotes,
-    createDocumentNode('Ke hoach cong viec tuan.md', personalNotes.id, 'approved'),
-    sharedDocs,
-    createDocumentNode('Project Charter.pdf', sharedDocs.id, 'approved'),
-  ]
-
-  return nodes
+  return [companyRoot, personalRoot, sharedRoot]
 }
 
 function findNodeById(nodes, nodeId) {
@@ -765,6 +737,8 @@ function cloneNode(node) {
     ...(node.is_system ? { is_system: true } : {}),
     ...(node.root_type ? { root_type: node.root_type } : {}),
     ...(node.workspace_type ? { workspace_type: node.workspace_type } : {}),
+    ...(node.file_url ? { file_url: node.file_url } : {}),
+    ...(node.file_mime ? { file_mime: node.file_mime } : {}),
   }
 }
 
@@ -1326,6 +1300,8 @@ app.post('/api/v1/library/documents', upload.single('file'), (req, res) => {
   let parentId = req.body?.parent_id ? String(req.body.parent_id) : null
   const rootType = req.body?.root_type ? String(req.body.root_type) : null
   const file = req.file ?? null
+  const fileUrl = req.body?.file_url ? String(req.body.file_url) : null
+  const fileMime = req.body?.file_mime ? String(req.body.file_mime) : null
   const library = getOrCreateLibraryState(auth.orgId)
 
   if (rootType && !ROOT_TYPES.has(rootType)) {
@@ -1353,7 +1329,10 @@ app.post('/api/v1/library/documents', upload.single('file'), (req, res) => {
     return
   }
 
-  const document = createDocumentNode(title, parentId, 'approved')
+  const document = createDocumentNode(title, parentId, 'approved', {
+    ...(fileUrl ? { file_url: fileUrl } : {}),
+    ...(fileMime ? { file_mime: fileMime } : {}),
+  })
   library.nodes.push(document)
 
   broadcastLibraryEvent(auth.orgId, 'document.created', {
@@ -2458,6 +2437,82 @@ app.delete('/api/v1/permission-groups/roles/:id/members/:memberId', (req, res) =
   if (idx === -1) return res.status(404).json({ success: false, error: 'Member not found' })
   group.members.splice(idx, 1)
   res.json({ success: true })
+})
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Proxy: forward file upload đến Ezfolio CDN (credentials ẩn ở backend) ──
+const externalUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } })
+
+// Cấu hình Ezfolio CDN — đọc từ env (không bao giờ expose ra frontend)
+const EZFOLIO_URL = process.env.FILE_API_URL
+  ?? 'https://cdn-upload-test.ezfolio.net/Files/UploadSingle?clientId=foliotest&siteId=b684b02b-cee5-4a63-8f88-7e16dec06db5&rnd=21487'
+const EZFOLIO_AUTH = process.env.FILE_API_AUTH
+  ?? 'Basic ZXpGb2xpb1dlYjplekZvbGlvQDIwMjQjJA=='
+
+app.post('/api/proxy/files/upload', externalUpload.single('file'), (req, res) => {
+  const file = req.file
+  if (!file) {
+    res.status(400).json({ ok: false, error: 'Không có file' })
+    return
+  }
+
+  // Build multipart/form-data (chỉ field "file", đúng như curl mẫu)
+  const boundary = `----EzfolioProxy${Date.now()}`
+  const CRLF = '\r\n'
+
+  const body = Buffer.concat([
+    Buffer.from(
+      `--${boundary}${CRLF}` +
+      `Content-Disposition: form-data; name="file"; filename="${file.originalname}"${CRLF}` +
+      `Content-Type: ${file.mimetype}${CRLF}${CRLF}`
+    ),
+    file.buffer,
+    Buffer.from(`${CRLF}--${boundary}--${CRLF}`),
+  ])
+
+  const url = new URL(EZFOLIO_URL)
+
+  const options = {
+    hostname: url.hostname,
+    port: url.port || 443,
+    path: `${url.pathname}${url.search}`,
+    method: 'POST',
+    headers: {
+      'Authorization': EZFOLIO_AUTH,
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Content-Length': body.length,
+    },
+  }
+
+  console.log(`[Proxy upload] → ${url.hostname}${url.pathname} | file: ${file.originalname} (${file.size} bytes)`)
+
+  const proxyReq = https.request(options, (proxyRes) => {
+    const chunks = []
+    proxyRes.on('data', (chunk) => chunks.push(chunk))
+    proxyRes.on('end', () => {
+      const rawBody = Buffer.concat(chunks).toString('utf8')
+      console.log(`[Proxy upload] ← status ${proxyRes.statusCode} | body: ${rawBody.slice(0, 300)}`)
+      try {
+        const json = JSON.parse(rawBody)
+        res.status(proxyRes.statusCode ?? 200).json(json)
+      } catch {
+        res.status(proxyRes.statusCode ?? 502).send(rawBody)
+      }
+    })
+  })
+
+  proxyReq.on('error', (err) => {
+    console.error('[Proxy upload] Error:', err.message)
+    res.status(502).json({ ok: false, error: `Proxy lỗi: ${err.message}` })
+  })
+
+  proxyReq.setTimeout(120_000, () => {
+    proxyReq.destroy()
+    res.status(504).json({ ok: false, error: 'Proxy timeout' })
+  })
+
+  proxyReq.write(body)
+  proxyReq.end()
 })
 // ─────────────────────────────────────────────────────────────────────────────
 
