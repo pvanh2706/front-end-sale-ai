@@ -4,7 +4,8 @@
       "Bash(grep -E \"\\\\.\\(config|json|ts\\)$\")",
       "Bash(npm uninstall *)",
       "Bash(awk -F'/' '{print $1}')",
-      "WebSearch"
+      "WebSearch",
+      "Bash(grep -E \"README|CHANGELOG|\\\\.md$\")"
     ]
   }
 }

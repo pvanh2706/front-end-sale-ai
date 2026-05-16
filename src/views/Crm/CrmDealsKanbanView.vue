@@ -142,6 +142,22 @@
             </div>
           </div>
 
+          <div class="space-y-1.5">
+            <Label for="deal-contact-title">Chức vụ người liên hệ</Label>
+            <Input id="deal-contact-title" v-model="form.contactTitle" placeholder="VD: Giám đốc mua hàng, Trưởng phòng IT" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1.5">
+              <Label for="deal-phone">Số điện thoại</Label>
+              <Input id="deal-phone" v-model="form.phone" type="tel" placeholder="VD: 0901 234 567" />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="deal-email">Email</Label>
+              <Input id="deal-email" v-model="form.email" type="email" placeholder="VD: contact@congty.com" />
+            </div>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1.5">
               <Label for="deal-value">Giá trị</Label>
@@ -232,6 +248,9 @@ interface DealForm {
   title: string
   company: string
   contact: string
+  contactTitle: string
+  phone: string
+  email: string
   value: string
   probability: string
   stage: DealStage
@@ -283,6 +302,9 @@ function resetForm(stage: DealStage = 'new'): void {
     title: '',
     company: '',
     contact: '',
+    contactTitle: '',
+    phone: '',
+    email: '',
     value: '',
     probability: '0',
     stage,
@@ -303,6 +325,9 @@ function openEditDialog(card: DealCard, stage: DealStage): void {
     title: card.title,
     company: card.company,
     contact: '',
+    contactTitle: '',
+    phone: '',
+    email: '',
     value: card.value.replace(/[^0-9]/g, ''),
     probability: '0',
     stage,
