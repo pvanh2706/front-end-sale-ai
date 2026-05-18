@@ -5,7 +5,11 @@
       "Bash(npm uninstall *)",
       "Bash(awk -F'/' '{print $1}')",
       "WebSearch",
-      "Bash(grep -E \"README|CHANGELOG|\\\\.md$\")"
+      "Bash(grep -E \"README|CHANGELOG|\\\\.md$\")",
+      "Bash(python -c ' *)",
+      "Bash(python3)",
+      "Bash(extract-text \"Bitrix24_Deal_Fields_with_Salio_Mapping.xlsx\")",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }

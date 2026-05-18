@@ -1,5 +1,15 @@
-﻿import { DealStage } from '@prisma/client'
-import { prisma } from './prisma.mjs'
+﻿import { prisma } from './prisma.mjs'
+
+// Fallback khi Prisma chưa generate enum DealStage
+const DealStage = {
+  new: 'new',
+  preparing: 'preparing',
+  contacted: 'contacted',
+  negotiating: 'negotiating',
+  quoted: 'quoted',
+  won: 'won',
+  lost: 'lost',
+}
 
 // ─── In-memory fallback (khi DB chưa sẵn sàng) ────────────────────────────────
 
