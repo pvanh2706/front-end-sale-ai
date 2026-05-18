@@ -9,7 +9,10 @@
       "Bash(python -c ' *)",
       "Bash(python3)",
       "Bash(extract-text \"Bitrix24_Deal_Fields_with_Salio_Mapping.xlsx\")",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
