@@ -148,80 +148,92 @@
               <!-- Table -->
               <div class="flex-1 overflow-auto">
                 <table class="w-full border-collapse">
-                  <thead class="sticky top-0 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-700">
+                  <thead class="sticky top-0 z-10 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/80">
                     <tr>
-                      <th class="pl-6 py-3 w-10">
-                        <input
-                          type="checkbox"
-                          :checked="allVisibleInSection"
-                          :indeterminate="someVisibleInSection"
-                          class="rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                          @change="toggleAllInCurrentSection(!allVisibleInSection)"
-                        />
+                      <!-- Checkbox gộp trong ô Tên trường -->
+                      <th class="py-3 pl-6 pr-4 text-left">
+                        <label class="flex cursor-pointer items-center gap-3 select-none">
+                          <input
+                            type="checkbox"
+                            :checked="allVisibleInSection"
+                            :indeterminate="someVisibleInSection"
+                            class="h-4 w-4 cursor-pointer rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                            @change="toggleAllInCurrentSection(!allVisibleInSection)"
+                          />
+                          <span class="text-theme-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            Tên trường
+                          </span>
+                        </label>
                       </th>
-                      <th class="py-3 text-left text-theme-xs font-semibold text-gray-400 uppercase tracking-wider">Tên trường (VI)</th>
-                      <th class="py-3 text-left text-theme-xs font-semibold text-gray-400 uppercase tracking-wider">Field ID</th>
-                      <th class="py-3 text-left text-theme-xs font-semibold text-gray-400 uppercase tracking-wider">Loại</th>
-                      <th class="py-3 text-left text-theme-xs font-semibold text-gray-400 uppercase tracking-wider">Quyền xem</th>
-                      <th class="pr-6 py-3 w-10" />
+                      <th class="py-3 pr-4 text-left text-theme-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Field ID</th>
+                      <th class="py-3 pr-4 text-left text-theme-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Loại</th>
+                      <th class="py-3 pr-4 text-left text-theme-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Quyền xem</th>
+                      <th class="py-3 pr-6 w-8" />
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                     <tr
                       v-for="field in filteredFields"
                       :key="field.fieldId"
-                      class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
+                      class="group transition-colors"
                       :class="[
-                        !draftConfig[field.fieldId]?.visible ? 'opacity-50' : '',
-                        field.isAI ? 'bg-brand-50/30 dark:bg-brand-500/5' : '',
+                        draftConfig[field.fieldId]?.visible
+                          ? 'bg-white hover:bg-brand-50/50 dark:bg-transparent dark:hover:bg-brand-500/5'
+                          : 'bg-gray-50/60 opacity-50 hover:opacity-75 dark:bg-gray-800/20',
+                        field.isAI ? 'border-l-2 border-l-brand-300 dark:border-l-brand-500/50' : '',
                       ]"
                     >
-                      <td class="pl-6 py-3">
-                        <input
-                          type="checkbox"
-                          :checked="draftConfig[field.fieldId]?.visible"
-                          :disabled="field.isLocked"
-                          class="rounded border-gray-300 text-brand-500 focus:ring-brand-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                          @change="toggleField(field.fieldId)"
-                        />
+                      <!-- Ô Tên trường: checkbox + label gộp lại, click vào tên = toggle -->
+                      <td class="py-2.5 pl-6 pr-4">
+                        <label
+                          class="flex items-center gap-3 select-none"
+                          :class="field.isLocked ? 'cursor-default' : 'cursor-pointer'"
+                        >
+                          <input
+                            type="checkbox"
+                            :checked="draftConfig[field.fieldId]?.visible"
+                            :disabled="field.isLocked"
+                            class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-40"
+                            :class="field.isLocked ? '' : 'cursor-pointer'"
+                            @change="toggleField(field.fieldId)"
+                          />
+                          <div class="flex items-center gap-1.5 min-w-0">
+                            <span
+                              class="text-theme-sm font-medium leading-snug"
+                              :class="field.isAI
+                                ? 'text-brand-600 dark:text-brand-400'
+                                : draftConfig[field.fieldId]?.visible
+                                  ? 'text-gray-900 dark:text-white'
+                                  : 'text-gray-500 dark:text-gray-500'"
+                            >{{ field.labelVI }}</span>
+                            <span
+                              v-if="field.isLocked"
+                              class="material-symbols-outlined text-[13px] text-error-400 shrink-0"
+                              title="Trường bắt buộc, không thể ẩn"
+                            >lock</span>
+                            <span
+                              v-if="field.isAI"
+                              class="shrink-0 rounded bg-brand-100 px-1 py-0.5 text-[9px] font-black uppercase text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+                            >AI</span>
+                          </div>
+                        </label>
                       </td>
-                      <td class="py-3 pr-4">
-                        <div class="flex items-center gap-2">
-                          <span
-                            class="text-theme-sm font-medium"
-                            :class="field.isAI ? 'text-brand-600 dark:text-brand-400' : 'text-gray-900 dark:text-white'"
-                          >
-                            {{ field.labelVI }}
-                          </span>
-                          <span
-                            v-if="field.isLocked"
-                            class="material-symbols-outlined text-[14px] text-error-500"
-                            title="Trường bắt buộc, không thể ẩn"
-                          >lock</span>
-                          <span
-                            v-if="field.isAI"
-                            class="text-[10px] font-black px-1.5 py-0.5 bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 rounded uppercase"
-                          >AI</span>
-                        </div>
-                      </td>
-                      <td class="py-3 pr-4">
-                        <code class="text-[11px] bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-gray-500 dark:text-gray-400 font-mono">
+                      <td class="py-2.5 pr-4">
+                        <code class="rounded bg-gray-100 px-2 py-0.5 font-mono text-[11px] text-gray-400 dark:bg-gray-800 dark:text-gray-500">
                           {{ field.bitrixId }}
                         </code>
                       </td>
-                      <td class="py-3 pr-4">
+                      <td class="py-2.5 pr-4">
                         <span
-                          class="px-2 py-0.5 rounded-md text-[11px] font-bold border"
+                          class="rounded-md border px-2 py-0.5 text-[11px] font-bold"
                           :class="typeClass(field.type)"
-                        >
-                          {{ typeLabel(field.type) }}
-                        </span>
+                        >{{ typeLabel(field.type) }}</span>
                       </td>
-                      <td class="py-3 pr-4">
+                      <td class="py-2.5 pr-4">
                         <select
                           :value="draftConfig[field.fieldId]?.permission ?? 'Công khai'"
                           :disabled="!draftConfig[field.fieldId]?.visible"
-                          class="bg-transparent text-theme-sm text-gray-500 dark:text-gray-400 border-none p-0 focus:ring-0 disabled:cursor-not-allowed"
+                          class="cursor-pointer border-none bg-transparent p-0 text-theme-sm text-gray-500 focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400"
                           @change="setPermission(field.fieldId, ($event.target as HTMLSelectElement).value as FieldPermission)"
                         >
                           <option>Công khai</option>
@@ -229,8 +241,8 @@
                           <option>Quản trị viên</option>
                         </select>
                       </td>
-                      <td class="pr-6 py-3 text-right">
-                        <span class="material-symbols-outlined text-gray-300 dark:text-gray-600 cursor-move opacity-0 group-hover:opacity-100 transition-opacity select-none">
+                      <td class="py-2.5 pr-6 text-right">
+                        <span class="material-symbols-outlined cursor-move select-none text-[18px] text-gray-300 opacity-0 transition-opacity group-hover:opacity-100 dark:text-gray-600">
                           drag_indicator
                         </span>
                       </td>
@@ -238,8 +250,9 @@
 
                     <!-- Empty state -->
                     <tr v-if="filteredFields.length === 0">
-                      <td colspan="6" class="py-12 text-center text-gray-400 text-theme-sm">
-                        Không tìm thấy trường nào phù hợp
+                      <td colspan="5" class="py-16 text-center">
+                        <span class="material-symbols-outlined mb-2 block text-[40px] text-gray-300">search_off</span>
+                        <p class="text-theme-sm text-gray-400">Không tìm thấy trường nào phù hợp</p>
                       </td>
                     </tr>
                   </tbody>

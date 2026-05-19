@@ -124,12 +124,12 @@
       </section>
 
       <section class="mt-12 border-t border-gray-200 px-4 pt-8 md:px-8 dark:border-gray-800">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <button
             v-for="action in quickActions"
             :key="action.title"
             type="button"
-            class="rounded-xl border border-gray-200 bg-white p-4 text-left transition-all duration-200 hover:border-primary-300 hover:shadow-theme-md dark:border-gray-800 dark:bg-white/[0.03]"
+            class="quick-action-card rounded-xl p-4 text-center transition-all duration-200"
             @click="action.onClick()"
           >
             <p class="text-2xl">{{ action.icon }}</p>
@@ -196,12 +196,6 @@ const quickActions = [
     title: 'Xem toàn bộ thư viện',
     description: 'Duyệt tất cả tài liệu',
     onClick: () => router.push('/chat-tai-lieu/library'),
-  },
-  {
-    icon: '📊',
-    title: 'Phân tích sử dụng',
-    description: 'Báo cáo chi tiết',
-    onClick: () => router.push('/chat-tai-lieu/analytics'),
   },
 ]
 
@@ -276,3 +270,21 @@ watch(
   },
 )
 </script>
+
+<style scoped>
+.quick-action-card {
+  background: color-mix(in srgb, var(--color-sidebar-bg) 30%, white 70%);
+  border: 1px solid var(--color-sidebar-active-border);
+}
+.quick-action-card:hover {
+  background: color-mix(in srgb, var(--color-sidebar-bg) 50%, white 50%);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-sidebar-bg) 30%, transparent 70%);
+}
+:global(.dark) .quick-action-card {
+  background: color-mix(in srgb, var(--color-primary-900) 60%, transparent 40%);
+  border-color: var(--color-sidebar-active-border);
+}
+:global(.dark) .quick-action-card:hover {
+  background: color-mix(in srgb, var(--color-primary-800) 60%, transparent 40%);
+}
+</style>

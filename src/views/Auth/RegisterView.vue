@@ -26,50 +26,223 @@
         </div>
 
         <!-- Dashboard illustration -->
-        <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-theme-xl border border-white/40">
-          <div class="absolute inset-0 flex flex-col p-4 gap-3 bg-gradient-to-br from-primary-50 to-white">
-            <!-- Mock top bar -->
-            <div class="flex items-center gap-2">
-              <div class="h-2.5 w-20 bg-primary-200 rounded-full"></div>
-              <div class="h-2 w-14 bg-gray-200 rounded-full ml-auto"></div>
-              <div class="h-2 w-8 bg-gray-200 rounded-full"></div>
-            </div>
-            <!-- Mock chart area -->
-            <div class="flex flex-1 gap-3 min-h-0">
-              <div class="w-1/4 bg-white/70 rounded-lg p-2 flex flex-col gap-1.5">
-                <div class="h-2 w-full bg-gray-100 rounded"></div>
-                <div class="h-2 w-3/4 bg-gray-100 rounded"></div>
-                <div class="h-2 w-1/2 bg-gray-100 rounded"></div>
-                <div class="h-2 w-3/4 bg-primary-100 rounded mt-1"></div>
-                <div class="h-2 w-1/2 bg-primary-100 rounded"></div>
-              </div>
-              <div class="flex-1 bg-white/70 rounded-lg flex items-end px-3 py-3 gap-1.5">
-                <div
-                  v-for="(h, i) in chartBars"
-                  :key="i"
-                  class="flex-1 rounded-t-sm"
-                  :class="i % 2 === 0 ? 'bg-primary-300' : 'bg-primary-500'"
-                  :style="{ height: h + '%' }"
-                ></div>
-              </div>
-            </div>
-            <!-- Mock stat cards -->
-            <div class="grid grid-cols-3 gap-2">
-              <div class="bg-white/80 rounded-lg p-2">
-                <div class="h-2 w-10 bg-gray-200 rounded mb-1.5"></div>
-                <div class="h-3.5 w-8 bg-primary-500 rounded"></div>
-              </div>
-              <div class="bg-white/80 rounded-lg p-2">
-                <div class="h-2 w-12 bg-gray-200 rounded mb-1.5"></div>
-                <div class="h-3.5 w-10 bg-success-500 rounded"></div>
-              </div>
-              <div class="bg-white/80 rounded-lg p-2">
-                <div class="h-2 w-8 bg-gray-200 rounded mb-1.5"></div>
-                <div class="h-3.5 w-12 bg-warning-500 rounded"></div>
-              </div>
-            </div>
-          </div>
-          <div class="absolute inset-0 bg-gradient-to-t from-primary-500/20 to-transparent pointer-events-none"></div>
+        <div class="relative w-full aspect-video rounded-2xl overflow-hidden shadow-theme-xl border border-white/60">
+          <svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" class="w-full h-full" aria-hidden="true">
+            <defs>
+              <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#f0f4ff"/>
+                <stop offset="100%" style="stop-color:#faf5ff"/>
+              </linearGradient>
+              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" style="stop-color:#465fff;stop-opacity:0.18"/>
+                <stop offset="100%" style="stop-color:#465fff;stop-opacity:0"/>
+              </linearGradient>
+              <linearGradient id="barGrad1" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" style="stop-color:#465fff"/>
+                <stop offset="100%" style="stop-color:#818cf8"/>
+              </linearGradient>
+              <linearGradient id="barGrad2" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" style="stop-color:#c7d2fe"/>
+                <stop offset="100%" style="stop-color:#e0e7ff"/>
+              </linearGradient>
+              <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="120%">
+                <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#465fff" flood-opacity="0.08"/>
+              </filter>
+            </defs>
+
+            <!-- Background -->
+            <rect width="640" height="360" fill="url(#bgGrad)"/>
+
+            <!-- ═══ HEADER (giống AppHeader thật) ═══ -->
+            <rect x="0" y="0" width="640" height="40" fill="white"/>
+            <line x1="0" y1="40" x2="640" y2="40" stroke="#e9edf2" stroke-width="1"/>
+            <!-- Hamburger -->
+            <rect x="10" y="15" width="14" height="1.5" rx="0.75" fill="#73839a"/>
+            <rect x="10" y="19.5" width="10" height="1.5" rx="0.75" fill="#73839a"/>
+            <rect x="10" y="24" width="14" height="1.5" rx="0.75" fill="#73839a"/>
+            <!-- Logo icon -->
+            <rect x="30" y="13" width="14" height="14" rx="3" fill="#8ea7f5"/>
+            <rect x="32.5" y="14.5" width="2.5" height="10" rx="1" fill="white"/>
+            <rect x="37" y="17" width="2.5" height="8" rx="1" fill="white" opacity="0.85"/>
+            <rect x="41.5" y="15.5" width="2.5" height="10" rx="1" fill="white" opacity="0.65"/>
+            <!-- "Salio" text -->
+            <text x="49" y="24" font-family="Inter,sans-serif" font-size="9" font-weight="700" fill="#2b3446">Salio</text>
+            <!-- Search bar -->
+            <rect x="85" y="12" width="175" height="16" rx="5" fill="#f4f6f8" stroke="#e9edf2" stroke-width="1"/>
+            <circle cx="97" cy="20" r="3.5" fill="none" stroke="#73839a" stroke-width="1.5"/>
+            <line x1="99.5" y1="22.5" x2="101.5" y2="24.5" stroke="#73839a" stroke-width="1.5" stroke-linecap="round"/>
+            <text x="106" y="23" font-family="Inter,sans-serif" font-size="7" fill="#b8c2d0">Tìm kiếm...</text>
+            <!-- Right icons: theme -->
+            <rect x="524" y="12" width="16" height="16" rx="4" fill="#f4f6f8" stroke="#e9edf2" stroke-width="1"/>
+            <circle cx="532" cy="20" r="3.5" fill="none" stroke="#73839a" stroke-width="1.5"/>
+            <!-- notification -->
+            <rect x="546" y="12" width="16" height="16" rx="4" fill="#f4f6f8" stroke="#e9edf2" stroke-width="1"/>
+            <path d="M554,16 a3,3 0 0,1 6,0 l0,4 l-6,0 Z" fill="none" stroke="#73839a" stroke-width="1.5" stroke-linejoin="round"/>
+            <line x1="554" y1="24" x2="560" y2="24" stroke="#73839a" stroke-width="1.5"/>
+            <!-- Avatar -->
+            <circle cx="579" cy="20" r="10" fill="#8ea7f5"/>
+            <text x="579" y="24" font-family="Inter,sans-serif" font-size="7" font-weight="700" fill="white" text-anchor="middle">AT</text>
+
+            <!-- ═══ SIDEBAR (giống AppSidebar thật) ═══ -->
+            <rect x="0" y="40" width="130" height="320" fill="white"/>
+            <line x1="130" y1="40" x2="130" y2="360" stroke="#e9edf2" stroke-width="1"/>
+            <!-- Sidebar logo -->
+            <rect x="12" y="56" width="14" height="14" rx="3" fill="#8ea7f5"/>
+            <rect x="14.5" y="57.5" width="2.5" height="10" rx="1" fill="white"/>
+            <rect x="19" y="60" width="2.5" height="8" rx="1" fill="white" opacity="0.85"/>
+            <rect x="23.5" y="58.5" width="2.5" height="10" rx="1" fill="white" opacity="0.65"/>
+            <text x="30" y="67" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#2b3446">Salio</text>
+            <!-- Group title -->
+            <text x="12" y="86" font-family="Inter,sans-serif" font-size="6" font-weight="600" fill="#5f74bf" letter-spacing="0.8">MENU CHÍNH</text>
+            <!-- Item 1: Chat tài liệu (inactive) -->
+            <rect x="10" y="93" width="110" height="20" rx="6" fill="transparent"/>
+            <rect x="18" y="97" width="9" height="9" rx="2" fill="#c3d3ff"/>
+            <text x="32" y="106" font-family="Inter,sans-serif" font-size="7.5" fill="#47556b">Chat tài liệu</text>
+            <polyline points="111,99 115,102 111,105" fill="none" stroke="#d8dee7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Item 2: CRM & Công việc (ACTIVE) -->
+            <rect x="10" y="117" width="110" height="20" rx="6" fill="#edf1ff" stroke="#c3d3ff" stroke-width="1"/>
+            <rect x="18" y="121" width="9" height="9" rx="2" fill="#8ea7f5"/>
+            <text x="32" y="130" font-family="Inter,sans-serif" font-size="7.5" font-weight="600" fill="#5f74bf">CRM &amp; Công việc</text>
+            <polyline points="111,123 115,127 111,131" fill="none" stroke="#8ea7f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Sub-item: Deals Kanban (active) -->
+            <rect x="28" y="141" width="94" height="15" rx="4" fill="#edf1ff"/>
+            <circle cx="36" cy="148.5" r="2.5" fill="#8ea7f5"/>
+            <text x="42" y="153" font-family="Inter,sans-serif" font-size="7" font-weight="600" fill="#5f74bf">Deals Kanban</text>
+            <!-- Sub-item: Kiểm tra trùng -->
+            <circle cx="36" cy="166.5" r="2.5" fill="#d8dee7"/>
+            <text x="42" y="171" font-family="Inter,sans-serif" font-size="7" fill="#73839a">Kiểm tra trùng</text>
+            <!-- Separator -->
+            <line x1="10" y1="318" x2="120" y2="318" stroke="#e9edf2" stroke-width="1"/>
+            <!-- Cài đặt -->
+            <rect x="18" y="327" width="9" height="9" rx="2" fill="#d8dee7"/>
+            <text x="32" y="335" font-family="Inter,sans-serif" font-size="7.5" fill="#73839a">Cài đặt</text>
+
+            <!-- Main content area -->
+            <!-- Stat cards row -->
+            <rect x="148" y="56" width="108" height="60" rx="10" fill="white" filter="url(#cardShadow)"/>
+            <text x="160" y="71" font-family="Inter,sans-serif" font-size="8" fill="#667085">Doanh thu tháng</text>
+            <text x="160" y="88" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="#101828">₫1.24 tỷ</text>
+            <text x="160" y="102" font-family="Inter,sans-serif" font-size="8" fill="#12b76a">▲ 12.4% so tháng trước</text>
+            <circle cx="238" cy="71" r="10" fill="#ecf3ff"/>
+            <text x="238" y="75" font-family="Inter,sans-serif" font-size="11" text-anchor="middle" fill="#465fff">₫</text>
+
+            <rect x="268" y="56" width="108" height="60" rx="10" fill="white" filter="url(#cardShadow)"/>
+            <text x="280" y="71" font-family="Inter,sans-serif" font-size="8" fill="#667085">Deals đang mở</text>
+            <text x="280" y="88" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="#101828">142 deals</text>
+            <text x="280" y="102" font-family="Inter,sans-serif" font-size="8" fill="#f79009">▲ 8 deals mới hôm nay</text>
+            <circle cx="358" cy="71" r="10" fill="#ecfdf3"/>
+            <text x="358" y="75" font-family="Inter,sans-serif" font-size="11" text-anchor="middle" fill="#12b76a">✦</text>
+
+            <rect x="388" y="56" width="108" height="60" rx="10" fill="white" filter="url(#cardShadow)"/>
+            <text x="400" y="71" font-family="Inter,sans-serif" font-size="8" fill="#667085">Tỉ lệ chuyển đổi</text>
+            <text x="400" y="88" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="#101828">68.5%</text>
+            <text x="400" y="102" font-family="Inter,sans-serif" font-size="8" fill="#465fff">▲ 3.2% so tuần trước</text>
+            <circle cx="478" cy="71" r="10" fill="#fffaeb"/>
+            <text x="478" y="75" font-family="Inter,sans-serif" font-size="11" text-anchor="middle" fill="#f79009">%</text>
+
+            <rect x="508" y="56" width="118" height="60" rx="10" fill="#465fff"/>
+            <text x="520" y="71" font-family="Inter,sans-serif" font-size="8" fill="white" opacity="0.7">Khách hàng mới</text>
+            <text x="520" y="88" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="white">+38 KH</text>
+            <text x="520" y="102" font-family="Inter,sans-serif" font-size="8" fill="white" opacity="0.6">Mục tiêu: 50 KH / tháng</text>
+            <circle cx="606" cy="71" r="10" fill="white" opacity="0.2"/>
+            <text x="606" y="75" font-family="Inter,sans-serif" font-size="11" text-anchor="middle" fill="white">★</text>
+
+            <!-- Revenue chart card -->
+            <rect x="148" y="130" width="338" height="170" rx="12" fill="white" filter="url(#cardShadow)"/>
+            <text x="162" y="149" font-family="Inter,sans-serif" font-size="10" font-weight="700" fill="#101828">Doanh thu theo tháng</text>
+            <text x="162" y="161" font-family="Inter,sans-serif" font-size="8" fill="#667085">T1 – T8 · 2025</text>
+            <rect x="418" y="141" width="56" height="20" rx="6" fill="#ecf3ff"/>
+            <text x="446" y="155" font-family="Inter,sans-serif" font-size="8" font-weight="600" fill="#465fff" text-anchor="middle">8 tháng</text>
+            <!-- Y-axis labels -->
+            <text x="158" y="268" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="end">0</text>
+            <text x="158" y="248" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="end">200M</text>
+            <text x="158" y="228" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="end">500M</text>
+            <text x="158" y="208" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="end">800M</text>
+            <text x="158" y="190" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="end">1.2T</text>
+            <!-- X-axis labels -->
+            <text x="175" y="296" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="middle">T1</text>
+            <text x="213" y="296" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="middle">T2</text>
+            <text x="251" y="296" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="middle">T3</text>
+            <text x="289" y="296" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="middle">T4</text>
+            <text x="327" y="296" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="middle">T5</text>
+            <text x="365" y="296" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="middle">T6</text>
+            <text x="403" y="296" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="middle">T7</text>
+            <text x="441" y="296" font-family="Inter,sans-serif" font-size="7" fill="#667085" text-anchor="middle">T8</text>
+
+            <!-- Area chart -->
+            <polyline points="162,270 196,248 230,255 264,230 298,238 332,210 366,218 400,195 434,205 468,182" fill="none" stroke="#465fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M162,270 196,248 230,255 264,230 298,238 332,210 366,218 400,195 434,205 468,182 468,285 162,285 Z" fill="url(#areaGrad)"/>
+            <!-- Data points -->
+            <circle cx="332" cy="210" r="4" fill="#465fff"/>
+            <circle cx="468" cy="182" r="4" fill="#465fff"/>
+            <!-- Tooltip -->
+            <rect x="314" y="191" width="72" height="28" rx="6" fill="#101828"/>
+            <text x="350" y="202" font-family="Inter,sans-serif" font-size="7" fill="white" opacity="0.6" text-anchor="middle">Tháng 5</text>
+            <text x="350" y="214" font-family="Inter,sans-serif" font-size="9" font-weight="700" fill="white" text-anchor="middle">₫980M</text>
+            <polygon points="346,219 354,219 350,224" fill="#101828"/>
+            <!-- Grid lines -->
+            <line x1="162" y1="285" x2="468" y2="285" stroke="#f2f4f7" stroke-width="1"/>
+            <line x1="162" y1="265" x2="468" y2="265" stroke="#f2f4f7" stroke-width="1"/>
+            <line x1="162" y1="245" x2="468" y2="245" stroke="#f2f4f7" stroke-width="1"/>
+            <line x1="162" y1="225" x2="468" y2="225" stroke="#f2f4f7" stroke-width="1"/>
+            <line x1="162" y1="205" x2="468" y2="205" stroke="#f2f4f7" stroke-width="1"/>
+
+            <!-- Pipeline card -->
+            <rect x="498" y="130" width="128" height="170" rx="12" fill="white" filter="url(#cardShadow)"/>
+            <text x="510" y="149" font-family="Inter,sans-serif" font-size="10" font-weight="700" fill="#101828">Pipeline</text>
+            <text x="510" y="161" font-family="Inter,sans-serif" font-size="8" fill="#667085">142 deals · 4 giai đoạn</text>
+            <!-- Pipeline stages -->
+            <rect x="510" y="170" width="104" height="24" rx="6" fill="#ecf3ff"/>
+            <circle cx="522" cy="182" r="5" fill="#465fff"/>
+            <text x="532" y="180" font-family="Inter,sans-serif" font-size="8" font-weight="600" fill="#465fff">Tiếp cận</text>
+            <text x="532" y="190" font-family="Inter,sans-serif" font-size="7" fill="#667085">54 deals</text>
+            <text x="606" y="185" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#465fff" text-anchor="end">38%</text>
+
+            <rect x="510" y="200" width="104" height="24" rx="6" fill="#fffaeb"/>
+            <circle cx="522" cy="212" r="5" fill="#f79009"/>
+            <text x="532" y="210" font-family="Inter,sans-serif" font-size="8" font-weight="600" fill="#f79009">Demo / Báo giá</text>
+            <text x="532" y="220" font-family="Inter,sans-serif" font-size="7" fill="#667085">41 deals</text>
+            <text x="606" y="215" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#f79009" text-anchor="end">29%</text>
+
+            <rect x="510" y="230" width="104" height="24" rx="6" fill="#ecfdf3"/>
+            <circle cx="522" cy="242" r="5" fill="#12b76a"/>
+            <text x="532" y="240" font-family="Inter,sans-serif" font-size="8" font-weight="600" fill="#12b76a">Đàm phán</text>
+            <text x="532" y="250" font-family="Inter,sans-serif" font-size="7" fill="#667085">30 deals</text>
+            <text x="606" y="245" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#12b76a" text-anchor="end">21%</text>
+
+            <rect x="510" y="260" width="104" height="24" rx="6" fill="#f9fafb"/>
+            <circle cx="522" cy="272" r="5" fill="#d0d5dd"/>
+            <text x="532" y="270" font-family="Inter,sans-serif" font-size="8" font-weight="600" fill="#667085">Chờ ký HĐ</text>
+            <text x="532" y="280" font-family="Inter,sans-serif" font-size="7" fill="#667085">17 deals</text>
+            <text x="606" y="275" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#667085" text-anchor="end">12%</text>
+
+            <!-- Bottom bar chart card -->
+            <rect x="148" y="312" width="468" height="40" rx="10" fill="white" filter="url(#cardShadow)"/>
+            <text x="160" y="327" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#101828">Top Sales</text>
+            <text x="160" y="338" font-family="Inter,sans-serif" font-size="7" fill="#667085">Tuần này</text>
+            <!-- Mini bars -->
+            <rect x="222" y="322" width="10" height="18" rx="2" fill="url(#barGrad1)"/>
+            <rect x="236" y="328" width="10" height="12" rx="2" fill="url(#barGrad2)"/>
+            <rect x="250" y="318" width="10" height="22" rx="2" fill="url(#barGrad1)"/>
+            <rect x="264" y="325" width="10" height="15" rx="2" fill="url(#barGrad2)"/>
+            <rect x="278" y="320" width="10" height="20" rx="2" fill="url(#barGrad1)"/>
+            <rect x="292" y="326" width="10" height="14" rx="2" fill="url(#barGrad2)"/>
+            <rect x="306" y="317" width="10" height="23" rx="2" fill="url(#barGrad1)"/>
+            <!-- Sales rep progress -->
+            <text x="332" y="327" font-family="Inter,sans-serif" font-size="7" fill="#344054">Minh T.</text>
+            <rect x="360" y="321" width="90" height="5" rx="2.5" fill="#f2f4f7"/>
+            <rect x="360" y="321" width="72" height="5" rx="2.5" fill="#465fff" opacity="0.8"/>
+            <text x="456" y="327" font-family="Inter,sans-serif" font-size="7" font-weight="700" fill="#465fff">₫420M</text>
+            <text x="332" y="340" font-family="Inter,sans-serif" font-size="7" fill="#344054">Hà P.</text>
+            <rect x="360" y="334" width="90" height="5" rx="2.5" fill="#f2f4f7"/>
+            <rect x="360" y="334" width="60" height="5" rx="2.5" fill="#12b76a" opacity="0.8"/>
+            <text x="456" y="340" font-family="Inter,sans-serif" font-size="7" font-weight="700" fill="#12b76a">₫350M</text>
+            <text x="510" y="327" font-family="Inter,sans-serif" font-size="7" fill="#667085">Mục tiêu:</text>
+            <text x="510" y="338" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#101828">₫500M</text>
+            <text x="560" y="327" font-family="Inter,sans-serif" font-size="7" fill="#667085">Đạt được:</text>
+            <text x="560" y="338" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#465fff">84%</text>
+          </svg>
+          <div class="absolute inset-0 bg-gradient-to-t from-primary-500/10 to-transparent pointer-events-none rounded-2xl"></div>
         </div>
       </div>
 

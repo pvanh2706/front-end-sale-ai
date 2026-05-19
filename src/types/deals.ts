@@ -41,6 +41,7 @@ export interface DealCard {
   id: string
   title: string
   company: string
+  contactName?: string
   value: string
   source: string
   aiScore?: number | null
@@ -48,6 +49,15 @@ export interface DealCard {
   isLost?: boolean
   hasActions?: boolean
   assignees?: number[]
+  assigneeName?: string
+  assigneeColor?: string
+  lastActivityAt?: string
+  closeDate?: string
+  isOverdue?: boolean
+  phone?: string
+  email?: string
+  commentCount?: number
+  notificationCount?: number
   updatedAt?: string
   isOptimistic?: boolean
 }

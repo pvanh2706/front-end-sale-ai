@@ -69,6 +69,7 @@
                   class="text-gray-500 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
                   aria-label="Xem tài liệu"
                   title="Xem tài liệu"
+                  @click="showSourcesDialog = true"
                 >
                   <Eye class="h-4 w-4" />
                 </Button>
@@ -202,6 +203,92 @@
     </div>
   </AdminLayout>
 
+  <!-- Dialog xem tài liệu & trích dẫn -->
+  <Dialog v-model:open="showSourcesDialog">
+    <DialogContent class="sm:max-w-xl">
+      <DialogHeader>
+        <DialogTitle class="flex items-center gap-2">
+          <Eye class="h-5 w-5 text-primary-500" />
+          Tài liệu & Trích dẫn
+        </DialogTitle>
+        <DialogDescription>
+          Tài liệu AI đang sử dụng và các đoạn trích dẫn trong cuộc hội thoại này.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div class="space-y-5 py-1">
+        <!-- Tài liệu đang chat -->
+        <div>
+          <p class="mb-2 text-theme-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tài liệu đang chat</p>
+          <div class="flex items-center gap-3 rounded-xl border border-primary-100 bg-primary-50 px-4 py-3 dark:border-primary-500/30 dark:bg-primary-500/10">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-500/20">
+              <FileText class="h-5 w-5 text-primary-600 dark:text-primary-400" />
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-theme-sm font-medium text-gray-900 dark:text-white">
+                {{ selectedContextNode ? selectedContextNode.name : 'Tất cả tài liệu được phép truy cập' }}
+              </p>
+              <p class="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">
+                {{ selectedContextNode ? (selectedContextNode.type === 'folder' ? 'Thư mục' : 'Tài liệu') : 'Context mặc định' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trích dẫn theo từng tin nhắn AI -->
+        <div>
+          <p class="mb-2 text-theme-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Trích dẫn nội dung</p>
+
+          <div v-if="aiMessagesWithSources.length" class="custom-scrollbar max-h-72 space-y-3 overflow-y-auto pr-1">
+            <div
+              v-for="msg in aiMessagesWithSources"
+              :key="msg.id"
+              class="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800/60"
+            >
+              <p class="mb-2 line-clamp-2 text-theme-xs italic text-gray-600 dark:text-gray-400">
+                "{{ msg.content }}"
+              </p>
+              <div class="flex flex-wrap gap-1.5">
+                <div
+                  v-for="source in msg.sources"
+                  :key="source.id ?? source.label"
+                  class="inline-flex items-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 text-theme-xs font-medium text-primary-700 dark:border-primary-500/30 dark:bg-primary-500/10 dark:text-primary-300"
+                >
+                  <FileText class="h-3 w-3" />
+                  {{ source.label }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="rounded-xl border border-dashed border-gray-300 px-4 py-6 text-center dark:border-gray-700">
+            <FileText class="mx-auto mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" />
+            <p class="text-theme-sm text-gray-500 dark:text-gray-400">Chưa có trích dẫn nào trong cuộc hội thoại này.</p>
+          </div>
+        </div>
+
+        <!-- Tất cả nguồn duy nhất -->
+        <div v-if="allUniqueSources.length">
+          <p class="mb-2 text-theme-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Tất cả nguồn sử dụng ({{ allUniqueSources.length }})</p>
+          <div class="flex flex-wrap gap-2">
+            <span
+              v-for="source in allUniqueSources"
+              :key="source.id ?? source.label"
+              class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-theme-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            >
+              <FileText class="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+              {{ source.label }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" @click="showSourcesDialog = false">Đóng</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
   <!-- Dialog xuất chat -->
   <ExportChatDialog v-model:open="showExportDialog" />
 
@@ -236,6 +323,50 @@
           </div>
           <Switch v-model:checked="settingsSendOnEnter" />
         </div>
+
+        <div class="rounded-lg border border-error-200 bg-error-50 px-3 py-3 dark:border-error-500/30 dark:bg-error-500/10">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-theme-sm font-medium text-error-700 dark:text-error-400">Xoá toàn bộ lịch sử chat</p>
+              <p class="text-theme-xs text-error-500 dark:text-error-400/80">Không thể hoàn tác sau khi xoá.</p>
+            </div>
+            <Button
+              v-if="!showDeleteHistoryConfirm"
+              type="button"
+              variant="outline"
+              size="sm"
+              class="border-error-300 text-error-600 hover:bg-error-100 hover:text-error-700 dark:border-error-500/40 dark:text-error-400 dark:hover:bg-error-500/20"
+              @click="showDeleteHistoryConfirm = true"
+            >
+              <Trash2 class="mr-1.5 h-3.5 w-3.5" />
+              Xoá lịch sử
+            </Button>
+          </div>
+
+          <div v-if="showDeleteHistoryConfirm" class="mt-3 flex items-center justify-end gap-2 border-t border-error-200 pt-3 dark:border-error-500/20">
+            <p class="mr-auto text-theme-xs font-medium text-error-700 dark:text-error-400">Bạn chắc chắn muốn xoá?</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="text-gray-600 hover:text-gray-800 dark:text-gray-400"
+              :disabled="isDeletingAllHistory"
+              @click="showDeleteHistoryConfirm = false"
+            >
+              Huỷ
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              class="bg-error-500 text-white hover:bg-error-600"
+              :disabled="isDeletingAllHistory"
+              @click="deleteAllHistory"
+            >
+              <LoaderCircle v-if="isDeletingAllHistory" class="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              Xác nhận xoá
+            </Button>
+          </div>
+        </div>
       </div>
 
       <DialogFooter>
@@ -269,6 +400,7 @@ import LibraryTree from '@/components/library/LibraryTree.vue'
 import ExportChatDialog from '@/views/Chat/ExportChatDialog.vue'
 import ShareChatDialog from '@/views/Chat/ShareChatDialog.vue'
 import {
+  deleteAllConversations,
   fetchChatConversations,
   fetchConversationMessages,
   pickAssistantText,
@@ -313,6 +445,9 @@ const isSending = ref(false)
 const showExportDialog = ref(false)
 const showShareDialog = ref(false)
 const showSettingsDialog = ref(false)
+const showSourcesDialog = ref(false)
+const showDeleteHistoryConfirm = ref(false)
+const isDeletingAllHistory = ref(false)
 const settingsShowSources = ref(true)
 const settingsSendOnEnter = ref(true)
 const CHAT_CONVERSATIONS_STALE_TIME_MS = 30_000
@@ -387,6 +522,15 @@ watch(
 )
 
 watch(
+  () => showSettingsDialog.value,
+  (open) => {
+    if (!open) {
+      showDeleteHistoryConfirm.value = false
+    }
+  },
+)
+
+watch(
   () => messagesQuery.error.value,
   (error) => {
     if (error instanceof Error) {
@@ -411,6 +555,25 @@ const conversationList = computed(() => {
 
 const isConversationsLoading = computed(() => conversationsQuery.isLoading.value)
 const isMessagesLoading = computed(() => messagesQuery.isLoading.value)
+
+const aiMessagesWithSources = computed(() =>
+  displayMessages.value.filter((m) => m.role === 'ai' && m.sources && m.sources.length > 0),
+)
+
+const allUniqueSources = computed(() => {
+  const seen = new Set<string>()
+  const result: ChatSource[] = []
+  for (const msg of aiMessagesWithSources.value) {
+    for (const src of msg.sources ?? []) {
+      const key = src.id ?? src.label
+      if (!seen.has(key)) {
+        seen.add(key)
+        result.push(src)
+      }
+    }
+  }
+  return result
+})
 
 onMounted(() => {
   void libraryStore.fetchTree()
@@ -563,6 +726,28 @@ function handleTreeExpand(node: LibraryNode): void {
 
 function clearChatContext(): void {
   selectedContextNode.value = null
+}
+
+async function deleteAllHistory(): Promise<void> {
+  isDeletingAllHistory.value = true
+  try {
+    const result = await deleteAllConversations()
+    if (!isSuccess(result)) {
+      toast.error(result.error || 'Không thể xoá lịch sử chat')
+      return
+    }
+    displayMessages.value = []
+    selectedConversationId.value = null
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] }),
+      queryClient.invalidateQueries({ queryKey: ['chat', 'messages'] }),
+    ])
+    showDeleteHistoryConfirm.value = false
+    showSettingsDialog.value = false
+    toast.success('Đã xoá toàn bộ lịch sử chat')
+  } finally {
+    isDeletingAllHistory.value = false
+  }
 }
 
 function handleComposerKeydown(event: KeyboardEvent): void {

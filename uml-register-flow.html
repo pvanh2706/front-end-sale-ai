@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>UML Luồng Đăng Ký — Salio</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      padding: 32px 24px;
+      min-height: 100vh;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+    .header p {
+      font-size: 13px;
+      color: #667085;
+      margin-top: 6px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(70,95,255,0.10);
+      padding: 32px;
+      max-width: 960px;
+      margin: 0 auto 24px;
+      overflow-x: auto;
+    }
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+    .btn-svg  { background: #465fff; color: #fff; }
+    .btn-png  { background: #12b76a; color: #fff; }
+    .legend {
+      max-width: 960px;
+      margin: 24px auto 0;
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 28px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .legend h2 { font-size: 15px; font-weight: 700; color: #344054; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #f2f4f7; color: #344054; font-weight: 600; text-align: left; padding: 8px 12px; }
+    td { padding: 8px 12px; border-top: 1px solid #e4e7ec; color: #344054; vertical-align: top; }
+    code { background: #f2f4f7; border-radius: 4px; padding: 2px 6px; font-size: 12px; color: #465fff; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .post  { background: #ecf3ff; color: #465fff; }
+    .mock  { background: #fffaeb; color: #f79009; }
+    .oauth { background: #ecfdf3; color: #12b76a; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>UML — Luồng Đăng Ký (Register Flow)</h1>
+  <p>Salio Sales AI · Sequence Diagram · Bao gồm API endpoints</p>
+</div>
+
+<div class="card">
+  <div class="mermaid" id="diagram">
+sequenceDiagram
+    actor User as Nguoi dung
+    participant UI as RegisterView.vue
+    participant Zod as Zod Validation
+    participant Store as useAuthStore
+    participant API as api.ts (Axios)
+    participant BE as Backend /api
+    participant OAuth as Google / Microsoft
+
+    User->>UI: Nhap form (fullName, email, companyName, password, confirmPassword)
+    UI->>UI: Real-time password strength
+    User->>UI: Tick checkbox "Dong y dieu khoan"
+    User->>UI: Nhan "Tao tai khoan"
+
+    UI->>Zod: Validate toan bo form
+    alt Validation that bai
+        Zod-->>UI: Loi tung field (min length, email format...)
+        UI-->>User: Hien thi FormMessage inline
+    end
+    Zod-->>UI: Pass - Du lieu hop le
+
+    UI->>API: POST /api/auth/check-email
+    Note right of API: body: { email }
+    API->>BE: POST /api/auth/check-email
+    BE-->>API: { exists: boolean }
+
+    alt Email da ton tai
+        API-->>UI: { exists: true }
+        UI-->>User: Mo EmailConflictDialog
+        User->>UI: Chon "Chuyen den dang nhap"
+        UI->>UI: router.push("/login")
+    end
+
+    UI->>API: POST /api/auth/register
+    Note right of API: body: { fullName, email, companyName, password }
+    API->>BE: POST /api/auth/register
+    BE->>BE: Hash password + Tao user + Tao org
+    BE-->>API: { isSuccess: true, data: { userId, token } }
+
+    alt Loi server (500 / conflict)
+        BE-->>API: { isSuccess: false, error: "..." }
+        API-->>UI: ApiResponse error
+        UI-->>User: toast.error("Da xay ra loi")
+    end
+
+    API-->>UI: ApiResponse success
+    UI->>Store: Luu token vao localStorage
+    UI-->>User: toast.success("Tao tai khoan thanh cong!")
+    UI->>UI: router.push("/login")
+
+    Note over User,OAuth: Hoac dang ky qua SSO
+    User->>UI: Nhan nut Google hoac Microsoft
+    UI->>OAuth: Redirect OAuth consent screen
+    OAuth-->>UI: OAuth callback + id_token
+    UI->>API: POST /api/auth/oauth
+    Note right of API: body: { provider, id_token }
+    API->>BE: POST /api/auth/oauth
+    BE-->>API: { isSuccess: true, data: { token, user } }
+    API-->>UI: Token + user info
+    UI->>Store: Luu token
+    UI->>UI: router.push("/chat-dashboard")
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="btn-svg" onclick="downloadSVG()">⬇ Tải SVG</button>
+  <button class="btn-png" onclick="downloadPNG()">⬇ Tải PNG</button>
+</div>
+
+<div class="legend">
+  <h2>API Endpoints — Chi tiết</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Bước</th>
+        <th>Endpoint</th>
+        <th>Method</th>
+        <th>Request Body</th>
+        <th>Response</th>
+        <th>Trạng thái</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Kiểm tra email trùng</td>
+        <td><code>/api/auth/check-email</code></td>
+        <td><span class="badge post">POST</span></td>
+        <td><code>{ email }</code></td>
+        <td><code>{ exists: boolean }</code></td>
+        <td><span class="badge mock">Cần implement</span></td>
+      </tr>
+      <tr>
+        <td>Tạo tài khoản</td>
+        <td><code>/api/auth/register</code></td>
+        <td><span class="badge post">POST</span></td>
+        <td><code>{ fullName, email, companyName, password }</code></td>
+        <td><code>{ isSuccess, data: { userId, token } }</code></td>
+        <td><span class="badge mock">Cần implement</span></td>
+      </tr>
+      <tr>
+        <td>Đăng ký qua Google/Microsoft</td>
+        <td><code>/api/auth/oauth</code></td>
+        <td><span class="badge post">POST</span></td>
+        <td><code>{ provider: "google"|"microsoft", id_token }</code></td>
+        <td><code>{ isSuccess, data: { token, user } }</code></td>
+        <td><span class="badge oauth">Planned</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:16px; font-size:12px; color:#667085;">
+    <b>Format chuẩn ApiResponse&lt;T&gt;:</b>
+    <code style="display:block;margin-top:6px;padding:10px;background:#f9fafb;border-radius:6px;color:#344054;">
+      { isSuccess: boolean, data?: T, error?: string }
+    </code>
+    <div style="margin-top:10px;">
+      <b>Auth header (tự động qua interceptor):</b>
+      <code style="display:block;margin-top:6px;padding:10px;background:#f9fafb;border-radius:6px;color:#344054;">
+        Authorization: Bearer {token}  ← lấy từ localStorage
+      </code>
+    </div>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', sequence: { actorMargin: 60, width: 160, height: 60, noteMargin: 10 } });
+
+  async function waitForDiagram() {
+    return new Promise(resolve => {
+      const check = setInterval(() => {
+        const svg = document.querySelector('#diagram svg');
+        if (svg) { clearInterval(check); resolve(svg); }
+      }, 200);
+    });
+  }
+
+  async function downloadSVG() {
+    const svg = await waitForDiagram();
+    const data = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([data], { type: 'image/svg+xml' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'salio-register-flow.svg';
+    a.click();
+  }
+
+  async function downloadPNG() {
+    const svg = await waitForDiagram();
+    const data = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    const svgBlob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = svg.getBoundingClientRect().width * 2;
+      canvas.height = svg.getBoundingClientRect().height * 2;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(2, 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      const a = document.createElement('a');
+      a.download = 'salio-register-flow.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    };
+    img.src = url;
+  }
+</script>
+</body>
+</html>

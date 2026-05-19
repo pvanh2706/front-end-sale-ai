@@ -43,12 +43,7 @@ const router = createRouter({
                     component: () => import('../views/DocLibrary/DocLibraryView.vue'),
                     meta: { title: 'Thư viện tài liệu' },
                 },
-                {
-                    path: 'analytics',
-                    name: 'chat-analytics',
-                    component: () => import('../views/Chat/ChatAnalyticsView.vue'),
-                    meta: { title: 'Phân tích sử dụng' },
-                },
+
             ],
         },
         {
@@ -141,6 +136,11 @@ const router = createRouter({
                     path: 'permission-groups',
                     name: 'PermissionGroups',
                     component: () => import('@/views/Settings/PermissionGroupsSettings.vue'),
+                },
+                {
+                    path: 'create-member',
+                    name: 'CreateMember',
+                    component: () => import('@/views/Settings/CreateMemberSettings.vue'),
                 },
             ],
         },

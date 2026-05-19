@@ -52,6 +52,10 @@
               <UsersRound class="h-4 w-4" />
               <span>Nhóm quyền</span>
             </RouterLink>
+            <RouterLink to="/settings/create-member" class="settings-nav-item">
+              <UserPlus class="h-4 w-4" />
+              <span>Tạo tài khoản</span>
+            </RouterLink>
           </nav>
         </aside>
 
@@ -64,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { Bell, ChevronLeft, FileWarning, Globe, Palette, Plug, ShieldCheck, User, UsersRound } from 'lucide-vue-next'
+import { Bell, ChevronLeft, FileWarning, Globe, Palette, Plug, ShieldCheck, User, UserPlus, UsersRound } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 </script>
 

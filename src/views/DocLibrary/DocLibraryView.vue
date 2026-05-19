@@ -57,24 +57,6 @@
         </div>
 
         <!-- Footer panel -->
-        <div class="border-t border-gray-200 dark:border-gray-800 p-3 flex flex-col gap-1">
-          <button
-            v-for="foot in footerNav"
-            :key="foot.label"
-            type="button"
-            class="flex items-center gap-3 rounded-lg px-3 py-2 text-theme-sm text-gray-600 hover:bg-gray-200/60 dark:text-gray-400 dark:hover:bg-white/5 w-full text-left transition-colors"
-          >
-            <component :is="foot.icon" class="h-4 w-4 shrink-0" />
-            <span>{{ foot.label }}</span>
-          </button>
-          <Button
-            variant="outline"
-            class="mt-2 w-full gap-2 text-theme-sm"
-          >
-            <UserPlus class="h-4 w-4" />
-            Mời thành viên
-          </Button>
-        </div>
       </aside>
 
       <!-- ───── Vùng nội dung chính ───── -->
@@ -100,19 +82,19 @@
               <Pencil class="h-4 w-4" />
               <span class="hidden lg:inline">Chỉnh sửa</span>
             </Button>
-            <Button variant="ghost" size="sm" class="gap-1.5 text-gray-600 dark:text-gray-400" @click="openShareDialog">
-              <Share2 class="h-4 w-4" />
-              <span class="hidden lg:inline">Chia sẻ</span>
-            </Button>
+            <div
+              v-if="currentRootType === 'company'"
+              class="hidden items-center gap-1.5 rounded-full border border-success-200 bg-success-50 px-3 py-1 text-theme-xs font-medium text-success-700 dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-400 lg:flex"
+            >
+              <CheckCircle2 class="h-3.5 w-3.5" />
+              Đã phê duyệt &amp; ban hành
+            </div>
             <Button
               size="sm"
               class="bg-primary-500 text-white hover:bg-primary-600"
               @click="handleSave"
             >
               Lưu
-            </Button>
-            <Button variant="ghost" size="icon-sm" class="text-gray-500">
-              <MoreVertical class="h-4 w-4" />
             </Button>
           </div>
         </header>
@@ -175,9 +157,98 @@
             </template>
           </section>
 
+          <!-- Folder contents (has children) -->
+          <section
+            v-if="selectedLibraryNode?.type === 'folder' && selectedLibraryNode.children.length > 0"
+            class="space-y-10"
+          >
+            <!-- Sub-folders list -->
+            <div v-if="folderChildren.length > 0">
+              <div class="mb-4 flex items-center gap-2">
+                <FolderOpen class="h-5 w-5 text-brand-500" />
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                  Thư mục con
+                  <span class="ml-1.5 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-500 dark:bg-brand-500/10">
+                    {{ folderChildren.length }}
+                  </span>
+                </h3>
+              </div>
+              <div class="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white dark:divide-gray-800 dark:border-gray-800 dark:bg-gray-900">
+                <button
+                  v-for="child in folderChildren"
+                  :key="child.id"
+                  type="button"
+                  class="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                  @click="handleTreeSelect(child)"
+                >
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 transition-colors group-hover:bg-brand-100 dark:bg-brand-500/10 dark:group-hover:bg-brand-500/20">
+                    <FolderOpen class="h-5 w-5 text-brand-500" />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium text-gray-900 group-hover:text-brand-500 dark:text-white">
+                      {{ child.name }}
+                    </p>
+                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ child.children.length > 0 ? `${child.children.length} mục` : child.total_children ? `${child.total_children} mục` : 'Thư mục' }}
+                    </p>
+                  </div>
+                  <ChevronRight class="h-4 w-4 shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-500" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Documents list -->
+            <div>
+              <div class="mb-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <FileText class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                    Tài liệu
+                    <span class="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                      {{ documentChildren.length }}
+                    </span>
+                  </h3>
+                </div>
+                <Button
+                  size="sm"
+                  class="gap-1.5 bg-primary-500 text-white hover:bg-primary-600"
+                  @click="openAddDocumentDialog"
+                >
+                  <Plus class="h-4 w-4" />
+                  Thêm tài liệu
+                </Button>
+              </div>
+              <div
+                v-if="documentChildren.length > 0"
+                class="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white dark:divide-gray-800 dark:border-gray-800 dark:bg-gray-900"
+              >
+                <button
+                  v-for="doc in documentChildren"
+                  :key="doc.id"
+                  type="button"
+                  class="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                  @click="handleTreeSelect(doc)"
+                >
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-brand-50 dark:bg-gray-800 dark:group-hover:bg-brand-500/10">
+                    <FileText class="h-5 w-5 text-gray-400 group-hover:text-brand-500 dark:text-gray-500" />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium text-gray-900 group-hover:text-brand-500 dark:text-white">
+                      {{ doc.name }}
+                    </p>
+                    <p v-if="doc.updated_at" class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                      Cập nhật: {{ formatDate(doc.updated_at) }}
+                    </p>
+                  </div>
+                  <ChevronRight class="h-4 w-4 shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-500" />
+                </button>
+              </div>
+            </div>
+          </section>
+
           <!-- Empty state -->
           <section
-            v-if="!selectedLibraryNode || selectedLibraryNode.type === 'folder' || !currentFileUrl"
+            v-if="showEmptyState"
             class="flex flex-col items-center justify-center py-16 text-center"
           >
             <div class="mb-6 flex h-52 w-52 items-center justify-center rounded-3xl border-2 border-dashed border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
@@ -197,66 +268,6 @@
             </Button>
           </section>
 
-          <!-- Footer bài viết -->
-          <footer v-if="selectedLibraryNode" class="mt-16 border-t border-gray-200 pt-10 dark:border-gray-800">
-            <!-- Like / Comment / View -->
-            <div class="mb-8 flex items-center gap-6">
-              <button
-                type="button"
-                class="flex items-center gap-2 text-theme-sm text-gray-500 hover:text-primary-500 transition-colors dark:text-gray-400"
-                @click="liked = !liked"
-              >
-                <ThumbsUp class="h-5 w-5" :class="liked ? 'text-primary-500' : ''" />
-                <span>{{ liked ? 'Đã thích' : 'Thích' }}</span>
-              </button>
-              <button type="button" class="flex items-center gap-2 text-theme-sm text-gray-500 hover:text-primary-500 transition-colors dark:text-gray-400">
-                <MessageSquare class="h-5 w-5" />
-                <span>{{ commentCount }} bình luận</span>
-              </button>
-              <span class="flex items-center gap-2 text-theme-sm text-gray-500 dark:text-gray-400">
-                <Eye class="h-5 w-5" />
-                <span>{{ viewCount }} lượt xem</span>
-              </span>
-            </div>
-
-            <!-- Ô bình luận -->
-            <div class="flex gap-4">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-theme-sm font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
-                QT
-              </div>
-              <div class="flex-1">
-                <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 focus-within:border-primary-300 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all dark:border-gray-700 dark:bg-gray-900">
-                  <Textarea
-                    v-model="commentText"
-                    :rows="3"
-                    placeholder="Viết bình luận của bạn..."
-                    class="bg-transparent border-none shadow-none focus-visible:ring-0 resize-none p-0 text-theme-sm text-gray-700 dark:text-gray-200"
-                  />
-                  <div class="mt-3 flex items-center justify-between">
-                    <div class="flex items-center gap-2 text-gray-400">
-                      <button type="button" class="rounded p-1 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                        <Bold class="h-4 w-4" />
-                      </button>
-                      <button type="button" class="rounded p-1 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                        <Italic class="h-4 w-4" />
-                      </button>
-                      <button type="button" class="rounded p-1 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                        <Paperclip class="h-4 w-4" />
-                      </button>
-                    </div>
-                    <Button
-                      size="sm"
-                      class="bg-primary-500 text-white hover:bg-primary-600"
-                      :disabled="!commentText.trim()"
-                      @click="handleSendComment"
-                    >
-                      Gửi bình luận
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </footer>
         </article>
       </main>
     </div>
@@ -718,23 +729,17 @@ import {
   Download,
   Eye,
   FileText,
-  GitBranch,
-  HelpCircle,
-  Italic,
+  FolderOpen,
   Loader2,
   Mail,
   MessageSquare,
-  MoreVertical,
   Paperclip,
   Pencil,
   Plus,
   Share2,
   Shield,
-  ThumbsUp,
-  Trash2,
   UserRound,
   Users,
-  UserPlus,
   X,
 } from 'lucide-vue-next'
 
@@ -778,16 +783,29 @@ interface PageInfo {
 }
 
 const router = useRouter()
+const currentRootType = computed(() => selectedLibraryNode.value?.root_type ?? null)
+
 const emptyDescription = computed(() => {
   if (!selectedLibraryNode.value) return 'Chọn thư mục hoặc tài liệu trong cây bên trái để xem nội dung.'
   if (selectedLibraryNode.value.type === 'folder') return 'Thư mục này chưa có tài liệu nào. Bấm "Thêm tài liệu" để tải lên.'
   return 'Tài liệu này chưa có tệp đính kèm. Bấm "Thêm tài liệu" để tải lên.'
 })
 
-const footerNav = [
-  { label: 'Trung tâm hỗ trợ', icon: HelpCircle },
-  { label: 'Thùng rác', icon: Trash2 },
-]
+const folderChildren = computed<LibraryNode[]>(() =>
+  selectedLibraryNode.value?.children.filter((c) => c.type === 'folder') ?? [],
+)
+
+const documentChildren = computed<LibraryNode[]>(() =>
+  selectedLibraryNode.value?.children.filter((c) => c.type === 'document') ?? [],
+)
+
+const showEmptyState = computed(() => {
+  const node = selectedLibraryNode.value
+  if (!node) return true
+  if (node.type === 'folder') return node.children.length === 0
+  return !currentFileUrl.value
+})
+
 
 const libraryStore = useLibraryStore()
 const selectedLibraryNode = ref<LibraryNode | null>(null)
@@ -1305,20 +1323,6 @@ function handleSave() {
 }
 
 // ─── Page content ────────────────────────────────────────────
-
-// ─── Footer ──────────────────────────────────────────────────
-
-const liked = ref(false)
-const commentCount = ref(12)
-const viewCount = ref(245)
-const commentText = ref('')
-
-function handleSendComment() {
-  if (!commentText.value.trim()) return
-  commentCount.value++
-  commentText.value = ''
-  toast.success('Đã gửi bình luận')
-}
 
 function findNodeById(nodes: LibraryNode[], targetId: string): LibraryNode | null {
   for (const node of nodes) {

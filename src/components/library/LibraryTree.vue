@@ -224,7 +224,7 @@
               @click.stop
             >
               <button
-                v-if="item.node.type === 'folder'"
+                v-if="item.node.type === 'folder' && item.level < 4"
                 type="button"
                 title="Thêm thư mục con"
                 class="inline-flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-500/20 dark:hover:text-primary-400"

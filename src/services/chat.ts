@@ -51,6 +51,10 @@ export function deleteSession(sessionId: string): Promise<ApiResponse<{ ok: true
   return post<{ ok: true; id: string }>(`/v1/chats/${sessionId}/delete`)
 }
 
+export function deleteAllConversations(): Promise<ApiResponse<{ ok: true; deleted: number }>> {
+  return post<{ ok: true; deleted: number }>('/chat/conversations/delete-all')
+}
+
 export function fetchConversationMessages(conversationId: string): Promise<ApiResponse<ChatMessage[]>> {
   return get<ChatMessage[]>(`${CHAT_CONVERSATIONS_ENDPOINT}/${conversationId}/messages`)
 }
