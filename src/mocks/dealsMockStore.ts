@@ -100,7 +100,7 @@ const store = reactive<{ deals: Deal[] }>({
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STAGE_META: Record<DealStage, { name: string; color: string }> = {
-  new:         { name: 'Mới',              color: '#6B7280' },
+  new:         { name: 'Mới',              color: '#64748B' },
   preparing:   { name: 'Đang chuẩn bị',   color: '#3B82F6' },
   contacted:   { name: 'Đã liên hệ',      color: '#06B6D4' },
   negotiating: { name: 'Đàm phán',        color: '#F59E0B' },

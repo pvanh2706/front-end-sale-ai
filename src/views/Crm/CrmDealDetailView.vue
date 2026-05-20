@@ -3,6 +3,16 @@
     <div class="-m-4 md:-m-6 flex items-start gap-0 min-h-[calc(100vh-64px)]">
       <!-- ===== LEFT SIDEBAR (30%) ===== -->
       <aside class="hidden lg:flex w-[30%] min-w-[280px] max-w-[380px] flex-col gap-4 p-5 sticky top-0 h-[calc(100vh-64px)] overflow-y-auto border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <!-- Back to Kanban -->
+        <button
+          type="button"
+          class="flex items-center gap-2 self-start rounded-lg px-3 py-1.5 text-theme-sm font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+          @click="router.push('/crm-deals')"
+        >
+          <ArrowLeft class="h-4 w-4" />
+          Quay lại Kanban
+        </button>
+
         <!-- Deal Summary Card -->
         <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-theme-xs p-5">
           <!-- Avatar + title -->
@@ -181,11 +191,12 @@
               v-for="(stage, idx) in stages.slice(0, -1)"
               :key="stage.id"
               class="stage-chevron flex min-w-[110px] items-center justify-center px-4 py-2 text-[11px] font-medium cursor-pointer transition-all"
-              :class="stage.current
-                ? 'bg-brand-500 text-white'
+              :class="!stage.current && idx >= currentStageIndex ? 'bg-gray-100 dark:bg-gray-800 text-gray-400' : ''"
+              :style="stage.current
+                ? { background: STAGE_COLOR[stage.id as DealStage], color: '#fff' }
                 : idx < currentStageIndex
-                  ? 'bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400'"
+                  ? { background: STAGE_COLOR[stage.id as DealStage] + '28', color: STAGE_COLOR[stage.id as DealStage] }
+                  : {}"
               @click="handleStageClick(stage)"
             >
               <Flag v-if="stage.current" class="mr-1 h-3 w-3" />
@@ -385,7 +396,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { Flag, Mail, MessageSquare, Phone, Save, Sparkles, SquareCheckBig, Trash2 } from 'lucide-vue-next'
+import { ArrowLeft, Flag, Mail, MessageSquare, Phone, Save, Sparkles, SquareCheckBig, Trash2 } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -436,6 +447,16 @@ const stageLabel: Record<DealStage, string> = {
   quoted: 'Báo giá',
   won: 'Thành công',
   lost: 'Thất bại',
+}
+
+const STAGE_COLOR: Record<DealStage, string> = {
+  new: '#64748B',
+  preparing: '#3B82F6',
+  contacted: '#06B6D4',
+  negotiating: '#F59E0B',
+  quoted: '#8B5CF6',
+  won: '#10B981',
+  lost: '#EF4444',
 }
 
 const stageOrder: DealStage[] = ['new', 'preparing', 'contacted', 'negotiating', 'quoted', 'won', 'lost']

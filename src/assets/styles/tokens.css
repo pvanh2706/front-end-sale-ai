@@ -12,4 +12,88 @@
   --color-success: #73c293;
   --color-warning: #cfa462;
   --color-error: #d9857d;
+
+  /* ── Deal Kanban: Stage Colors (light) ────────────────────── */
+  --deal-new-bg: #CBD5E1;
+  --deal-new-text: #1E293B;
+  --deal-new-border: #64748B;
+
+  --deal-preparing-bg: #93C5FD;
+  --deal-preparing-text: #1E3A8A;
+  --deal-preparing-border: #3B82F6;
+
+  --deal-contacted-bg: #67E8F9;
+  --deal-contacted-text: #164E63;
+  --deal-contacted-border: #06B6D4;
+
+  --deal-negotiating-bg: #FCD34D;
+  --deal-negotiating-text: #78350F;
+  --deal-negotiating-border: #F59E0B;
+
+  --deal-quoted-bg: #C4B5FD;
+  --deal-quoted-text: #3B0764;
+  --deal-quoted-border: #8B5CF6;
+
+  --deal-won-bg: #6EE7B7;
+  --deal-won-text: #022C22;
+  --deal-won-border: #10B981;
+
+  --deal-lost-bg: #FCA5A5;
+  --deal-lost-text: #7F1D1D;
+  --deal-lost-border: #EF4444;
+
+  /* ── Deal Kanban: Source Badge Colors ─────────────────────── */
+  --source-inbound-bg: #ECFDF5;
+  --source-inbound-text: #065F46;
+  --source-outbound-bg: #FEF3C7;
+  --source-outbound-text: #92400E;
+  --source-referral-bg: #F5F3FF;
+  --source-referral-text: #5B21B6;
+  --source-website-bg: #EFF6FF;
+  --source-website-text: #1E40AF;
+  --source-event-bg: #FCE7F3;
+  --source-event-text: #9F1239;
+}
+
+.dark {
+  /* ── Deal Kanban: Stage Colors (dark) ─────────────────────── */
+  --deal-new-bg: rgba(100, 116, 139, 0.18);
+  --deal-new-text: #94A3B8;
+  --deal-new-border: #475569;
+
+  --deal-preparing-bg: rgba(59, 130, 246, 0.14);
+  --deal-preparing-text: #93C5FD;
+  --deal-preparing-border: #3B82F6;
+
+  --deal-contacted-bg: rgba(6, 182, 212, 0.14);
+  --deal-contacted-text: #67E8F9;
+  --deal-contacted-border: #06B6D4;
+
+  --deal-negotiating-bg: rgba(245, 158, 11, 0.14);
+  --deal-negotiating-text: #FCD34D;
+  --deal-negotiating-border: #F59E0B;
+
+  --deal-quoted-bg: rgba(139, 92, 246, 0.14);
+  --deal-quoted-text: #C4B5FD;
+  --deal-quoted-border: #8B5CF6;
+
+  --deal-won-bg: rgba(16, 185, 129, 0.14);
+  --deal-won-text: #6EE7B7;
+  --deal-won-border: #10B981;
+
+  --deal-lost-bg: rgba(239, 68, 68, 0.14);
+  --deal-lost-text: #FCA5A5;
+  --deal-lost-border: #EF4444;
+
+  /* ── Deal Kanban: Source Badge Colors (dark) ──────────────── */
+  --source-inbound-bg: rgba(16, 185, 129, 0.15);
+  --source-inbound-text: #6EE7B7;
+  --source-outbound-bg: rgba(245, 158, 11, 0.15);
+  --source-outbound-text: #FCD34D;
+  --source-referral-bg: rgba(139, 92, 246, 0.15);
+  --source-referral-text: #C4B5FD;
+  --source-website-bg: rgba(59, 130, 246, 0.15);
+  --source-website-text: #93C5FD;
+  --source-event-bg: rgba(236, 72, 153, 0.15);
+  --source-event-text: #F9A8D4;
 }

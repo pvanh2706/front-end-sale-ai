@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "sales-ai-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:web"],
-      "port": 5174
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--port", "5175"],
+      "port": 5175
     }
   ]
 }

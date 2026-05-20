@@ -69,6 +69,21 @@
           </div>
           <!-- Tab + Filters -->
           <div class="flex flex-wrap items-center gap-2">
+            <!-- Type filter: Lead / Deal -->
+            <div class="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+              <button
+                v-for="tab in typeTabs"
+                :key="tab.value"
+                class="rounded-md px-3 py-1 text-xs font-medium transition-colors"
+                :class="activeTypeFilter === tab.value
+                  ? 'bg-white text-brand-500 shadow-theme-xs dark:bg-gray-700 dark:text-brand-400'
+                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+                @click="activeTypeFilter = tab.value"
+              >
+                {{ tab.label }}
+              </button>
+            </div>
+            <!-- Match field filter: Phone / Email / Company -->
             <div class="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
               <button
                 v-for="tab in filterTabs"
@@ -191,10 +206,12 @@
                   <th class="p-3 text-xs font-medium text-gray-500">
                     Bản ghi A
                     <Badge variant="outline" class="ml-1 text-[10px]">{{ group.recordA.type === 'deal' ? 'Deal' : 'Lead' }} #{{ group.recordA.displayId }}</Badge>
+                    <Badge v-if="group.recordA.pipeline" variant="outline" class="ml-1 text-[10px] text-primary-500">{{ group.recordA.pipeline }}</Badge>
                   </th>
                   <th class="p-3 text-xs font-medium text-gray-500">
                     Bản ghi B
                     <Badge variant="outline" class="ml-1 text-[10px]">{{ group.recordB.type === 'deal' ? 'Deal' : 'Lead' }} #{{ group.recordB.displayId }}</Badge>
+                    <Badge v-if="group.recordB.pipeline" variant="outline" class="ml-1 text-[10px] text-primary-500">{{ group.recordB.pipeline }}</Badge>
                   </th>
                 </tr>
               </thead>
@@ -389,8 +406,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -438,8 +455,8 @@ interface MatchGroup {
   score: number
   level: MatchLevel
   tags: string[]
-  recordA: { id: string; type: RecordType; displayId: string }
-  recordB: { id: string; type: RecordType; displayId: string }
+  recordA: { id: string; type: RecordType; displayId: string; pipeline?: string }
+  recordB: { id: string; type: RecordType; displayId: string; pipeline?: string }
   masterSelected: 'A' | 'B'
   fields: MatchField[]
 }
@@ -477,11 +494,25 @@ const sourceBars = [
   { label: 'KH', pct: 25, opacity: 0.3 },
 ]
 
+const typeTabs = [
+  { label: 'Tất cả', value: 'all' as const },
+  { label: 'Lead',   value: 'lead' as const },
+  { label: 'Deal',   value: 'deal' as const },
+]
+
 const filterTabs = [
   { label: 'Điện thoại', value: 'phone' as const },
   { label: 'Email', value: 'email' as const },
   { label: 'Công ty', value: 'company' as const },
 ]
+
+const route = useRoute()
+const activeTypeFilter = ref<'all' | 'lead' | 'deal'>('all')
+
+onMounted(() => {
+  const t = route.query.type
+  if (t === 'lead' || t === 'deal') activeTypeFilter.value = t
+})
 
 const activeFilterTags = ref<FilterTag[]>([
   { id: 'scope', label: 'Phạm vi: Toàn bộ' },
@@ -491,37 +522,22 @@ const activeFilterTags = ref<FilterTag[]>([
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
 const matchGroups = ref<MatchGroup[]>([
+  // ── Deal vs Deal ─────────────────────────────────────────────
   {
     id: 'g-01',
     score: 100,
     level: 'exact',
     tags: ['Trùng SĐT', 'Trùng Email'],
-    recordA: { id: 'd-09', type: 'deal', displayId: '8821' },
-    recordB: { id: 'd-02', type: 'lead', displayId: '9042' },
+    recordA: { id: 'd-09', type: 'deal', displayId: '8821', pipeline: 'B2B Enterprise' },
+    recordB: { id: 'd-12', type: 'deal', displayId: '9042', pipeline: 'B2B Enterprise' },
     masterSelected: 'A',
     fields: [
       { label: 'Tên khách hàng', valueA: 'Nguyễn Văn An', valueB: 'Nguyễn Văn An', highlight: 'same', isMasterKey: true },
       { label: 'Số điện thoại', valueA: '0901 234 567', valueB: '0901 234 567', highlight: 'same', isMasterKey: true },
       { label: 'Email', valueA: 'an.nguyen@company.vn', valueB: 'an.nguyen@company.vn', highlight: 'same' },
-      { label: 'Nguồn Lead', valueA: 'Facebook Ads', valueB: 'Trực tiếp', highlight: 'diff' },
-      { label: 'Người phụ trách', valueA: 'Trần Thị B (Sale)', valueB: 'Lê Văn C (Admin)', highlight: 'none' },
+      { label: 'Giá trị', valueA: '280.000.000 VNĐ', valueB: '300.000.000 VNĐ', highlight: 'diff' },
+      { label: 'Người phụ trách', valueA: 'Trần Thị B', valueB: 'Lê Văn C', highlight: 'none' },
       { label: 'Ngày tạo', valueA: '12/10/2023', valueB: '25/10/2023', highlight: 'none' },
-    ],
-  },
-  {
-    id: 'g-02',
-    score: 85,
-    level: 'high',
-    tags: ['Trùng Email'],
-    recordA: { id: 'd-09', type: 'deal', displayId: '7714' },
-    recordB: { id: 'd-07', type: 'lead', displayId: '8853' },
-    masterSelected: 'A',
-    fields: [
-      { label: 'Tên khách hàng', valueA: 'Phạm Minh Tuấn', valueB: 'P. Minh Tuan', highlight: 'diff', isMasterKey: true },
-      { label: 'Công ty', valueA: 'Techcom Corp', valueB: 'Techcom Corp', highlight: 'same', isMasterKey: true },
-      { label: 'Email', valueA: 'tuan.pm@techcom.vn', valueB: 'tuan.pm@techcom.vn', highlight: 'same' },
-      { label: 'Giá trị dự kiến', valueA: '50.000.000 VNĐ', valueB: '—', highlight: 'diff' },
-      { label: 'Nguồn Lead', valueA: 'Outbound', valueB: 'Website', highlight: 'diff' },
     ],
   },
   {
@@ -529,30 +545,15 @@ const matchGroups = ref<MatchGroup[]>([
     score: 78,
     level: 'medium',
     tags: ['Trùng Công ty'],
-    recordA: { id: 'd-06', type: 'deal', displayId: '6601' },
-    recordB: { id: 'd-01', type: 'lead', displayId: '6720' },
+    recordA: { id: 'd-06', type: 'deal', displayId: '6601', pipeline: 'B2B Enterprise' },
+    recordB: { id: 'd-13', type: 'deal', displayId: '6720', pipeline: 'SMB Retail' },
     masterSelected: 'A',
     fields: [
       { label: 'Tên khách hàng', valueA: 'Hoàng Anh Tuấn', valueB: 'Hoang A. Tuan', highlight: 'diff', isMasterKey: true },
       { label: 'Công ty', valueA: 'Fintech Việt Nam JSC', valueB: 'Fintech VN JSC', highlight: 'diff' },
       { label: 'Số điện thoại', valueA: '0902 111 222', valueB: '0902 111 333', highlight: 'diff' },
-      { label: 'Nguồn Lead', valueA: 'Referral', valueB: 'Website', highlight: 'diff' },
-    ],
-  },
-  {
-    id: 'g-04',
-    score: 100,
-    level: 'exact',
-    tags: ['Trùng SĐT'],
-    recordA: { id: 'd-04', type: 'lead', displayId: '5012' },
-    recordB: { id: 'd-05', type: 'lead', displayId: '5188' },
-    masterSelected: 'A',
-    fields: [
-      { label: 'Tên khách hàng', valueA: 'Vũ Thị Hoa', valueB: 'Vũ Thị Hoa', highlight: 'same', isMasterKey: true },
-      { label: 'Số điện thoại', valueA: '0935 678 901', valueB: '0935 678 901', highlight: 'same', isMasterKey: true },
-      { label: 'Email', valueA: 'hoa.vu@bachphu.vn', valueB: 'vuhoabp@gmail.com', highlight: 'diff' },
-      { label: 'Nguồn Lead', valueA: 'Event', valueB: 'Facebook Ads', highlight: 'diff' },
-      { label: 'Ngày tạo', valueA: '03/01/2024', valueB: '15/01/2024', highlight: 'none' },
+      { label: 'Giá trị', valueA: '120.000.000 VNĐ', valueB: '125.000.000 VNĐ', highlight: 'diff' },
+      { label: 'Nguồn', valueA: 'Referral', valueB: 'Website', highlight: 'diff' },
     ],
   },
   {
@@ -560,14 +561,46 @@ const matchGroups = ref<MatchGroup[]>([
     score: 92,
     level: 'high',
     tags: ['Trùng Email', 'Trùng Công ty'],
-    recordA: { id: 'd-10', type: 'deal', displayId: '4409' },
-    recordB: { id: 'd-03', type: 'lead', displayId: '4521' },
+    recordA: { id: 'd-10', type: 'deal', displayId: '4409', pipeline: 'SMB Retail' },
+    recordB: { id: 'd-14', type: 'deal', displayId: '4521', pipeline: 'SMB Retail' },
     masterSelected: 'A',
     fields: [
       { label: 'Tên khách hàng', valueA: 'Trần Đức Thành', valueB: 'Trần Đức Thành', highlight: 'same', isMasterKey: true },
       { label: 'Công ty', valueA: 'Ngân hàng TechBank', valueB: 'TechBank', highlight: 'diff' },
       { label: 'Email', valueA: 'thanh.td@techbank.vn', valueB: 'thanh.td@techbank.vn', highlight: 'same' },
-      { label: 'Giá trị dự kiến', valueA: '850.000.000 VNĐ', valueB: '—', highlight: 'diff' },
+      { label: 'Giá trị', valueA: '850.000.000 VNĐ', valueB: '800.000.000 VNĐ', highlight: 'diff' },
+    ],
+  },
+  // ── Lead vs Lead ─────────────────────────────────────────────
+  {
+    id: 'g-02',
+    score: 85,
+    level: 'high',
+    tags: ['Trùng Email'],
+    recordA: { id: 'l-09', type: 'lead', displayId: '7714' },
+    recordB: { id: 'l-07', type: 'lead', displayId: '8853' },
+    masterSelected: 'A',
+    fields: [
+      { label: 'Tên khách hàng', valueA: 'Phạm Minh Tuấn', valueB: 'P. Minh Tuan', highlight: 'diff', isMasterKey: true },
+      { label: 'Công ty', valueA: 'Techcom Corp', valueB: 'Techcom Corp', highlight: 'same', isMasterKey: true },
+      { label: 'Email', valueA: 'tuan.pm@techcom.vn', valueB: 'tuan.pm@techcom.vn', highlight: 'same' },
+      { label: 'Nguồn', valueA: 'Outbound', valueB: 'Website', highlight: 'diff' },
+    ],
+  },
+  {
+    id: 'g-04',
+    score: 100,
+    level: 'exact',
+    tags: ['Trùng SĐT'],
+    recordA: { id: 'l-04', type: 'lead', displayId: '5012' },
+    recordB: { id: 'l-05', type: 'lead', displayId: '5188' },
+    masterSelected: 'A',
+    fields: [
+      { label: 'Tên khách hàng', valueA: 'Vũ Thị Hoa', valueB: 'Vũ Thị Hoa', highlight: 'same', isMasterKey: true },
+      { label: 'Số điện thoại', valueA: '0935 678 901', valueB: '0935 678 901', highlight: 'same', isMasterKey: true },
+      { label: 'Email', valueA: 'hoa.vu@bachphu.vn', valueB: 'vuhoabp@gmail.com', highlight: 'diff' },
+      { label: 'Nguồn', valueA: 'Event', valueB: 'Facebook Ads', highlight: 'diff' },
+      { label: 'Ngày tạo', valueA: '03/01/2024', valueB: '15/01/2024', highlight: 'none' },
     ],
   },
   {
@@ -575,14 +608,14 @@ const matchGroups = ref<MatchGroup[]>([
     score: 80,
     level: 'high',
     tags: ['Trùng SĐT'],
-    recordA: { id: 'd-11', type: 'deal', displayId: '3312' },
-    recordB: { id: 'd-02', type: 'lead', displayId: '3498' },
+    recordA: { id: 'l-11', type: 'lead', displayId: '3312' },
+    recordB: { id: 'l-02', type: 'lead', displayId: '3498' },
     masterSelected: 'A',
     fields: [
       { label: 'Tên khách hàng', valueA: 'Lý Thị Ngọc', valueB: 'Ly Ngoc', highlight: 'diff', isMasterKey: true },
       { label: 'Số điện thoại', valueA: '0911 345 678', valueB: '0911 345 678', highlight: 'same', isMasterKey: true },
       { label: 'Email', valueA: 'ngoc.lt@fashionx.vn', valueB: 'lyngoc.work@gmail.com', highlight: 'diff' },
-      { label: 'Nguồn Lead', valueA: 'Website', valueB: 'Zalo', highlight: 'diff' },
+      { label: 'Nguồn', valueA: 'Website', valueB: 'Zalo', highlight: 'diff' },
     ],
   },
 ])
@@ -590,9 +623,21 @@ const matchGroups = ref<MatchGroup[]>([
 // ── Computed ──────────────────────────────────────────────────────────────────
 
 const filteredGroups = computed<MatchGroup[]>(() => {
+  let groups = matchGroups.value
+
+  // Deals: only flag duplicates within the same pipeline
+  groups = groups.filter((g) => {
+    if (g.recordA.type !== 'deal') return true
+    return g.recordA.pipeline === g.recordB.pipeline
+  })
+
+  if (activeTypeFilter.value !== 'all') {
+    groups = groups.filter((g) => g.recordA.type === activeTypeFilter.value)
+  }
+
   const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return matchGroups.value
-  return matchGroups.value.filter((group) =>
+  if (!q) return groups
+  return groups.filter((group) =>
     group.fields.some(
       (field) =>
         field.valueA.toLowerCase().includes(q) ||

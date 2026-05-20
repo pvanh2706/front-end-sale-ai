@@ -105,7 +105,7 @@
               <Zap class="h-4 w-4" />
             </button>
             <Button
-              class="gap-1.5 bg-brand-500 text-white hover:bg-brand-600"
+              class="gap-1.5 bg-primary-700 text-white hover:bg-primary-800"
               size="sm"
               @click="activeTab === 'deal' ? openCreateDialog() : leadBoardRef?.openCreateDialog()"
             >
@@ -123,8 +123,8 @@
             type="button"
             class="shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors"
             :class="activeQuickFilter === f.id
-              ? 'bg-brand-500 text-white shadow-sm'
-              : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700'"
+              ? 'bg-white text-gray-900 font-semibold ring-2 ring-gray-400 shadow-sm dark:bg-gray-700 dark:text-white dark:ring-gray-500'
+              : 'bg-white text-gray-500 ring-1 ring-gray-200 hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700'"
             @click="activeQuickFilter = f.id"
           >{{ f.name }}</button>
         </div>
@@ -148,7 +148,7 @@
           <p class="text-sm text-warning-700 dark:text-warning-400">
             Phát hiện <strong>2 deal</strong> có thể trùng lặp với khách hàng hiện tại.
           </p>
-          <button class="ml-2 shrink-0 text-xs font-medium text-warning-600 underline underline-offset-2 hover:text-warning-700 dark:text-warning-400">
+          <button class="ml-2 shrink-0 text-xs font-medium text-warning-600 underline underline-offset-2 hover:text-warning-700 dark:text-warning-400" @click="$router.push({ path: '/crm-duplicate-check', query: { type: 'deal' } })">
             Xem ngay
           </button>
           <button class="ml-auto shrink-0 rounded p-0.5 text-warning-400 hover:bg-warning-100 hover:text-warning-600" @click="showDuplicateBanner = false">
@@ -187,51 +187,229 @@
       <!-- ─── Deal board ──────────────────────────────────────────── -->
       <template v-else>
 
+        <!-- Deal search / filter bar (kanban only) -->
+        <div v-if="viewMode === 'kanban'" ref="dealSearchBarRef" class="relative shrink-0 px-2 pt-1.5">
+          <div
+            class="flex min-h-[36px] cursor-text items-center gap-1.5 rounded-xl border bg-white px-3 py-1.5 shadow-theme-xs transition-all dark:bg-gray-800"
+            :class="showDealFilterPanel
+              ? 'border-primary-400 ring-1 ring-primary-200/60 dark:border-primary-500'
+              : 'border-gray-200 hover:border-gray-300 dark:border-gray-700'"
+            @click="openDealFilterPanel"
+          >
+            <Search class="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            <div class="flex flex-1 flex-wrap items-center gap-1.5">
+              <span
+                v-for="chip in activeDealFilterChips"
+                :key="chip.key"
+                class="inline-flex items-center gap-1 rounded-md bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+              >
+                {{ chip.label }}
+                <button type="button" class="rounded-full text-primary-400 hover:text-primary-700" @click.stop="removeDealFilter(chip.key)">
+                  <X class="h-2.5 w-2.5" />
+                </button>
+              </span>
+              <input
+                ref="dealSearchInputRef"
+                v-model="dealFilterText"
+                placeholder="Tìm kiếm deal..."
+                class="min-w-[120px] flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400 dark:text-gray-200"
+                @focus="showDealFilterPanel = true"
+                @keydown.escape="showDealFilterPanel = false"
+                @click.stop
+              />
+            </div>
+            <div class="flex shrink-0 items-center gap-0.5">
+              <button v-if="hasDealFilters" type="button" class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700" title="Xóa bộ lọc" @click.stop="clearDealFilters">
+                <X class="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                class="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                :class="hasDealFilters ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500'"
+                @click.stop="showDealFilterPanel = !showDealFilterPanel"
+              >
+                <SlidersHorizontal class="h-3.5 w-3.5" />
+                <span v-if="totalDealFilterCount > 0" class="tabular-nums">{{ totalDealFilterCount }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Deal filter panel -->
+          <div
+            v-if="showDealFilterPanel"
+            class="absolute inset-x-2 top-full z-40 mt-1 flex overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-700 dark:bg-gray-900"
+            style="max-height: min(480px, 70vh)"
+            @click.stop
+          >
+            <!-- Left: presets -->
+            <div class="flex w-48 shrink-0 flex-col overflow-y-auto border-r border-gray-100 py-2 dark:border-gray-800">
+              <p class="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Lọc nhanh</p>
+              <button
+                v-for="preset in DEAL_FILTER_PRESETS"
+                :key="preset.id"
+                type="button"
+                class="w-full px-3 py-2 text-left text-xs font-medium transition-colors"
+                :class="activeDealPreset === preset.id
+                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                  : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'"
+                @click="applyDealPreset(preset.id)"
+              >{{ preset.name }}</button>
+            </div>
+
+            <!-- Right: filter fields -->
+            <div class="flex-1 overflow-y-auto p-4">
+              <div class="grid grid-cols-2 gap-5">
+                <!-- Nguồn -->
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Nguồn</p>
+                  <div class="space-y-1">
+                    <label v-for="src in DEAL_SOURCES" :key="src.value" class="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">
+                      <input type="checkbox" :value="src.value" v-model="dealFilterSources" class="h-3.5 w-3.5 rounded border-gray-300 accent-primary-600" />
+                      {{ src.label }}
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Giai đoạn -->
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Giai đoạn</p>
+                  <div class="space-y-1">
+                    <label v-for="stg in DEAL_STAGES_LIST" :key="stg.value" class="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">
+                      <input type="checkbox" :value="stg.value" v-model="dealFilterStages" class="h-3.5 w-3.5 rounded border-gray-300 accent-primary-600" />
+                      {{ stg.label }}
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Trạng thái -->
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Trạng thái</p>
+                  <div class="space-y-1">
+                    <label class="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">
+                      <input type="checkbox" v-model="dealFilterOverdue" class="h-3.5 w-3.5 rounded border-gray-300 accent-primary-600" />
+                      Quá hạn
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Ngày tạo -->
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Ngày tạo</p>
+                  <div class="space-y-1">
+                    <label v-for="opt in DEAL_DATE_RANGE_OPTIONS" :key="opt.value" class="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800">
+                      <input type="radio" :value="opt.value" v-model="dealFilterDateRange" class="h-3.5 w-3.5 border-gray-300 accent-primary-600" />
+                      {{ opt.label }}
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Tên deal -->
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Tên deal</p>
+                  <input v-model="dealFilterName" placeholder="Tìm theo tên deal..." class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-primary-400 focus:ring-1 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300" />
+                </div>
+
+                <!-- Deal ID -->
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Deal ID</p>
+                  <input v-model="dealFilterId" placeholder="Nhập Deal ID..." class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-primary-400 focus:ring-1 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300" />
+                </div>
+
+                <!-- Người phụ trách -->
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Người phụ trách</p>
+                  <input v-model="dealFilterAssignee" placeholder="Tìm theo tên..." class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-primary-400 focus:ring-1 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300" />
+                </div>
+
+                <!-- Công ty -->
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Công ty / Liên hệ</p>
+                  <input v-model="dealFilterText" placeholder="Tìm theo tên/công ty..." class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-primary-400 focus:ring-1 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300" />
+                </div>
+
+                <!-- Số điện thoại -->
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Số điện thoại</p>
+                  <input v-model="dealFilterPhone" placeholder="Nhập số điện thoại..." class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-primary-400 focus:ring-1 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300" />
+                </div>
+
+                <!-- Email -->
+                <div>
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Email</p>
+                  <input v-model="dealFilterEmail" placeholder="Nhập email..." class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none transition focus:border-primary-400 focus:ring-1 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300" />
+                </div>
+              </div>
+              <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-gray-800">
+                <button type="button" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" @click="clearDealFilters">Xóa bộ lọc</button>
+                <button type="button" class="rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-800" @click="showDealFilterPanel = false">Áp dụng</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Kanban view -->
         <div
           v-if="viewMode === 'kanban'"
-          class="custom-scrollbar flex-1 overflow-x-auto overflow-y-hidden p-4 dark:bg-gray-950/80"
+          class="custom-scrollbar flex-1 overflow-x-auto overflow-y-hidden p-2 dark:bg-gray-950/80"
         >
           <div v-if="isLoading" class="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white/60 dark:border-gray-700 dark:bg-gray-900/50">
             <p class="text-sm text-gray-500">Đang tải Kanban...</p>
           </div>
 
-          <div v-else class="kanban-container h-full">
+          <div v-else ref="kanbanContainerRef" class="kanban-container h-full">
             <div
-              v-for="column in columns"
+              v-for="(column, colIdx) in dealFilteredColumns"
               :key="column.id"
-              class="kanban-column flex h-full shrink-0 flex-col"
+              class="kanban-column relative flex h-full flex-col"
+              :style="{ width: `calc(${colWidths[column.id] ?? (100 / columns.length)}% - ${(columns.length - 1) * 6 / columns.length}px)` }"
               @dragover.prevent
               @drop="handleDrop(column.id)"
             >
+              <div
+                v-if="colIdx < columns.length - 1"
+                class="resize-handle"
+                :class="{ 'resize-active': resizingHandle?.leftId === column.id }"
+                @mousedown.prevent.stop="startColumnResize($event, column.id, columns[colIdx + 1].id)"
+              />
               <!-- Column header -->
               <div class="mb-2 flex flex-col gap-1.5">
-                <div class="flex items-center justify-between gap-2">
-                  <span
-                    class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm"
-                    :style="{ background: column.color }"
+                <!-- Title + total — full width (giống Lead Kanban) -->
+                <div class="overflow-hidden rounded-xl shadow-theme-xs">
+                  <!-- Title row -->
+                  <div
+                    class="flex items-center justify-between px-3 py-2"
+                    :style="{
+                      background: `var(--deal-${column.id}-bg)`,
+                      borderTop: `3px solid var(--deal-${column.id}-border)`,
+                    }"
                   >
-                    {{ column.name }}
-                    <span class="rounded-md bg-white/25 px-1.5 py-0.5 text-xs font-bold leading-none">
-                      {{ column.cards.length }}
+                    <span
+                      class="text-sm font-bold"
+                      :style="{ color: `var(--deal-${column.id}-text)` }"
+                    >
+                      {{ column.name }}
+                      <span class="ml-1 font-normal opacity-60">({{ column.cards.length }})</span>
                     </span>
-                  </span>
-                  <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ column.total }}</span>
+                    <button
+                      type="button"
+                      class="rounded p-0.5 opacity-50 transition-opacity hover:opacity-100"
+                      :style="{ color: `var(--deal-${column.id}-text)` }"
+                      title="Tạo deal nhanh"
+                      @click.stop="openQuickDeal(column.id)"
+                    >
+                      <Plus class="h-4 w-4" />
+                    </button>
+                  </div>
+                  <!-- Total value -->
+                  <div class="bg-white/95 px-3 py-1.5 text-center dark:bg-gray-800/95">
+                    <p class="text-sm font-bold tabular-nums text-[#6366F1] dark:text-[#818CF8]">
+                      {{ column.total }}
+                    </p>
+                  </div>
                 </div>
 
-                <!-- Quick Deal button -->
-                <button
-                  v-if="quickDealCol !== column.id"
-                  type="button"
-                  class="flex items-center gap-1 rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 dark:border-gray-600 dark:hover:border-brand-600 dark:hover:bg-brand-900/20 dark:hover:text-brand-400"
-                  @click.stop="openQuickDeal(column.id)"
-                >
-                  <Plus class="h-3.5 w-3.5" />
-                  Quick Deal
-                </button>
-
-                <!-- Inline quick deal form -->
-                <div v-else class="flex items-center gap-1.5">
+                <!-- Inline quick deal form (hiện khi nhấn +) -->
+                <div v-if="quickDealCol === column.id" class="flex items-center gap-1.5">
                   <Input
                     :id="`qdeal-${column.id}`"
                     v-model="quickDealTitle"
@@ -271,6 +449,7 @@
                     card.isOptimistic ? 'animate-pulse border-brand-300 dark:border-brand-700' : 'border-gray-200 dark:border-gray-700',
                     selectedCards.has(card.id) ? 'ring-2 ring-brand-500 ring-offset-1 dark:ring-offset-gray-900' : '',
                   ]"
+                  :style="{ borderLeftWidth: '4px', borderLeftColor: cardStatusColor(card) }"
                   draggable="true"
                   @dragstart="handleDragStart(card.id, column.id)"
                 >
@@ -286,7 +465,10 @@
 
                   <!-- Row 1: Source badge + badges + actions -->
                   <div class="mb-1.5 flex items-start justify-between gap-1">
-                    <Badge variant="secondary" class="text-[10px] font-bold uppercase">{{ card.source }}</Badge>
+                    <span
+                      class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                      :style="sourceStyle(card.source)"
+                    >{{ card.source }}</span>
                     <div class="flex shrink-0 items-center gap-1">
                       <span
                         v-if="card.commentCount"
@@ -324,7 +506,7 @@
 
                   <!-- Value + AI score -->
                   <div class="mb-2 flex items-center justify-between">
-                    <p class="text-sm font-bold text-gray-900 dark:text-white">{{ card.value }}</p>
+                    <p class="text-sm font-bold text-[#6366F1] dark:text-[#818CF8]">{{ card.value }}</p>
                     <div v-if="card.aiScore" class="flex items-center gap-1 text-brand-500">
                       <Star class="h-3.5 w-3.5 fill-current" />
                       <span class="text-xs font-bold">{{ card.aiScore }}</span>
@@ -569,7 +751,7 @@
 
         <DialogFooter class="border-t border-gray-200 pt-4 dark:border-gray-700">
           <Button variant="outline" @click="showDealDialog = false">Hủy</Button>
-          <Button class="bg-brand-500 text-white hover:bg-brand-600" :disabled="isSubmitting" @click="submitDeal">
+          <Button class="bg-primary-700 text-white hover:bg-primary-800" :disabled="isSubmitting" @click="submitDeal">
             <Loader2 v-if="isSubmitting" class="mr-1.5 h-4 w-4 animate-spin" />
             {{ editingDealId ? 'Lưu thay đổi' : 'Tạo Deal' }}
           </Button>
@@ -582,7 +764,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
-import { Badge } from '@/components/ui/badge'
+import { useRoute } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -734,7 +916,7 @@ const DEMO_CARDS: Record<DealStage, DealCard[]> = {
 }
 
 const DEFAULT_COLUMNS: KanbanColumn[] = [
-  { id: 'new', name: 'Mới', color: '#6B7280', total: '₫ 450M', cards: DEMO_CARDS.new },
+  { id: 'new', name: 'Mới', color: '#64748B', total: '₫ 450M', cards: DEMO_CARDS.new },
   { id: 'preparing', name: 'Đang chuẩn bị', color: '#3B82F6', total: '₫ 320M', cards: DEMO_CARDS.preparing },
   { id: 'contacted', name: 'Đã liên hệ', color: '#06B6D4', total: '₫ 0', cards: [] },
   { id: 'negotiating', name: 'Đàm phán', color: '#F59E0B', total: '₫ 800M', cards: DEMO_CARDS.negotiating },
@@ -742,6 +924,26 @@ const DEFAULT_COLUMNS: KanbanColumn[] = [
   { id: 'won', name: 'Thắng', color: '#10B981', total: '₫ 0', cards: [] },
   { id: 'lost', name: 'Thua', color: '#EF4444', total: '₫ 0', cards: [] },
 ]
+
+// ── Source badge color map (keyed by uppercase source string) ──
+const SOURCE_STYLE: Record<string, { background: string; color: string }> = {
+  INBOUND:  { background: 'var(--source-inbound-bg)',  color: 'var(--source-inbound-text)'  },
+  OUTBOUND: { background: 'var(--source-outbound-bg)', color: 'var(--source-outbound-text)' },
+  REFERRAL: { background: 'var(--source-referral-bg)', color: 'var(--source-referral-text)' },
+  WEBSITE:  { background: 'var(--source-website-bg)',  color: 'var(--source-website-text)'  },
+  EVENT:    { background: 'var(--source-event-bg)',    color: 'var(--source-event-text)'    },
+}
+
+function sourceStyle(source: string): { background: string; color: string } {
+  return SOURCE_STYLE[source?.toUpperCase()] ?? { background: '#F3F4F6', color: '#374151' }
+}
+
+function cardStatusColor(card: DealCard): string {
+  if (card.isOverdue) return '#EF4444'
+  if (card.closeDate && isCloseSoon(card.closeDate)) return '#F59E0B'
+  if (card.lastActivityAt && /phút|giờ/.test(card.lastActivityAt)) return '#10B981'
+  return '#D1D5DB'
+}
 
 // ─── State ────────────────────────────────────────────────────
 
@@ -762,6 +964,264 @@ const columns = ref<KanbanColumn[]>(structuredClone(DEFAULT_COLUMNS))
 const kpis = ref<KanbanKpi[]>([])
 const isLoading = ref(false)
 const dragging = ref<{ dealId: string; fromStage: DealStage } | null>(null)
+
+// ─── Deal filter ──────────────────────────────────────────────
+
+const DEAL_SOURCES = [
+  { value: 'website', label: 'Website' },
+  { value: 'inbound', label: 'Inbound' },
+  { value: 'referral', label: 'Referral' },
+  { value: 'outbound', label: 'Outbound' },
+  { value: 'event', label: 'Event' },
+  { value: 'zalo', label: 'Zalo' },
+  { value: 'facebook', label: 'Facebook' },
+]
+
+const DEAL_STAGES_LIST = [
+  { value: 'new' as DealStage, label: 'Mới' },
+  { value: 'preparing' as DealStage, label: 'Chuẩn bị' },
+  { value: 'contacted' as DealStage, label: 'Đã liên hệ' },
+  { value: 'negotiating' as DealStage, label: 'Đàm phán' },
+  { value: 'quoted' as DealStage, label: 'Đã báo giá' },
+  { value: 'won' as DealStage, label: 'Thành công' },
+  { value: 'lost' as DealStage, label: 'Thất bại' },
+]
+
+const DEAL_DATE_RANGE_OPTIONS = [
+  { value: 'any', label: 'Bất kỳ' },
+  { value: 'today', label: 'Hôm nay' },
+  { value: 'week', label: 'Tuần này' },
+  { value: 'month', label: 'Tháng này' },
+]
+
+const DEAL_FILTER_PRESETS = [
+  { id: 'all', name: 'Tất cả deals' },
+  { id: 'overdue', name: 'Quá hạn' },
+  { id: 'has_assignee', name: 'Được giao' },
+  { id: 'src_website', name: 'Từ Website' },
+  { id: 'src_inbound', name: 'Từ Inbound' },
+  { id: 'src_zalo', name: 'Từ Zalo' },
+  { id: 'src_outbound', name: 'Từ Outbound' },
+]
+
+const showDealFilterPanel = ref(false)
+const dealSearchBarRef = ref<HTMLElement | null>(null)
+const dealSearchInputRef = ref<HTMLInputElement | null>(null)
+const dealFilterText = ref('')
+const dealFilterSources = ref<string[]>([])
+const dealFilterStages = ref<DealStage[]>([])
+const dealFilterDateRange = ref('any')
+const dealFilterAssignee = ref('')
+const dealFilterPhone = ref('')
+const dealFilterEmail = ref('')
+const dealFilterName = ref('')
+const dealFilterId = ref('')
+const dealFilterOverdue = ref(false)
+const activeDealPreset = ref<string | null>('all')
+
+const hasDealFilters = computed(() =>
+  dealFilterText.value.trim() !== '' ||
+  dealFilterSources.value.length > 0 ||
+  dealFilterStages.value.length > 0 ||
+  dealFilterDateRange.value !== 'any' ||
+  dealFilterAssignee.value.trim() !== '' ||
+  dealFilterPhone.value.trim() !== '' ||
+  dealFilterEmail.value.trim() !== '' ||
+  dealFilterName.value.trim() !== '' ||
+  dealFilterId.value.trim() !== '' ||
+  dealFilterOverdue.value,
+)
+
+const totalDealFilterCount = computed(() => {
+  let n = 0
+  if (dealFilterText.value.trim()) n++
+  if (dealFilterSources.value.length) n++
+  if (dealFilterStages.value.length) n++
+  if (dealFilterDateRange.value !== 'any') n++
+  if (dealFilterAssignee.value.trim()) n++
+  if (dealFilterPhone.value.trim()) n++
+  if (dealFilterEmail.value.trim()) n++
+  if (dealFilterName.value.trim()) n++
+  if (dealFilterId.value.trim()) n++
+  if (dealFilterOverdue.value) n++
+  return n
+})
+
+const activeDealFilterChips = computed(() => {
+  const chips: { key: string; label: string }[] = []
+  if (dealFilterSources.value.length)
+    chips.push({ key: 'sources', label: `Nguồn (${dealFilterSources.value.length})` })
+  if (dealFilterStages.value.length)
+    chips.push({ key: 'stages', label: `Giai đoạn (${dealFilterStages.value.length})` })
+  if (dealFilterDateRange.value !== 'any')
+    chips.push({ key: 'dateRange', label: DEAL_DATE_RANGE_OPTIONS.find((o) => o.value === dealFilterDateRange.value)?.label ?? dealFilterDateRange.value })
+  if (dealFilterName.value.trim())
+    chips.push({ key: 'name', label: `Tên: ${dealFilterName.value.trim()}` })
+  if (dealFilterId.value.trim())
+    chips.push({ key: 'dealId', label: `ID: ${dealFilterId.value.trim()}` })
+  if (dealFilterAssignee.value.trim())
+    chips.push({ key: 'assignee', label: `Phụ trách: ${dealFilterAssignee.value.trim()}` })
+  if (dealFilterPhone.value.trim())
+    chips.push({ key: 'phone', label: `SĐT: ${dealFilterPhone.value.trim()}` })
+  if (dealFilterEmail.value.trim())
+    chips.push({ key: 'email', label: `Email: ${dealFilterEmail.value.trim()}` })
+  if (dealFilterOverdue.value)
+    chips.push({ key: 'overdue', label: 'Quá hạn' })
+  return chips
+})
+
+function matchesDealDateRange(dateStr: string | undefined, range: string): boolean {
+  if (!dateStr) return range === 'any'
+  const now = new Date()
+  const d = new Date(dateStr)
+  if (!isNaN(d.getTime())) {
+    if (range === 'today') {
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+    }
+    if (range === 'week') {
+      const weekAgo = new Date(now)
+      weekAgo.setDate(now.getDate() - 7)
+      return d >= weekAgo
+    }
+    if (range === 'month') {
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+    }
+  } else {
+    const s = dateStr.toLowerCase()
+    const monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+    if (range === 'today') return s.includes('phút') || s.includes('giờ') || s.includes('hôm nay')
+    if (range === 'week') return s.includes('phút') || s.includes('giờ') || s.includes('hôm nay')
+    if (range === 'month') return s.includes(monthNames[now.getMonth()])
+  }
+  return true
+}
+
+const dealFilteredColumns = computed(() => {
+  if (!hasDealFilters.value) return columns.value
+  const q = dealFilterText.value.trim().toLowerCase()
+  const nameQ = dealFilterName.value.trim().toLowerCase()
+  const idQ = dealFilterId.value.trim().toLowerCase()
+  const phoneQ = dealFilterPhone.value.trim().toLowerCase()
+  const emailQ = dealFilterEmail.value.trim().toLowerCase()
+
+  let cols = columns.value
+  if (dealFilterStages.value.length) {
+    cols = cols.filter((col) => dealFilterStages.value.includes(col.id as DealStage))
+  }
+
+  return cols.map((col) => ({
+    ...col,
+    cards: col.cards.filter((card) => {
+      if (q) {
+        const hit =
+          card.title.toLowerCase().includes(q) ||
+          (card.company?.toLowerCase().includes(q) ?? false) ||
+          (card.contactName?.toLowerCase().includes(q) ?? false) ||
+          (card.assigneeName?.toLowerCase().includes(q) ?? false)
+        if (!hit) return false
+      }
+      if (nameQ && !card.title.toLowerCase().includes(nameQ)) return false
+      if (idQ && !card.id.toLowerCase().includes(idQ)) return false
+      if (phoneQ && !(card.phone?.toLowerCase().includes(phoneQ) ?? false)) return false
+      if (emailQ && !(card.email?.toLowerCase().includes(emailQ) ?? false)) return false
+      if (dealFilterSources.value.length && !dealFilterSources.value.includes(card.source ?? '')) return false
+      if (dealFilterAssignee.value.trim() && !(card.assigneeName?.toLowerCase().includes(dealFilterAssignee.value.trim().toLowerCase()) ?? false)) return false
+      if (dealFilterDateRange.value !== 'any' && !matchesDealDateRange(card.lastActivityAt, dealFilterDateRange.value)) return false
+      if (dealFilterOverdue.value && !card.isOverdue) return false
+      return true
+    }),
+  }))
+})
+
+function removeDealFilter(key: string): void {
+  if (key === 'sources') dealFilterSources.value = []
+  if (key === 'stages') dealFilterStages.value = []
+  if (key === 'dateRange') dealFilterDateRange.value = 'any'
+  if (key === 'assignee') dealFilterAssignee.value = ''
+  if (key === 'phone') dealFilterPhone.value = ''
+  if (key === 'email') dealFilterEmail.value = ''
+  if (key === 'name') dealFilterName.value = ''
+  if (key === 'dealId') dealFilterId.value = ''
+  if (key === 'overdue') dealFilterOverdue.value = false
+  activeDealPreset.value = null
+}
+
+function clearDealFilters(): void {
+  dealFilterText.value = ''
+  dealFilterSources.value = []
+  dealFilterStages.value = []
+  dealFilterDateRange.value = 'any'
+  dealFilterAssignee.value = ''
+  dealFilterPhone.value = ''
+  dealFilterEmail.value = ''
+  dealFilterName.value = ''
+  dealFilterId.value = ''
+  dealFilterOverdue.value = false
+  activeDealPreset.value = 'all'
+}
+
+function applyDealPreset(id: string): void {
+  clearDealFilters()
+  activeDealPreset.value = id
+  if (id === 'overdue') dealFilterOverdue.value = true
+  else if (id === 'has_assignee') dealFilterAssignee.value = ' '
+  else if (id === 'src_website') dealFilterSources.value = ['website']
+  else if (id === 'src_inbound') dealFilterSources.value = ['inbound']
+  else if (id === 'src_zalo') dealFilterSources.value = ['zalo']
+  else if (id === 'src_outbound') dealFilterSources.value = ['outbound']
+}
+
+function openDealFilterPanel(): void {
+  showDealFilterPanel.value = true
+  nextTick(() => dealSearchInputRef.value?.focus())
+}
+
+function handleDealOutsideClick(e: MouseEvent): void {
+  if (dealSearchBarRef.value && !dealSearchBarRef.value.contains(e.target as Node)) {
+    showDealFilterPanel.value = false
+  }
+}
+
+// ─── Column resize ────────────────────────────────────────────
+
+const kanbanContainerRef = ref<HTMLElement | null>(null)
+const colWidths = ref<Record<string, number>>({})
+
+function initColWidths(): void {
+  if (!columns.value.length) return
+  const equal = 100 / columns.value.length
+  const w: Record<string, number> = {}
+  columns.value.forEach((col) => { w[col.id] = equal })
+  colWidths.value = w
+}
+
+const resizingHandle = ref<{ leftId: string; rightId: string; startX: number; startL: number; startR: number } | null>(null)
+
+function startColumnResize(e: MouseEvent, leftId: string, rightId: string): void {
+  resizingHandle.value = {
+    leftId, rightId, startX: e.clientX,
+    startL: colWidths.value[leftId] ?? 0,
+    startR: colWidths.value[rightId] ?? 0,
+  }
+  document.addEventListener('mousemove', onColumnResize)
+  document.addEventListener('mouseup', stopColumnResize)
+}
+
+function onColumnResize(e: MouseEvent): void {
+  if (!resizingHandle.value || !kanbanContainerRef.value) return
+  const { leftId, rightId, startX, startL, startR } = resizingHandle.value
+  const containerW = kanbanContainerRef.value.getBoundingClientRect().width
+  const deltaPct = ((e.clientX - startX) / containerW) * 100
+  const minPct = 6
+  const newL = Math.max(minPct, Math.min(startL + deltaPct, startL + startR - minPct))
+  colWidths.value = { ...colWidths.value, [leftId]: newL, [rightId]: startL + startR - newL }
+}
+
+function stopColumnResize(): void {
+  resizingHandle.value = null
+  document.removeEventListener('mousemove', onColumnResize)
+  document.removeEventListener('mouseup', stopColumnResize)
+}
 
 // ─── Quick deal state ─────────────────────────────────────────
 
@@ -1092,9 +1552,19 @@ function bindRealtime(): void {
   socket.on('deal.deleted', sync)
 }
 
-onMounted(() => { void loadKanban(); bindRealtime() })
+const route = useRoute()
+
+onMounted(() => {
+  if (route.query.tab === 'lead') activeTab.value = 'lead'
+  void loadKanban()
+  bindRealtime()
+  initColWidths()
+  document.addEventListener('click', handleDealOutsideClick)
+})
 
 onUnmounted(() => {
+  stopColumnResize()
+  document.removeEventListener('click', handleDealOutsideClick)
   if (socket) {
     socket.off('deal.created')
     socket.off('deal.updated')
@@ -1143,20 +1613,51 @@ onUnmounted(() => {
 
 .kanban-container {
   display: flex;
-  gap: 16px;
-  min-width: max-content;
-  padding-bottom: 8px;
-  scroll-snap-type: x mandatory;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 4px;
 }
 
 .kanban-column {
-  width: 288px;
-  min-width: 288px;
-  scroll-snap-align: start;
+  position: relative;
+  flex: none;
+  min-width: 0;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  transform: translateX(50%);
+  cursor: col-resize;
+  z-index: 20;
+  user-select: none;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  background: transparent;
+  border-radius: 1px;
+  transition: background 0.15s;
+}
+
+.resize-handle:hover::after,
+.resize-handle.resize-active::after {
+  background: rgba(99, 102, 241, 0.45);
 }
 
 @media (max-width: 768px) {
-  .kanban-column { width: 260px; min-width: 260px; }
+  .kanban-container { overflow-x: auto; }
+  .kanban-column { width: 200px !important; }
 }
 
 /* Transitions */

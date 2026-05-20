@@ -12,7 +12,17 @@
       "mcp__Claude_Preview__preview_start",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git check-ignore *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5174)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Dự án CodeOn\\\\Sales.AI\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "mcp__3e5796eb-a422-447f-917b-a57f785d7e87__generate_diagram",
+      "Bash(npx vue-tsc *)",
+      "PowerShell(Get-Process -Id 12076)",
+      "Bash(npx tsc *)",
+      "Bash(git -C \"D:\\\\Dự án CodeOn\\\\Sales.AI\" log --oneline -5)"
     ]
   }
 }
