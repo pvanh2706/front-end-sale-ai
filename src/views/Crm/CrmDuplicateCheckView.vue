@@ -22,7 +22,7 @@
       </div>
 
       <!-- ── KPI Cards ─────────────────────────────────────────────────────── -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div
           v-for="kpi in kpis"
           :key="kpi.label"
@@ -34,23 +34,6 @@
           </div>
           <div class="text-2xl font-semibold text-gray-900 dark:text-white">{{ kpi.value }}</div>
           <div class="mt-1 text-xs" :class="kpi.trendClass">{{ kpi.trend }}</div>
-        </div>
-
-        <!-- Tỷ lệ trùng theo nguồn (mini bar chart) -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-theme-xs dark:border-gray-700 dark:bg-gray-800">
-          <span class="mb-3 block text-sm text-gray-500 dark:text-gray-400">Tỷ lệ trùng theo nguồn</span>
-          <div class="flex h-12 items-end gap-1">
-            <div
-              v-for="bar in sourceBars"
-              :key="bar.label"
-              class="w-full rounded-sm bg-brand-500 transition-all"
-              :style="{ height: bar.pct + '%', opacity: bar.opacity }"
-              :title="`${bar.label}: ${bar.pct}%`"
-            />
-          </div>
-          <div class="mt-1 flex justify-between text-[10px] text-gray-400 dark:text-gray-500">
-            <span v-for="bar in sourceBars" :key="bar.label">{{ bar.label }}</span>
-          </div>
         </div>
       </div>
 
@@ -179,10 +162,19 @@
                 variant="ghost"
                 size="sm"
                 class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                title="Bỏ qua"
+                title="Bỏ qua tạm thời"
                 @click="ignoreGroup(group.id)"
               >
                 <EyeOff class="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                class="gap-1.5 border-success-300 text-success-600 hover:bg-success-50 dark:border-success-500/40 dark:text-success-400 dark:hover:bg-success-500/10"
+                @click="openNotDupDialog(group)"
+              >
+                <CheckCircle2 class="h-3.5 w-3.5" />
+                Không phải trùng
               </Button>
               <Button
                 size="sm"
@@ -295,6 +287,50 @@
         </Button>
       </div>
 
+      <!-- ── Whitelist: Đã đánh dấu không phải trùng ────────────────────────── -->
+      <div
+        v-if="whitelistedPairs.length > 0"
+        class="overflow-hidden rounded-xl border border-success-200 bg-success-50/40 dark:border-success-500/20 dark:bg-success-500/5"
+      >
+        <div class="flex items-center justify-between border-b border-success-200 px-4 py-3 dark:border-success-500/20">
+          <div class="flex items-center gap-2">
+            <CheckCircle2 class="h-4 w-4 text-success-500" />
+            <span class="text-sm font-semibold text-success-700 dark:text-success-400">
+              Đã đánh dấu không phải trùng ({{ whitelistedPairs.length }})
+            </span>
+          </div>
+          <span class="text-xs text-gray-400 dark:text-gray-500">Các cặp này không bị cảnh báo lại</span>
+        </div>
+        <div class="divide-y divide-success-100 dark:divide-success-500/10">
+          <div
+            v-for="entry in whitelistedPairs"
+            :key="entry.pairKey"
+            class="flex flex-wrap items-start justify-between gap-3 px-4 py-3"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ entry.nameA }}</span>
+                <span class="text-xs text-gray-400">vs</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ entry.nameB }}</span>
+              </div>
+              <div v-if="entry.companyA || entry.companyB" class="mt-1 flex flex-wrap items-center gap-1.5">
+                <span v-if="entry.companyA" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">{{ entry.companyA }}</span>
+                <span v-if="entry.companyA && entry.companyB" class="text-xs text-gray-400">→</span>
+                <span v-if="entry.companyB" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">{{ entry.companyB }}</span>
+              </div>
+              <p v-if="entry.reason" class="mt-1 text-xs italic text-gray-400 dark:text-gray-500">"{{ entry.reason }}"</p>
+              <p class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{{ entry.markedAt }}</p>
+            </div>
+            <button
+              class="shrink-0 rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-500 transition hover:border-error-300 hover:text-error-500 dark:border-gray-700 dark:text-gray-400 dark:hover:border-error-500/40 dark:hover:text-error-400"
+              @click="undoNotDuplicate(entry.pairKey)"
+            >
+              Hoàn tác
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Pagination ────────────────────────────────────────────────────── -->
       <div
         v-if="filteredGroups.length"
@@ -402,6 +438,75 @@
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <!-- ── Not Duplicate Confirm Dialog ──────────────────────────────────── -->
+    <Dialog :open="showNotDupDialog" @update:open="showNotDupDialog = $event">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle class="text-gray-900 dark:text-white">Xác nhận không phải trùng</DialogTitle>
+          <DialogDescription class="text-gray-500 dark:text-gray-400">
+            Hệ thống sẽ lưu cặp bản ghi này vào danh sách ngoại lệ và không cảnh báo lại trong tương lai.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div v-if="pendingNotDupGroup" class="my-2 space-y-3">
+          <!-- Hai bản ghi sẽ được giữ nguyên -->
+          <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900">
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Hai bản ghi sẽ được giữ nguyên</p>
+            <div class="space-y-1.5">
+              <div class="flex items-start gap-2 text-sm">
+                <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-600 dark:bg-brand-500/20 dark:text-brand-400">A</span>
+                <div>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ pendingNotDupGroup.fields[0]?.valueA }}</span>
+                  <span v-if="pendingNotDupGroup.fields.find(f => f.label.toLowerCase().includes('công ty') || f.label.toLowerCase().includes('hkd'))?.valueA" class="ml-1.5 text-xs text-gray-400">
+                    — {{ pendingNotDupGroup.fields.find(f => f.label.toLowerCase().includes('công ty') || f.label.toLowerCase().includes('hkd'))?.valueA }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2 text-sm">
+                <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold text-gray-500 dark:bg-gray-700 dark:text-gray-400">B</span>
+                <div>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ pendingNotDupGroup.fields[0]?.valueB }}</span>
+                  <span v-if="pendingNotDupGroup.fields.find(f => f.label.toLowerCase().includes('công ty') || f.label.toLowerCase().includes('hkd'))?.valueB" class="ml-1.5 text-xs text-gray-400">
+                    — {{ pendingNotDupGroup.fields.find(f => f.label.toLowerCase().includes('công ty') || f.label.toLowerCase().includes('hkd'))?.valueB }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lý do -->
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Lý do <span class="text-xs font-normal text-gray-400">(tuỳ chọn)</span>
+            </label>
+            <textarea
+              v-model="notDupReason"
+              rows="2"
+              placeholder="VD: Đây là cùng 1 người mua cho 2 hộ kinh doanh khác nhau..."
+              class="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-brand-400 focus:ring-1 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+
+          <!-- Ghi chú -->
+          <div class="flex items-start gap-1.5 rounded-lg bg-brand-50 px-3 py-2.5 text-xs text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+            <CheckCircle2 class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            Bạn có thể hoàn tác bất cứ lúc nào từ mục "Đã đánh dấu không trùng" bên dưới.
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="showNotDupDialog = false">Hủy</Button>
+          <Button
+            class="gap-1.5 bg-success-500 text-white hover:bg-success-600"
+            @click="confirmNotDuplicate"
+          >
+            <CheckCircle2 class="h-4 w-4" />
+            Xác nhận không phải trùng
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
   </AdminLayout>
 </template>
 
@@ -421,6 +526,7 @@ import {
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import {
   BarChart2,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -479,20 +585,33 @@ const showMergeDialog = ref(false)
 const isMerging = ref(false)
 const pendingMergeGroup = ref<MatchGroup | null>(null)
 
-// ── Static data ───────────────────────────────────────────────────────────────
+// ── Whitelist (mark as not duplicate) ─────────────────────────────────────────
 
-const kpis = [
-  { label: 'Tổng cụm trùng', value: '1,248', trend: '+12% so với tháng trước', trendClass: 'text-brand-500', icon: BarChart2, iconClass: 'text-brand-500' },
-  { label: 'Lead trùng hôm nay', value: '42', trend: 'Đang chờ xử lý', trendClass: 'text-gray-500 dark:text-gray-400', icon: UserX, iconClass: 'text-warning-500' },
-  { label: 'Deal nghi ngờ trùng', value: '18', trend: 'Cần ưu tiên xử lý', trendClass: 'text-error-500', icon: CreditCard, iconClass: 'text-error-500' },
-]
+interface WhitelistEntry {
+  pairKey: string
+  nameA: string
+  nameB: string
+  companyA?: string
+  companyB?: string
+  reason?: string
+  markedAt: string
+}
 
-const sourceBars = [
-  { label: 'FB', pct: 100, opacity: 0.9 },
-  { label: 'GG', pct: 75, opacity: 0.7 },
-  { label: 'ZL', pct: 50, opacity: 0.5 },
-  { label: 'KH', pct: 25, opacity: 0.3 },
-]
+const whitelistedPairs = ref<WhitelistEntry[]>([])
+const whitelistSet = computed(() => new Set(whitelistedPairs.value.map((e) => e.pairKey)))
+const showNotDupDialog = ref(false)
+const pendingNotDupGroup = ref<MatchGroup | null>(null)
+const notDupReason = ref('')
+
+// ── KPI Cards (computed so whitelist count is reactive) ───────────────────────
+
+const kpis = computed(() => [
+  { label: 'Tổng cụm trùng',           value: '1,248', trend: '+12% so với tháng trước',       trendClass: 'text-brand-500',                        icon: BarChart2,     iconClass: 'text-brand-500' },
+  { label: 'Lead trùng hôm nay',        value: '42',    trend: 'Đang chờ xử lý',                trendClass: 'text-gray-500 dark:text-gray-400',      icon: UserX,         iconClass: 'text-warning-500' },
+  { label: 'Deal nghi ngờ trùng',       value: '18',    trend: 'Cần ưu tiên xử lý',             trendClass: 'text-error-500',                        icon: CreditCard,    iconClass: 'text-error-500' },
+  { label: 'Không phải trùng',          value: String(whitelistedPairs.value.length), trend: whitelistedPairs.value.length > 0 ? 'Có thể hoàn tác' : 'Chưa có', trendClass: 'text-success-500', icon: CheckCircle2, iconClass: 'text-success-500' },
+])
+
 
 const typeTabs = [
   { label: 'Tất cả', value: 'all' as const },
@@ -618,9 +737,31 @@ const matchGroups = ref<MatchGroup[]>([
       { label: 'Nguồn', valueA: 'Website', valueB: 'Zalo', highlight: 'diff' },
     ],
   },
+  // ── Edge case: cùng liên hệ, mua cho 2 hộ kinh doanh khác nhau ──────────
+  {
+    id: 'g-07',
+    score: 96,
+    level: 'high',
+    tags: ['Trùng SĐT', 'Trùng Email'],
+    recordA: { id: 'l-15', type: 'lead', displayId: '9101' },
+    recordB: { id: 'l-16', type: 'lead', displayId: '9102' },
+    masterSelected: 'A',
+    fields: [
+      { label: 'Tên liên hệ',    valueA: 'Trần Minh Khoa',       valueB: 'Trần Minh Khoa',       highlight: 'same', isMasterKey: true },
+      { label: 'Số điện thoại',  valueA: '0909 111 222',          valueB: '0909 111 222',          highlight: 'same', isMasterKey: true },
+      { label: 'Email',          valueA: 'khoa.tran@gmail.com',   valueB: 'khoa.tran@gmail.com',   highlight: 'same' },
+      { label: 'Công ty / HKD',  valueA: 'Cửa hàng Minh Phát',   valueB: 'Nhà hàng Thanh Sơn',   highlight: 'diff' },
+      { label: 'Nguồn',          valueA: 'Zalo',                  valueB: 'Facebook',              highlight: 'diff' },
+      { label: 'Ngày tạo',       valueA: '10/03/2024',            valueB: '22/03/2024',            highlight: 'none' },
+    ],
+  },
 ])
 
 // ── Computed ──────────────────────────────────────────────────────────────────
+
+function pairKey(g: MatchGroup): string {
+  return [g.recordA.id, g.recordB.id].sort().join('|')
+}
 
 const filteredGroups = computed<MatchGroup[]>(() => {
   let groups = matchGroups.value
@@ -630,6 +771,9 @@ const filteredGroups = computed<MatchGroup[]>(() => {
     if (g.recordA.type !== 'deal') return true
     return g.recordA.pipeline === g.recordB.pipeline
   })
+
+  // Exclude whitelisted pairs
+  groups = groups.filter((g) => !whitelistSet.value.has(pairKey(g)))
 
   if (activeTypeFilter.value !== 'all') {
     groups = groups.filter((g) => g.recordA.type === activeTypeFilter.value)
@@ -697,5 +841,43 @@ async function confirmMerge(): Promise<void> {
 
   toast.success('Đã hợp nhất 2 bản ghi thành công.')
   if (currentPage.value > totalPages.value) currentPage.value = Math.max(1, totalPages.value)
+}
+
+function openNotDupDialog(group: MatchGroup): void {
+  pendingNotDupGroup.value = group
+  notDupReason.value = ''
+  showNotDupDialog.value = true
+}
+
+function confirmNotDuplicate(): void {
+  if (!pendingNotDupGroup.value) return
+  const g = pendingNotDupGroup.value
+  const key = pairKey(g)
+  const nameA = g.fields[0]?.valueA ?? 'Bản ghi A'
+  const nameB = g.fields[0]?.valueB ?? 'Bản ghi B'
+  const companyField = g.fields.find((f) =>
+    f.label.toLowerCase().includes('công ty') || f.label.toLowerCase().includes('hkd'),
+  )
+  whitelistedPairs.value.push({
+    pairKey: key,
+    nameA,
+    nameB,
+    companyA: companyField?.valueA,
+    companyB: companyField?.valueB,
+    reason: notDupReason.value.trim() || undefined,
+    markedAt: new Date().toLocaleString('vi-VN'),
+  })
+  showNotDupDialog.value = false
+  pendingNotDupGroup.value = null
+  toast.success('Đã đánh dấu không phải trùng', {
+    description: 'Cặp bản ghi này sẽ không xuất hiện cảnh báo trong tương lai.',
+  })
+  if (currentPage.value > totalPages.value) currentPage.value = Math.max(1, totalPages.value)
+}
+
+function undoNotDuplicate(key: string): void {
+  const idx = whitelistedPairs.value.findIndex((e) => e.pairKey === key)
+  if (idx >= 0) whitelistedPairs.value.splice(idx, 1)
+  toast('Đã hoàn tác. Cặp bản ghi sẽ xuất hiện lại trong danh sách.')
 }
 </script>

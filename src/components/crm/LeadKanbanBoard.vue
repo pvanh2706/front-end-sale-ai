@@ -16,7 +16,7 @@
     </div>
 
     <!-- ─── KPIs ─────────────────────────────────────────────── -->
-    <div class="shrink-0 grid grid-cols-2 gap-3 px-4 pt-2 md:grid-cols-4">
+    <div class="shrink-0 grid grid-cols-3 gap-3 px-4 pt-2">
       <div
         v-for="kpi in leadKpis"
         :key="kpi.label"
@@ -264,8 +264,8 @@
       </div>
     </div>
 
-    <!-- Board -->
-    <div class="custom-scrollbar flex-1 overflow-x-auto overflow-y-hidden p-2">
+    <!-- Board (kanban view) -->
+    <div v-if="!props.viewMode || props.viewMode === 'kanban'" class="custom-scrollbar flex-1 overflow-x-auto overflow-y-hidden p-2">
       <div ref="leadContainerRef" class="lead-kanban-container h-full">
 
         <div
@@ -338,7 +338,7 @@
               :class="[
                 card.isOptimistic ? 'animate-pulse border-primary-300 dark:border-primary-700' : 'border-gray-200 dark:border-gray-700',
               ]"
-              :style="{ borderLeftWidth: '4px', borderLeftColor: LEAD_COL_ACCENT[column.id] ?? '#D1D5DB' }"
+              :style="{ borderLeftWidth: '4px', borderLeftColor: column.color ?? '#D1D5DB' }"
               draggable="true"
               @dragstart="handleDragStart(card.id, column.id)"
             >
@@ -440,9 +440,430 @@
       </div>
     </div>
 
+    <!-- List view -->
+    <div v-if="props.viewMode === 'list'" class="custom-scrollbar flex-1 overflow-auto p-3">
+      <!-- Selection toolbar -->
+      <Transition name="fade">
+        <div v-if="selectedLeadIds.length > 0" class="mb-2 flex items-center gap-3 rounded-lg border border-error-200 bg-error-50 px-4 py-2 dark:border-error-500/30 dark:bg-error-900/20">
+          <span class="text-sm font-medium text-error-600 dark:text-error-400">Đã chọn <strong>{{ selectedLeadIds.length }}</strong> lead</span>
+          <button
+            class="ml-auto flex items-center gap-1.5 rounded-lg bg-error-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-error-600"
+            @click="deleteSelectedLeads"
+          >
+            <Trash2 class="h-3.5 w-3.5" />
+            Xóa đã chọn
+          </button>
+        </div>
+      </Transition>
+      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-xs dark:border-gray-700 dark:bg-gray-800">
+        <!-- Header -->
+        <div class="sticky top-0 z-10 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/90">
+          <div class="flex min-w-[800px] items-center gap-3 px-4 py-2.5">
+            <input
+              type="checkbox"
+              class="h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-brand-500"
+              :checked="allLeadsSelected"
+              @change="toggleAllLeads(($event.target as HTMLInputElement).checked)"
+            />
+            <span class="w-[210px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Tên lead</span>
+            <span class="w-[170px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Công ty</span>
+            <span class="w-[120px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Giai đoạn</span>
+            <span class="w-[90px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Nguồn</span>
+            <span class="w-[120px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Tags</span>
+            <span class="flex-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Phụ trách</span>
+            <span class="w-[60px] shrink-0"></span>
+          </div>
+        </div>
+        <!-- Empty state -->
+        <div v-if="allLeadCards.length === 0" class="flex items-center justify-center py-12">
+          <p class="text-sm text-gray-400 dark:text-gray-600">Không có lead nào phù hợp</p>
+        </div>
+        <!-- Rows -->
+        <div
+          v-for="(item, idx) in allLeadCards"
+          :key="item.id"
+          class="group flex min-w-[800px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-700/40"
+          :class="[
+            idx !== allLeadCards.length - 1 ? 'border-b border-gray-100 dark:border-gray-700/50' : '',
+            selectedLeadIds.includes(item.id) ? 'bg-brand-50/60 dark:bg-brand-900/10' : '',
+          ]"
+          :style="{ borderLeft: `3px solid ${item.stageColor}` }"
+        >
+          <!-- Checkbox -->
+          <input
+            type="checkbox"
+            class="h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-brand-500"
+            :checked="selectedLeadIds.includes(item.id)"
+            @change="toggleLeadRow(item.id, ($event.target as HTMLInputElement).checked)"
+            @click.stop
+          />
+          <!-- Name -->
+          <div class="w-[210px] min-w-0 shrink-0">
+            <RouterLink
+              :to="`/crm-leads/${item.id}`"
+              class="block truncate text-sm font-semibold text-gray-900 hover:text-primary-500 dark:text-white dark:hover:text-primary-400"
+              @click.stop
+            >{{ item.title }}</RouterLink>
+          </div>
+          <!-- Company -->
+          <div class="w-[170px] min-w-0 shrink-0">
+            <p v-if="item.companyName" class="truncate text-sm text-gray-700 dark:text-gray-300">{{ item.companyName }}</p>
+            <span v-else class="text-xs text-gray-300 dark:text-gray-600">—</span>
+          </div>
+          <!-- Stage -->
+          <div class="w-[120px] shrink-0">
+            <span
+              class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+              :style="{ background: item.stageColor + '22', color: item.stageColor }"
+            >{{ item.stageName }}</span>
+          </div>
+          <!-- Source -->
+          <div class="w-[90px] shrink-0">
+            <span
+              v-if="item.source"
+              class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+              :style="leadSourceStyle(item.source)"
+            >{{ item.source }}</span>
+            <span v-else class="text-xs text-gray-300 dark:text-gray-600">—</span>
+          </div>
+          <!-- Tags -->
+          <div class="flex w-[120px] shrink-0 flex-wrap gap-1">
+            <span v-if="item.isRepeat" class="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 dark:bg-gray-700 dark:text-gray-400">Repeat</span>
+            <span v-if="item.isViewed" class="inline-flex items-center rounded-md border border-success-200 bg-success-50 px-1.5 py-0.5 text-[10px] font-semibold text-success-600 dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-400">Đã xem</span>
+            <span v-if="item.hasTask" class="inline-flex items-center rounded-md border border-warning-200 bg-warning-50 px-1.5 py-0.5 text-[10px] font-semibold text-warning-600 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-400">Có task</span>
+            <span v-if="!item.isRepeat && !item.isViewed && !item.hasTask" class="text-xs text-gray-300 dark:text-gray-600">—</span>
+          </div>
+          <!-- Assignee -->
+          <div class="flex min-w-0 flex-1 items-center gap-1.5">
+            <div
+              class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
+              :style="{ background: item.avatarColor ?? '#6B7280' }"
+              :title="item.assigneeName ?? ''"
+            >{{ item.avatarInitials ?? '?' }}</div>
+            <span v-if="item.assigneeName" class="truncate text-xs text-gray-500 dark:text-gray-400">{{ item.assigneeName }}</span>
+            <span v-else class="text-xs text-gray-300 dark:text-gray-600">—</span>
+          </div>
+          <!-- Actions -->
+          <div class="flex w-[60px] shrink-0 items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-primary-500 dark:hover:bg-gray-700"
+              @click.stop="openEditDialog(item, item.stageId)"
+            ><Pencil class="h-3.5 w-3.5" /></button>
+            <button
+              class="rounded p-1 text-gray-400 hover:bg-error-50 hover:text-error-500 dark:hover:bg-error-900/20"
+              @click.stop="removeCard(item.id)"
+            ><Trash2 class="h-3.5 w-3.5" /></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar view — Priority Action List -->
+    <div v-if="props.viewMode === 'calendar'" class="custom-scrollbar flex-1 overflow-auto p-4">
+
+      <!-- Stats + filter bar -->
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div
+            v-if="leadCalendarActions.filter(a => !a.done && a.priority === 'urgent').length"
+            class="flex items-center gap-1.5 rounded-xl bg-error-50 px-3 py-1.5 dark:bg-error-900/20"
+          >
+            <span class="h-2 w-2 rounded-full bg-error-500"></span>
+            <span class="text-xs font-semibold text-error-600 dark:text-error-400">
+              {{ leadCalendarActions.filter(a => !a.done && a.priority === 'urgent').length }} khẩn cấp
+            </span>
+          </div>
+          <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="font-semibold text-gray-700 dark:text-gray-300">{{ leadCalendarActions.filter(a => !a.done).length }}</span>
+            việc chưa xử lý
+          </span>
+        </div>
+        <!-- Filter tabs -->
+        <div class="flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-800">
+          <button
+            v-for="f in LEAD_CALENDAR_FILTERS"
+            :key="f.id"
+            type="button"
+            class="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            :class="leadCalendarFilter === f.id
+              ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            @click="leadCalendarFilter = f.id"
+          >{{ f.name }}</button>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div
+        v-if="filteredLeadCalendarActions.length === 0"
+        class="flex flex-col items-center justify-center gap-3 py-20 text-center"
+      >
+        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-success-50 dark:bg-success-900/20">
+          <CheckCircle2 class="h-7 w-7 text-success-500" />
+        </div>
+        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Tất cả đã xử lý!</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500">Không còn việc nào cần xử lý trong bộ lọc này</p>
+      </div>
+
+      <!-- Action list -->
+      <div v-else class="space-y-2">
+        <div
+          v-for="action in filteredLeadCalendarActions"
+          :key="action.id"
+          class="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-theme-xs transition-all dark:border-gray-700 dark:bg-gray-800"
+          :class="['border-l-[3px]', LEAD_PRIORITY_BORDER[action.priority], action.done ? 'opacity-55' : '']"
+        >
+          <!-- Priority badge -->
+          <span
+            class="shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+            :class="LEAD_PRIORITY_BADGE[action.priority]"
+          >{{ LEAD_PRIORITY_LABEL[action.priority] }}</span>
+
+          <!-- Action type badge -->
+          <span
+            class="shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-[10px] font-semibold"
+            :class="LEAD_ACTION_TYPE_BADGE[action.type] ?? 'bg-gray-100 text-gray-600'"
+          >{{ action.type }}</span>
+
+          <!-- Description + linked lead -->
+          <div class="min-w-0 flex-1">
+            <p
+              class="truncate text-sm font-medium"
+              :class="action.done
+                ? 'text-gray-400 line-through dark:text-gray-500'
+                : 'text-gray-800 dark:text-gray-200'"
+            >{{ action.description }}</p>
+            <div class="mt-0.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+              <RouterLink
+                :to="`/crm-leads/${action.leadId}`"
+                class="truncate font-medium text-brand-500 hover:underline dark:text-brand-400"
+              >{{ action.leadTitle }}</RouterLink>
+              <span v-if="action.company">· {{ action.company }}</span>
+            </div>
+          </div>
+
+          <!-- Due date -->
+          <div class="w-[110px] shrink-0 text-right">
+            <p
+              class="text-xs font-medium"
+              :class="action.done
+                ? 'text-gray-400 dark:text-gray-500'
+                : action.isOverdue
+                  ? 'text-error-500'
+                  : isCloseSoon(action.dueDate) ? 'text-warning-500' : 'text-gray-600 dark:text-gray-400'"
+            >
+              <Calendar class="mr-0.5 inline-block h-3 w-3" />
+              {{ formatCloseDate(action.dueDate) }}
+            </p>
+            <p
+              class="mt-0.5 text-[10px]"
+              :class="action.done
+                ? 'text-gray-300 dark:text-gray-600'
+                : action.isOverdue
+                  ? 'text-error-400'
+                  : isCloseSoon(action.dueDate) ? 'text-warning-400' : 'text-gray-400 dark:text-gray-500'"
+            >{{ action.done ? 'Đã xong' : daysLabel(action.dueDate) }}</p>
+          </div>
+
+          <!-- Assignee -->
+          <div class="flex w-[130px] shrink-0 items-center gap-1.5">
+            <div
+              v-if="action.assigneeName"
+              class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-white dark:ring-gray-800"
+              :style="{ background: action.assigneeColor || '#6B7280' }"
+              :title="action.assigneeName"
+            >{{ cardInitials(action.assigneeName) }}</div>
+            <span v-if="action.assigneeName" class="truncate text-xs text-gray-500 dark:text-gray-400">
+              {{ action.assigneeName }}
+            </span>
+          </div>
+
+          <!-- Done button — checkmark chỉ hiện khi đã xử lý -->
+          <button
+            type="button"
+            class="shrink-0 flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all"
+            :class="action.done
+              ? 'border-success-300 bg-success-50 text-success-600 dark:border-success-600 dark:bg-success-900/20 dark:text-success-400'
+              : 'border-gray-200 bg-white text-gray-500 hover:border-success-300 hover:bg-success-50 hover:text-success-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:border-success-600 dark:hover:bg-success-900/20 dark:hover:text-success-400'"
+            @click="markLeadActionDone(action.id)"
+          >
+            <span :class="[
+              'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all',
+              action.done
+                ? 'border-success-500 bg-success-500'
+                : 'border-gray-300 bg-white dark:border-gray-500 dark:bg-transparent'
+            ]">
+              <Check v-if="action.done" class="h-2.5 w-2.5 text-white" />
+            </span>
+            Đã xử lý
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── Lead Stage Settings Dialog ─────────────────────────── -->
+    <Dialog :open="showLeadStageSettings" @update:open="val => { showLeadStageSettings = val; leadColorPickerIdx = null; showAddLeadStageForm = false }">
+      <DialogContent class="sm:max-w-md max-h-[85vh] overflow-y-auto" @click="leadColorPickerIdx = null">
+        <DialogHeader>
+          <DialogTitle class="text-base font-semibold text-gray-900 dark:text-white">Cài đặt giai đoạn Lead</DialogTitle>
+          <DialogDescription class="text-sm text-gray-500">Thêm, đổi tên hoặc xóa giai đoạn — kéo thả để sắp xếp lại</DialogDescription>
+        </DialogHeader>
+
+        <!-- Stage list -->
+        <div class="max-h-[220px] space-y-1.5 overflow-y-auto py-1 pr-1">
+          <div
+            v-for="(stage, idx) in leadStageDraft"
+            :key="stage.id"
+            :draggable="true"
+            :class="[
+              'flex items-center gap-2 rounded-lg border px-3 py-2 transition-all select-none',
+              leadDragIdx === idx ? 'opacity-40' : '',
+              leadDragOverIdx === idx && leadDragIdx !== idx
+                ? 'border-brand-400 bg-brand-50 dark:border-brand-500 dark:bg-brand-900/20'
+                : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50',
+            ]"
+            @dragstart="onLeadDragStart(idx)"
+            @dragover="onLeadDragOver($event, idx)"
+            @drop.prevent="onLeadDrop(idx)"
+            @dragend="onLeadDragEnd"
+          >
+            <!-- Drag handle -->
+            <GripVertical class="h-4 w-4 shrink-0 cursor-grab text-gray-300 dark:text-gray-600" />
+
+            <!-- Color swatch + picker -->
+            <div class="relative shrink-0">
+              <button
+                type="button"
+                class="h-6 w-6 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-110 dark:border-gray-700 dark:ring-gray-600"
+                :style="{ background: stage.color }"
+                title="Chọn màu"
+                @click.stop="leadColorPickerIdx = leadColorPickerIdx === idx ? null : idx"
+              />
+              <transition name="fade">
+                <div
+                  v-if="leadColorPickerIdx === idx"
+                  class="absolute left-0 top-full z-20 mt-1.5 grid grid-cols-5 gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
+                  @click.stop
+                >
+                  <button
+                    v-for="entry in STAGE_COLOR_PALETTE"
+                    :key="entry.color"
+                    type="button"
+                    class="h-5 w-5 rounded-full transition-transform hover:scale-125"
+                    :style="{ background: entry.color, outline: stage.color === entry.color ? `2px solid ${entry.color}` : 'none', outlineOffset: '2px' }"
+                    @click.stop="stage.color = entry.color; stage.headerBg = entry.gradient; leadColorPickerIdx = null"
+                  />
+                </div>
+              </transition>
+            </div>
+
+            <!-- Name input -->
+            <input
+              v-model="stage.name"
+              class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500"
+              placeholder="Tên giai đoạn"
+              maxlength="40"
+              @keyup.enter="stage.name.trim() !== (leadStageOrigNames[stage.id] ?? '') && saveLeadStageName(stage)"
+            />
+
+            <!-- Per-stage save (shown when name is dirty) -->
+            <button
+              v-if="stage.name.trim() && stage.name.trim() !== (leadStageOrigNames[stage.id] ?? '')"
+              type="button"
+              class="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-success-600 transition-colors hover:bg-success-50 dark:text-success-400 dark:hover:bg-success-900/20"
+              title="Lưu tên"
+              @click.stop="saveLeadStageName(stage)"
+            >✓ Lưu</button>
+
+            <!-- Delete -->
+            <button
+              type="button"
+              class="shrink-0 rounded-md p-1.5 text-gray-400 transition-colors hover:bg-error-50 hover:text-error-500 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-error-900/20"
+              :disabled="leadStageDraft.length <= 1"
+              :title="leadStageDraft.length <= 1 ? 'Pipeline phải có ít nhất 1 giai đoạn' : 'Xóa giai đoạn'"
+              @click="removeLeadStage(idx)"
+            >
+              <Trash2 class="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Bottom section: sub-form / add button / footer — always visible -->
+        <div class="shrink-0 space-y-3 pt-1">
+
+          <!-- Inline add-stage sub-form -->
+          <transition name="fade">
+            <div
+              v-if="showAddLeadStageForm"
+              class="rounded-xl border border-brand-200 bg-brand-50/60 p-3 space-y-3 dark:border-brand-700/60 dark:bg-brand-900/20"
+              @click.stop
+            >
+              <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">Giai đoạn mới</p>
+
+              <div class="space-y-1">
+                <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Tên giai đoạn</label>
+                <input
+                  v-model="newLeadStageName"
+                  class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500"
+                  placeholder="VD: Đang thương lượng"
+                  maxlength="40"
+                  @keyup.enter="confirmAddLeadStage"
+                  @keyup.esc="showAddLeadStageForm = false; newLeadStageName = ''"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Vị trí</label>
+                <select
+                  v-model="newLeadStagePosition"
+                  class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                >
+                  <option value="first">Đứng đầu tiên</option>
+                  <option v-for="s in leadStageDraft" :key="s.id" :value="s.id">Sau: {{ s.name || '(chưa đặt tên)' }}</option>
+                  <option value="last">Cuối danh sách</option>
+                </select>
+              </div>
+
+              <div class="flex justify-end gap-2">
+                <button
+                  type="button"
+                  class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                  @click="showAddLeadStageForm = false; newLeadStageName = ''"
+                >Hủy</button>
+                <button
+                  v-if="newLeadStageName.trim()"
+                  type="button"
+                  class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                  @click="confirmAddLeadStage"
+                >Lưu</button>
+              </div>
+            </div>
+          </transition>
+
+          <!-- Toggle add-form button -->
+          <button
+            v-if="!showAddLeadStageForm"
+            type="button"
+            class="flex w-full items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 px-3 py-2.5 text-sm font-medium text-gray-400 transition-colors hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:hover:border-brand-600 dark:hover:text-brand-400"
+            @click="showAddLeadStageForm = true; newLeadStagePosition = 'last'"
+          >
+            <Plus class="h-4 w-4" />
+            Thêm giai đoạn mới
+          </button>
+
+          <DialogFooter class="gap-2">
+            <Button variant="outline" @click="showLeadStageSettings = false; showAddLeadStageForm = false">Hủy</Button>
+            <Button class="bg-brand-500 text-white hover:bg-brand-600" @click="saveLeadStages">Lưu thay đổi</Button>
+          </DialogFooter>
+
+        </div>
+      </DialogContent>
+    </Dialog>
+
     <!-- Create / Edit Lead Dialog -->
     <Dialog :open="showDialog" @update:open="showDialog = $event">
-      <DialogContent class="sm:max-w-lg">
+      <DialogContent class="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader class="border-b border-gray-200 pb-4 dark:border-gray-700">
           <DialogTitle class="text-lg font-semibold text-gray-900 dark:text-white">
             {{ editingId ? 'Cập nhật Lead' : 'Tạo Lead mới' }}
@@ -458,17 +879,87 @@
             <Input id="l-title" v-model="form.title" placeholder="Họ tên hoặc tên cơ hội" />
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div class="space-y-1.5">
-              <Label for="l-assignee">Người phụ trách</Label>
-              <Input id="l-assignee" v-model="form.assigneeName" placeholder="Tên nhân viên" />
-            </div>
-            <div class="space-y-1.5">
-              <Label for="l-company">Công ty</Label>
-              <Input id="l-company" v-model="form.companyName" placeholder="Tên công ty" />
+          <!-- Customer type toggle -->
+          <div class="space-y-1.5">
+            <Label>Loại khách hàng</Label>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                class="flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-medium transition-all"
+                :class="form.customerType === 'company'
+                  ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-600'"
+                @click="form.customerType = 'company'"
+              >
+                <Building2 class="h-4 w-4 shrink-0" />
+                Công ty
+              </button>
+              <button
+                type="button"
+                class="flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-medium transition-all"
+                :class="form.customerType === 'household'
+                  ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-600'"
+                @click="form.customerType = 'household'; form.contactTitle = ''"
+              >
+                <Store class="h-4 w-4 shrink-0" />
+                Hộ kinh doanh
+              </button>
+              <button
+                type="button"
+                class="flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-medium transition-all"
+                :class="form.customerType === 'individual'
+                  ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-600'"
+                @click="form.customerType = 'individual'; form.companyName = ''; form.contactTitle = ''"
+              >
+                <User class="h-4 w-4 shrink-0" />
+                Cá nhân
+              </button>
             </div>
           </div>
 
+          <!-- Company customer fields -->
+          <template v-if="form.customerType === 'company'">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <Label for="l-company">Tên công ty</Label>
+                <Input id="l-company" v-model="form.companyName" placeholder="VD: Tập đoàn Vinhomes" />
+              </div>
+              <div class="space-y-1.5">
+                <Label for="l-contact">Người liên hệ</Label>
+                <Input id="l-contact" v-model="form.contactName" placeholder="Họ và tên" />
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <Label for="l-contact-title">Chức vụ người liên hệ</Label>
+              <Input id="l-contact-title" v-model="form.contactTitle" placeholder="VD: Giám đốc mua hàng, Trưởng phòng IT" />
+            </div>
+          </template>
+
+          <!-- Household business fields -->
+          <template v-else-if="form.customerType === 'household'">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <Label for="l-hkd-name">Tên hộ kinh doanh</Label>
+                <Input id="l-hkd-name" v-model="form.companyName" placeholder="VD: Cửa hàng Minh Phát" />
+              </div>
+              <div class="space-y-1.5">
+                <Label for="l-hkd-contact">Chủ hộ / Người liên hệ</Label>
+                <Input id="l-hkd-contact" v-model="form.contactName" placeholder="Họ và tên" />
+              </div>
+            </div>
+          </template>
+
+          <!-- Individual customer fields -->
+          <template v-else>
+            <div class="space-y-1.5">
+              <Label for="l-contact">Tên khách hàng</Label>
+              <Input id="l-contact" v-model="form.contactName" placeholder="Họ và tên khách hàng" />
+            </div>
+          </template>
+
+          <!-- Common: phone + email -->
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1.5">
               <Label for="l-phone">Số điện thoại</Label>
@@ -478,6 +969,17 @@
               <Label for="l-email">Email</Label>
               <Input id="l-email" v-model="form.email" type="email" placeholder="email@congty.com" />
             </div>
+          </div>
+
+          <!-- Assignee -->
+          <div class="space-y-1.5">
+            <Label for="l-assignee">Người phụ trách</Label>
+            <Input id="l-assignee" v-model="form.assigneeName" placeholder="Tên nhân viên phụ trách" />
+          </div>
+          <!-- Team Lead -->
+          <div class="space-y-1.5">
+            <Label for="l-teamlead">Team Lead quản lý</Label>
+            <Input id="l-teamlead" v-model="form.teamLeadName" placeholder="Tên team lead" />
           </div>
 
           <div class="grid grid-cols-2 gap-3">
@@ -527,6 +1029,12 @@ import { computed, nextTick, ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import {
   AlertTriangle,
+  Building2,
+  Calendar,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  GripVertical,
   Mail,
   MessageCircle,
   MessageSquare,
@@ -534,8 +1042,11 @@ import {
   Phone,
   Plus,
   Search,
+  Settings,
   SlidersHorizontal,
+  Store,
   Trash2,
+  User,
   X,
 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
@@ -552,6 +1063,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
+const props = withDefaults(defineProps<{
+  viewMode?: 'kanban' | 'list' | 'calendar'
+}>(), {
+  viewMode: 'kanban',
+})
+
 const router = useRouter()
 
 // ─── Quick filters ────────────────────────────────────────────
@@ -567,6 +1084,15 @@ const LEAD_QUICK_FILTERS = [
 
 const activeLeadQuickFilter = ref('all')
 const showLeadDuplicateBanner = ref(true)
+
+// ─── List selection ────────────────────────────────────────────
+const selectedLeadIds = ref<string[]>([])
+const allLeadsSelected = computed(() =>
+  allLeadCards.value.length > 0 && allLeadCards.value.every(l => selectedLeadIds.value.includes(l.id))
+)
+const someLeadsSelected = computed(() =>
+  selectedLeadIds.value.length > 0 && !allLeadsSelected.value
+)
 
 // ─── Source badge style ────────────────────────────────────────
 
@@ -604,7 +1130,10 @@ interface LeadCard {
   isRepeat?: boolean
   assigneeName?: string
   assigneeColor?: string
+  teamLeadName?: string
   companyName?: string
+  contactName?: string
+  contactTitle?: string
   date: string
   hasTask?: boolean
   isViewed?: boolean
@@ -619,22 +1148,109 @@ interface LeadCard {
 }
 
 interface LeadColumn {
-  id: LeadStage
+  id: string          // loosened from LeadStage to support dynamic stages
   name: string
   headerBg: string
+  color: string       // main accent color
   totalValue: string
   cards: LeadCard[]
 }
 
+interface StageDraft {
+  id: string
+  name: string
+  color: string
+  headerBg: string
+  isNew?: boolean
+}
+
 interface LeadForm {
+  customerType: 'company' | 'household' | 'individual'
   title: string
   assigneeName: string
+  teamLeadName: string
   companyName: string
+  contactName: string
+  contactTitle: string
   phone: string
   email: string
   source: string
   stage: LeadStage
 }
+
+// ─── Calendar Action types ─────────────────────────────────────
+
+type LeadActionPriority = 'urgent' | 'high' | 'normal' | 'low'
+type LeadActionType = 'Gọi điện' | 'Gửi email' | 'Demo' | 'Gặp mặt' | 'Báo giá' | 'Ghi chú'
+
+interface LeadCalendarAction {
+  id: string
+  leadId: string
+  leadTitle: string
+  company?: string
+  type: LeadActionType
+  description: string
+  priority: LeadActionPriority
+  dueDate: string
+  isOverdue?: boolean
+  assigneeName?: string
+  assigneeColor?: string
+  done: boolean
+}
+
+type LeadCalendarFilterId = 'all' | 'urgent' | 'today' | 'week'
+
+const LEAD_PRIORITY_LABEL: Record<LeadActionPriority, string> = {
+  urgent: 'Khẩn cấp',
+  high:   'Cao',
+  normal: 'Bình thường',
+  low:    'Thấp',
+}
+
+const LEAD_PRIORITY_BADGE: Record<LeadActionPriority, string> = {
+  urgent: 'bg-error-50 text-error-600 dark:bg-error-900/30 dark:text-error-400',
+  high:   'bg-warning-50 text-warning-600 dark:bg-warning-900/30 dark:text-warning-400',
+  normal: 'bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400',
+  low:    'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
+}
+
+const LEAD_PRIORITY_BORDER: Record<LeadActionPriority, string> = {
+  urgent: 'border-l-error-500',
+  high:   'border-l-warning-400',
+  normal: 'border-l-brand-400',
+  low:    'border-l-gray-300 dark:border-l-gray-600',
+}
+
+const LEAD_PRIORITY_ORDER: Record<LeadActionPriority, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
+
+const LEAD_CALENDAR_FILTERS: { id: LeadCalendarFilterId; name: string }[] = [
+  { id: 'all',    name: 'Tất cả' },
+  { id: 'urgent', name: '🔴 Khẩn cấp' },
+  { id: 'today',  name: 'Hôm nay' },
+  { id: 'week',   name: 'Tuần này' },
+]
+
+const LEAD_ACTION_TYPE_BADGE: Record<string, string> = {
+  'Gọi điện': 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+  'Gửi email': 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+  'Demo':      'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+  'Gặp mặt':  'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
+  'Báo giá':  'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400',
+  'Ghi chú':  'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+}
+
+const STAGE_COLOR_PALETTE = [
+  { color: '#F59E0B', gradient: 'linear-gradient(135deg,#F59E0B,#D97706)' },
+  { color: '#10B981', gradient: 'linear-gradient(135deg,#10B981,#059669)' },
+  { color: '#0D9488', gradient: 'linear-gradient(135deg,#0D9488,#0F766E)' },
+  { color: '#0EA5E9', gradient: 'linear-gradient(135deg,#0EA5E9,#0284C7)' },
+  { color: '#3B82F6', gradient: 'linear-gradient(135deg,#3B82F6,#2563EB)' },
+  { color: '#6366F1', gradient: 'linear-gradient(135deg,#6366F1,#4F46E5)' },
+  { color: '#8B5CF6', gradient: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' },
+  { color: '#EC4899', gradient: 'linear-gradient(135deg,#EC4899,#DB2777)' },
+  { color: '#EF4444', gradient: 'linear-gradient(135deg,#EF4444,#DC2626)' },
+  { color: '#64748B', gradient: 'linear-gradient(135deg,#64748B,#475569)' },
+]
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -653,6 +1269,31 @@ function pickColor(name: string): string {
   return AVATAR_COLORS[h % AVATAR_COLORS.length]
 }
 
+function cardInitials(name: string): string {
+  return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+}
+
+function isCloseSoon(dateStr: string): boolean {
+  const diff = (new Date(dateStr).getTime() - Date.now()) / 86_400_000
+  return diff >= 0 && diff <= 7
+}
+
+function formatCloseDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function daysLabel(dateStr: string): string {
+  const d = new Date(dateStr)
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  d.setHours(0, 0, 0, 0)
+  const diff = Math.round((d.getTime() - now.getTime()) / 86_400_000)
+  if (diff < 0) return `Quá hạn ${Math.abs(diff)} ngày`
+  if (diff === 0) return 'Đến hạn hôm nay'
+  if (diff === 1) return 'Đến hạn ngày mai'
+  return `Còn ${diff} ngày`
+}
+
 // ─── Mock data ────────────────────────────────────────────────
 
 const columns = ref<LeadColumn[]>([
@@ -660,6 +1301,7 @@ const columns = ref<LeadColumn[]>([
     id: 'lead',
     name: 'Lead',
     headerBg: 'linear-gradient(135deg,#F59E0B,#D97706)',
+    color: '#F59E0B',
     totalValue: '438 764 000',
     cards: [
       {
@@ -684,6 +1326,7 @@ const columns = ref<LeadColumn[]>([
     id: 'mql',
     name: 'MQL',
     headerBg: 'linear-gradient(135deg,#10B981,#059669)',
+    color: '#10B981',
     totalValue: '358 773 263',
     cards: [
       {
@@ -714,6 +1357,7 @@ const columns = ref<LeadColumn[]>([
     id: 'sql',
     name: 'SQL',
     headerBg: 'linear-gradient(135deg,#0D9488,#0F766E)',
+    color: '#0D9488',
     totalValue: '896 226 080',
     cards: [
       {
@@ -744,6 +1388,7 @@ const columns = ref<LeadColumn[]>([
     id: 'opportunity',
     name: 'Opportunity',
     headerBg: 'linear-gradient(135deg,#0EA5E9,#0284C7)',
+    color: '#0EA5E9',
     totalValue: '0',
     cards: [
       {
@@ -772,6 +1417,7 @@ const columns = ref<LeadColumn[]>([
     id: 'customer',
     name: 'Customer',
     headerBg: 'linear-gradient(135deg,#3B82F6,#2563EB)',
+    color: '#3B82F6',
     totalValue: '332 622 877',
     cards: [
       {
@@ -799,6 +1445,7 @@ const columns = ref<LeadColumn[]>([
     id: 'evangelist',
     name: 'Evangelist',
     headerBg: 'linear-gradient(135deg,#6366F1,#4F46E5)',
+    color: '#6366F1',
     totalValue: '0',
     cards: [],
   },
@@ -812,7 +1459,6 @@ const leadKpis = computed(() => {
     { label: 'Tổng Lead',  value: String(all.length) },
     { label: 'Hôm nay',    value: String(all.filter((c) => /phút|giờ|hôm nay/i.test(c.date)).length), valueClass: 'text-success-500' },
     { label: 'Có task',    value: String(all.filter((c) => c.hasTask).length) },
-    { label: 'Đã xem',     value: String(all.filter((c) => c.isViewed).length), valueClass: 'text-primary-500' },
   ]
 })
 
@@ -999,6 +1645,17 @@ const filteredColumns = computed(() => {
   }))
 })
 
+const allLeadCards = computed(() =>
+  filteredColumns.value.flatMap((col) =>
+    col.cards.map((card) => ({
+      ...card,
+      stageId: col.id as LeadStage,
+      stageName: col.name,
+      stageColor: col.color ?? '#D1D5DB',
+    }))
+  )
+)
+
 function removeLeadFilter(key: string): void {
   if (key === 'sources') leadFilterSources.value = []
   if (key === 'stages') leadFilterStages.value = []
@@ -1096,6 +1753,208 @@ function stopLeadResize(): void {
   document.removeEventListener('mouseup', stopLeadResize)
 }
 
+// ─── Lead Stage Settings ──────────────────────────────────────
+
+const showLeadStageSettings = ref(false)
+const leadStageDraft = ref<StageDraft[]>([])
+const leadColorPickerIdx = ref<number | null>(null)
+const leadStageOrigNames = ref<Record<string, string>>({})
+
+// Add-stage sub-form
+const showAddLeadStageForm = ref(false)
+const newLeadStageName = ref('')
+const newLeadStagePosition = ref<string>('last')
+
+// Drag-drop
+const leadDragIdx = ref<number | null>(null)
+const leadDragOverIdx = ref<number | null>(null)
+
+function openStageSettings(): void {
+  leadStageDraft.value = columns.value.map((col) => ({
+    id: col.id,
+    name: col.name,
+    color: col.color ?? '#64748B',
+    headerBg: col.headerBg,
+  }))
+  leadStageOrigNames.value = Object.fromEntries(columns.value.map((col) => [col.id, col.name]))
+  leadColorPickerIdx.value = null
+  showAddLeadStageForm.value = false
+  newLeadStageName.value = ''
+  newLeadStagePosition.value = 'last'
+  showLeadStageSettings.value = true
+}
+
+function confirmAddLeadStage(): void {
+  const name = newLeadStageName.value.trim()
+  if (!name) { toast.error('Tên giai đoạn không được để trống'); return }
+  const entry = STAGE_COLOR_PALETTE[leadStageDraft.value.length % STAGE_COLOR_PALETTE.length]
+  const newStage: StageDraft = { id: `new_${Date.now()}`, name, color: entry.color, headerBg: entry.gradient, isNew: true }
+  if (newLeadStagePosition.value === 'first') {
+    leadStageDraft.value.unshift(newStage)
+  } else if (newLeadStagePosition.value === 'last') {
+    leadStageDraft.value.push(newStage)
+  } else {
+    const afterIdx = leadStageDraft.value.findIndex((s) => s.id === newLeadStagePosition.value)
+    leadStageDraft.value.splice(afterIdx >= 0 ? afterIdx + 1 : leadStageDraft.value.length, 0, newStage)
+  }
+  leadStageOrigNames.value[newStage.id] = name
+  showAddLeadStageForm.value = false
+  newLeadStageName.value = ''
+  newLeadStagePosition.value = 'last'
+}
+
+function removeLeadStage(idx: number): void {
+  const draft = leadStageDraft.value[idx]
+  if (!draft.isNew) {
+    const col = columns.value.find((c) => c.id === draft.id)
+    if (col && col.cards.length > 0) {
+      toast.error(`Không thể xóa — giai đoạn đang có ${col.cards.length} lead`)
+      return
+    }
+  }
+  leadStageDraft.value.splice(idx, 1)
+  if (leadColorPickerIdx.value === idx) leadColorPickerIdx.value = null
+}
+
+function saveLeadStageName(stage: StageDraft): void {
+  if (!stage.name.trim()) { toast.error('Tên không được để trống'); return }
+  stage.name = stage.name.trim()
+  leadStageOrigNames.value[stage.id] = stage.name
+  toast.success('Đã lưu tên giai đoạn')
+}
+
+function onLeadDragStart(idx: number): void { leadDragIdx.value = idx }
+function onLeadDragOver(e: DragEvent, idx: number): void { e.preventDefault(); leadDragOverIdx.value = idx }
+function onLeadDrop(idx: number): void {
+  const from = leadDragIdx.value
+  if (from === null || from === idx) { leadDragIdx.value = null; leadDragOverIdx.value = null; return }
+  const list = [...leadStageDraft.value]
+  const [moved] = list.splice(from, 1)
+  list.splice(idx, 0, moved)
+  leadStageDraft.value = list
+  leadDragIdx.value = null
+  leadDragOverIdx.value = null
+}
+function onLeadDragEnd(): void { leadDragIdx.value = null; leadDragOverIdx.value = null }
+
+function saveLeadStages(): void {
+  if (leadStageDraft.value.length === 0) {
+    toast.error('Pipeline phải có ít nhất 1 giai đoạn')
+    return
+  }
+  if (leadStageDraft.value.some((s) => !s.name.trim())) {
+    toast.error('Tên giai đoạn không được để trống')
+    return
+  }
+  columns.value = leadStageDraft.value.map((draft) => {
+    const existing = columns.value.find((c) => c.id === draft.id)
+    const palette = STAGE_COLOR_PALETTE.find((p) => p.color === draft.color)
+    const headerBg = palette?.gradient ?? `linear-gradient(135deg,${draft.color},${draft.color})`
+    if (existing) {
+      return { ...existing, name: draft.name.trim(), color: draft.color, headerBg }
+    }
+    const slug = draft.name.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + `_${Date.now()}`
+    return {
+      id: slug, name: draft.name.trim(),
+      color: draft.color, headerBg,
+      totalValue: '0', cards: [],
+    } as LeadColumn
+  })
+  showLeadStageSettings.value = false
+  toast.success('Đã lưu cài đặt giai đoạn')
+}
+
+// ─── Calendar view (Lead) ─────────────────────────────────────
+
+const leadCalendarFilter = ref<LeadCalendarFilterId>('all')
+
+const leadCalendarActions = ref<LeadCalendarAction[]>([
+  {
+    id: 'lca-1', leadId: 'l1', leadTitle: 'Tram Máy Sapa',
+    company: 'Sapa Resort Group', type: 'Gọi điện',
+    description: 'Follow-up sau lần liên hệ đầu tiên, xác nhận nhu cầu',
+    priority: 'urgent', dueDate: '2026-05-19', isOverdue: true,
+    assigneeName: 'Minh Tú', assigneeColor: '#3B82F6', done: false,
+  },
+  {
+    id: 'lca-2', leadId: 'm1', leadTitle: 'POPUP ĐĂNG KÝ DÙNG THỬ API',
+    company: undefined, type: 'Gửi email',
+    description: 'Gửi email giới thiệu gói API phù hợp nhu cầu dùng thử',
+    priority: 'urgent', dueDate: '2026-05-20', isOverdue: true,
+    assigneeName: 'Lan Ngọc', assigneeColor: '#10B981', done: false,
+  },
+  {
+    id: 'lca-3', leadId: 's1', leadTitle: 'Khách sạn Emma',
+    company: 'Emma Hotel Group', type: 'Demo',
+    description: 'Demo tính năng quản lý phòng và check-in online',
+    priority: 'high', dueDate: '2026-05-24',
+    assigneeName: 'Hùng Phát', assigneeColor: '#8B5CF6', done: false,
+  },
+  {
+    id: 'lca-4', leadId: 'o1', leadTitle: 'Golden Hotel',
+    company: 'Golden Hospitality', type: 'Gặp mặt',
+    description: 'Gặp trực tiếp trình bày giải pháp và báo giá dự kiến',
+    priority: 'high', dueDate: '2026-05-27',
+    assigneeName: 'Đức Long', assigneeColor: '#F59E0B', done: false,
+  },
+  {
+    id: 'lca-5', leadId: 'o2', leadTitle: 'Lovera Signature',
+    company: 'Lovera Hotels', type: 'Báo giá',
+    description: 'Gửi báo giá gói Premium cho hệ thống 50 phòng',
+    priority: 'normal', dueDate: '2026-06-02',
+    assigneeName: 'Minh Tú', assigneeColor: '#3B82F6', done: false,
+  },
+  {
+    id: 'lca-6', leadId: 's3', leadTitle: 'Marisol Hotel Đà Nẵng',
+    company: 'Marisol Resort', type: 'Gọi điện',
+    description: 'Gọi kiểm tra tiến độ sau buổi demo tuần trước',
+    priority: 'normal', dueDate: '2026-06-05',
+    assigneeName: 'Lan Ngọc', assigneeColor: '#10B981', done: false,
+  },
+  {
+    id: 'lca-7', leadId: 'l2', leadTitle: '[AFF] D-Mart Hotel',
+    company: 'D-Mart Hotels', type: 'Ghi chú',
+    description: 'Cập nhật ghi chú nhu cầu từ buổi khảo sát ban đầu',
+    priority: 'low', dueDate: '2026-06-10',
+    assigneeName: 'Hùng Phát', assigneeColor: '#8B5CF6', done: false,
+  },
+])
+
+const filteredLeadCalendarActions = computed(() => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const endOfWeek = new Date(today)
+  endOfWeek.setDate(today.getDate() + 7)
+
+  return leadCalendarActions.value
+    .filter((a) => {
+      if (leadCalendarFilter.value === 'urgent') return !a.done && a.priority === 'urgent'
+      if (leadCalendarFilter.value === 'today') {
+        const d = new Date(a.dueDate); d.setHours(0, 0, 0, 0)
+        return !a.done && d.getTime() === today.getTime()
+      }
+      if (leadCalendarFilter.value === 'week') {
+        const d = new Date(a.dueDate); d.setHours(0, 0, 0, 0)
+        return !a.done && d >= today && d <= endOfWeek
+      }
+      return true // 'all' — hiện tất cả (done + chưa done)
+    })
+    .sort((a, b) => {
+      if (a.done !== b.done) return a.done ? 1 : -1 // done xuống cuối
+      const diff = LEAD_PRIORITY_ORDER[a.priority] - LEAD_PRIORITY_ORDER[b.priority]
+      if (diff !== 0) return diff
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    })
+})
+
+function markLeadActionDone(id: string): void {
+  const action = leadCalendarActions.value.find((a) => a.id === id)
+  if (action) {
+    action.done = !action.done
+    if (action.done) toast.success('Đã đánh dấu hoàn thành')
+  }
+}
+
 onMounted(() => {
   initLeadColWidths()
   document.addEventListener('click', handleLeadOutsideClick)
@@ -1111,9 +1970,13 @@ const showDialog = ref(false)
 const editingId = ref<string | null>(null)
 
 const form = ref<LeadForm>({
+  customerType: 'company',
   title: '',
   assigneeName: '',
+  teamLeadName: '',
   companyName: '',
+  contactName: '',
+  contactTitle: '',
   phone: '',
   email: '',
   source: 'website',
@@ -1146,9 +2009,13 @@ function addCard(stage: LeadStage, card: LeadCard): void {
 function openCreateDialog(stage?: LeadStage): void {
   editingId.value = null
   form.value = {
+    customerType: 'company',
     title: '',
     assigneeName: '',
+    teamLeadName: '',
     companyName: '',
+    contactName: '',
+    contactTitle: '',
     phone: '',
     email: '',
     source: 'website',
@@ -1159,10 +2026,15 @@ function openCreateDialog(stage?: LeadStage): void {
 
 function openEditDialog(card: LeadCard, stage: LeadStage): void {
   editingId.value = card.id
+  const ct = (card as LeadCard & { customerType?: LeadForm['customerType'] }).customerType
   form.value = {
+    customerType: ct ?? (card.companyName ? 'company' : 'individual'),
     title: card.title,
     assigneeName: card.assigneeName ?? '',
+    teamLeadName: card.teamLeadName ?? '',
     companyName: card.companyName ?? '',
+    contactName: card.contactName ?? '',
+    contactTitle: card.contactTitle ?? '',
     phone: card.phone ?? '',
     email: card.email ?? '',
     source: card.source ?? 'website',
@@ -1180,6 +2052,12 @@ function submitForm(): void {
 
   const now = new Date().toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })
   const assignee = form.value.assigneeName.trim()
+  const teamLead = form.value.teamLeadName.trim()
+
+  const isOrg = form.value.customerType === 'company' || form.value.customerType === 'household'
+  const companyName = isOrg ? form.value.companyName.trim() || undefined : undefined
+  const contactName = form.value.contactName.trim() || undefined
+  const contactTitle = form.value.customerType === 'company' ? form.value.contactTitle.trim() || undefined : undefined
 
   if (editingId.value) {
     for (const col of columns.value) {
@@ -1187,11 +2065,14 @@ function submitForm(): void {
       if (card) {
         if (col.id !== form.value.stage) {
           removeCardById(editingId.value)
-          addCard(form.value.stage, { ...card, title, assigneeName: assignee || undefined, companyName: form.value.companyName.trim() || undefined, source: form.value.source })
+          addCard(form.value.stage, { ...card, title, assigneeName: assignee || undefined, teamLeadName: teamLead || undefined, companyName, contactName, contactTitle, source: form.value.source })
         } else {
           card.title = title
           card.assigneeName = assignee || undefined
-          card.companyName = form.value.companyName.trim() || undefined
+          card.teamLeadName = teamLead || undefined
+          card.companyName = companyName
+          card.contactName = contactName
+          card.contactTitle = contactTitle
           card.source = form.value.source
         }
         break
@@ -1204,7 +2085,10 @@ function submitForm(): void {
       title,
       assigneeName: assignee || undefined,
       assigneeColor: assignee ? pickColor(assignee) : undefined,
-      companyName: form.value.companyName.trim() || undefined,
+      teamLeadName: teamLead || undefined,
+      companyName,
+      contactName,
+      contactTitle,
       phone: form.value.phone.trim() || undefined,
       email: form.value.email.trim() || undefined,
       source: form.value.source,
@@ -1226,6 +2110,19 @@ function removeCard(id: string): void {
   toast.success('Đã xóa lead')
 }
 
+function toggleAllLeads(checked: boolean): void {
+  selectedLeadIds.value = checked ? allLeadCards.value.map(l => l.id) : []
+}
+function toggleLeadRow(id: string, checked: boolean): void {
+  if (checked) selectedLeadIds.value = [...selectedLeadIds.value, id]
+  else selectedLeadIds.value = selectedLeadIds.value.filter(x => x !== id)
+}
+function deleteSelectedLeads(): void {
+  const ids = [...selectedLeadIds.value]
+  selectedLeadIds.value = []
+  ids.forEach(id => removeCard(id))
+}
+
 // ─── Drag-drop ────────────────────────────────────────────────
 
 const dragging = ref<{ id: string; fromStage: LeadStage } | null>(null)
@@ -1243,7 +2140,7 @@ function handleDrop(toStage: LeadStage): void {
   if (removed) addCard(toStage, removed.card)
 }
 
-defineExpose({ openCreateDialog })
+defineExpose({ openCreateDialog, openStageSettings })
 </script>
 
 <style scoped>
@@ -1317,6 +2214,9 @@ defineExpose({ openCreateDialog })
 
 .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,.03); border-radius: 10px; }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-4px); }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 </style>

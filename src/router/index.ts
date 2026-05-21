@@ -23,13 +23,13 @@ const router = createRouter({
         {
             path: '/chat-tai-lieu',
             component: () => import('../views/Chat/ChatModuleView.vue'),
-            meta: { requiresAuth: true, title: 'Chat tài liệu' },
+            meta: { requiresAuth: true, title: 'Tài liệu hỗ trợ' },
             children: [
                 {
                     path: '',
                     name: 'chat-dashboard',
                     component: () => import('../views/Chat/ChatDashboardView.vue'),
-                    meta: { title: 'Chat tài liệu' },
+                    meta: { title: 'Tài liệu hỗ trợ' },
                 },
                 {
                     path: 'chat',

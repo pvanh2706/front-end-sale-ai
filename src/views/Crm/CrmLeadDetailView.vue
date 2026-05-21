@@ -110,6 +110,10 @@
               </div>
             </div>
             <div class="flex justify-between items-center gap-2">
+              <span class="text-theme-sm text-gray-500 shrink-0">Team Lead quản lý</span>
+              <span class="text-theme-sm font-medium text-gray-900 dark:text-white">{{ lead.teamLeadName ?? '—' }}</span>
+            </div>
+            <div class="flex justify-between items-center gap-2">
               <span class="text-theme-sm text-gray-500">Loại</span>
               <span
                 class="rounded-full px-2 py-0.5 text-theme-xs font-semibold"
@@ -176,10 +180,6 @@
 
           <!-- Right: action buttons -->
           <div class="flex items-center gap-2 shrink-0">
-            <Button type="button" class="bg-brand-500 text-white hover:bg-brand-600 text-theme-xs" @click="handleConvertToDeal">
-              <ArrowRightCircle class="mr-1.5 h-3.5 w-3.5" />
-              Chuyển thành Deal
-            </Button>
             <Button type="button" variant="outline" class="border-gray-200 dark:border-gray-700 text-theme-xs" @click="handleEdit">
               <Pencil class="mr-1.5 h-3.5 w-3.5" />
               Sửa
@@ -217,6 +217,30 @@
 
           <!-- Tổng quan -->
           <template v-if="activeTab === 'overview'">
+
+            <!-- Auto-created deal banner (shown when stage is customer) -->
+            <div
+              v-if="lead.stage === 'customer'"
+              class="flex items-center justify-between gap-3 rounded-xl border border-success-200 bg-success-50 px-4 py-3 dark:border-success-500/30 dark:bg-success-500/10"
+            >
+              <div class="flex items-center gap-2.5">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success-100 dark:bg-success-500/20">
+                  <svg class="h-4 w-4 text-success-600 dark:text-success-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <div>
+                  <p class="text-theme-sm font-semibold text-success-700 dark:text-success-400">Deal đã được tạo tự động</p>
+                  <p class="text-theme-xs text-success-600/80 dark:text-success-400/70">Lead đã đạt giai đoạn Customer — hệ thống đã tự động tạo một Deal tương ứng.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="flex shrink-0 items-center gap-1.5 rounded-lg bg-success-600 px-3 py-1.5 text-theme-xs font-medium text-white hover:bg-success-700 transition-colors"
+                @click="router.push('/crm-deals')"
+              >
+                Xem Deal
+                <ArrowRight class="h-3.5 w-3.5" />
+              </button>
+            </div>
 
             <!-- Contact info section -->
             <section class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-theme-xs overflow-hidden">
@@ -282,24 +306,21 @@
 
           <!-- Hoạt động -->
           <template v-else-if="activeTab === 'activity'">
-            <div class="space-y-3">
-              <div
-                v-for="item in timeline"
+            <div class="space-y-4">
+              <ActivityItemCard
+                v-for="item in allActivities"
                 :key="item.id"
-                class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-theme-xs"
-              >
-                <div class="flex items-start justify-between gap-2 mb-1">
-                  <p class="text-theme-sm font-medium text-gray-900 dark:text-white">{{ item.title }}</p>
-                  <span class="shrink-0 rounded-full px-2.5 py-0.5 text-theme-xs font-semibold" :class="item.badgeClass">{{ item.badge }}</span>
-                </div>
-                <p class="text-theme-sm text-gray-500">{{ item.detail }}</p>
-                <p class="text-theme-xs text-gray-400 mt-1">{{ item.time }}</p>
-              </div>
-              <!-- Add activity -->
+                :item="item"
+                @update="onActivityUpdate"
+                @remove="onActivityRemove"
+                @result="onActivityResult"
+              />
+
+              <!-- Add activity button -->
               <button
                 type="button"
                 class="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 py-3 text-theme-sm text-gray-400 hover:border-brand-400 hover:text-brand-500 transition-colors"
-                @click="handleQuickAction('Ghi chú')"
+                @click="showActivityDialog = true"
               >
                 <Plus class="h-4 w-4" />
                 Thêm hoạt động
@@ -309,14 +330,73 @@
 
           <!-- Lịch sử -->
           <template v-else-if="activeTab === 'history'">
-            <div class="space-y-3">
-              <div
-                v-for="entry in history"
-                :key="entry.id"
-                class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-theme-xs"
-              >
-                <p class="text-theme-sm font-medium text-gray-900 dark:text-white">{{ entry.title }}</p>
-                <p class="text-theme-xs text-gray-400 mt-1">{{ entry.time }}</p>
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-theme-xs px-5 py-5">
+              <!-- Header -->
+              <div class="flex items-center justify-between mb-5">
+                <h3 class="text-theme-sm font-semibold text-gray-900 dark:text-white">Lịch sử thay đổi</h3>
+                <span class="text-theme-xs text-gray-400">{{ history.length }} thao tác</span>
+              </div>
+
+              <!-- Timeline -->
+              <div>
+                <div
+                  v-for="(entry, idx) in history"
+                  :key="entry.id"
+                  class="flex gap-4"
+                >
+                  <!-- Avatar + connector -->
+                  <div class="flex flex-col items-center shrink-0">
+                    <div
+                      class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
+                      :class="entry.userColor"
+                    >
+                      {{ entry.userInitial }}
+                    </div>
+                    <div
+                      v-if="idx < history.length - 1"
+                      class="w-px flex-1 bg-gray-200 dark:bg-gray-700 mt-1.5 min-h-[24px]"
+                    />
+                  </div>
+
+                  <!-- Content -->
+                  <div class="flex-1 min-w-0 pb-5" :class="{ 'pb-0': idx === history.length - 1 }">
+                    <!-- Top row: user · time · badge -->
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+                      <span class="text-theme-sm font-semibold text-gray-900 dark:text-white">{{ entry.user }}</span>
+                      <span class="text-gray-300 dark:text-gray-600">·</span>
+                      <span class="text-theme-xs text-gray-400">{{ entry.time }}</span>
+                      <span
+                        class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                        :class="HISTORY_BADGE[entry.type].cls"
+                      >
+                        {{ HISTORY_BADGE[entry.type].label }}
+                      </span>
+                    </div>
+
+                    <!-- Description -->
+                    <p class="text-theme-sm text-gray-700 dark:text-gray-300">{{ entry.description }}</p>
+
+                    <!-- Field change: from → to -->
+                    <div v-if="entry.from || entry.to" class="mt-2 flex flex-wrap items-center gap-2">
+                      <span v-if="entry.field" class="text-theme-xs text-gray-400 font-medium">{{ entry.field }}:</span>
+                      <span
+                        v-if="entry.from"
+                        class="text-theme-xs bg-error-50 dark:bg-error-500/10 text-error-600 dark:text-error-400 px-2 py-0.5 rounded line-through"
+                      >{{ entry.from }}</span>
+                      <span v-if="entry.from && entry.to" class="text-gray-400">→</span>
+                      <span
+                        v-if="entry.to"
+                        class="text-theme-xs bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 px-2 py-0.5 rounded font-medium"
+                      >{{ entry.to }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Empty state -->
+                <div v-if="history.length === 0" class="text-center py-12 text-gray-400">
+                  <span class="material-symbols-outlined text-[40px] block mb-2 text-gray-300">history</span>
+                  <p class="text-theme-sm">Chưa có lịch sử thay đổi nào</p>
+                </div>
               </div>
             </div>
           </template>
@@ -324,6 +404,16 @@
         </div>
       </div>
     </div>
+
+    <!-- Add Activity Dialog -->
+    <AddActivityDialog
+      v-model:open="showActivityDialog"
+      :initial-type="activityDialogInitialType"
+      :contact-name="lead.title"
+      :contact-phone="lead.phone"
+      :contact-email="lead.email"
+      @submitted="handleActivitySubmitted"
+    />
 
     <!-- Floating AI button -->
     <div class="fixed bottom-6 right-6 z-20">
@@ -339,12 +429,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
   ArrowLeft,
-  ArrowRightCircle,
+  ArrowRight,
   BarChart2,
   ChevronDown,
   Flag,
@@ -360,6 +450,11 @@ import {
 } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Button } from '@/components/ui/button'
+import AddActivityDialog from '@/components/crm/AddActivityDialog.vue'
+import type { ActivitySubmitPayload } from '@/components/crm/AddActivityDialog.vue'
+import ActivityItemCard from '@/components/crm/ActivityItemCard.vue'
+import type { ActivityResultData, CardActivityItem } from '@/components/crm/ActivityItemCard.vue'
+import { generateAiSuggestion } from '@/composables/useAiSuggestion'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -372,6 +467,7 @@ interface LeadData {
   isRepeat?: boolean
   assigneeName?: string
   assigneeColor?: string
+  teamLeadName?: string
   companyName?: string
   date: string
   isViewed?: boolean
@@ -452,6 +548,11 @@ const stageProgress = computed(() => {
 
 const activeTab = ref('overview')
 const expanded = ref<Set<string>>(new Set(['contact', 'leadinfo']))
+const showActivityDialog = ref(false)
+const activityDialogInitialType = ref('')
+const localActivities = ref<CardActivityItem[]>([])
+const deletedIds = ref<Set<string>>(new Set())
+const activityOverrides = ref<Record<string, Partial<CardActivityItem>>>({})
 
 const tabs = [
   { id: 'overview', label: 'Tổng quan' },
@@ -490,22 +591,173 @@ const leadInfoFields = computed(() => [
 
 // ─── Timeline & History ───────────────────────────────────────
 
-const timeline = computed(() => {
+const timeline = computed<CardActivityItem[]>(() => {
   const l = lead.value
-  const items = []
+  const ctx = { name: l.title, company: l.companyName }
+  const items: CardActivityItem[] = []
   if (l.isViewed) {
-    items.push({ id: 'v1', title: 'Đã xem lead', detail: 'Khách hàng đã mở link theo dõi', time: l.activityTime ?? l.date, badge: 'Viewed', badgeClass: 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-300' })
+    items.push({
+      id: 'v1',
+      title: 'Đã xem lead',
+      detail: 'Khách hàng đã mở link theo dõi',
+      time: l.activityTime ?? l.date,
+      badge: 'Viewed',
+      badgeClass: 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-300',
+      type: 'other',
+      note: 'Khách hàng đã mở link theo dõi',
+      date: new Date().toISOString().slice(0, 16),
+      aiSuggestion:
+        `🔥 Lead đang "nóng" — hành động ngay!\n\n` +
+        `${l.title} vừa xem tài liệu. Xác suất phản hồi cao nhất trong vòng 60 phút.\n\n` +
+        `📞 Gọi ngay và mở bằng:\n"Xin chào ${l.title}, em thấy anh/chị vừa xem thông tin về [sản phẩm]. Anh/chị có câu hỏi gì cần em hỗ trợ không ạ?"`,
+    })
   }
   if (l.assigneeName) {
-    items.push({ id: 'a1', title: `Giao cho ${l.assigneeName}`, detail: 'Lead được phân công cho nhân viên', time: l.date, badge: 'Assign', badgeClass: 'bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-300' })
+    items.push({
+      id: 'a1',
+      title: `Giao cho ${l.assigneeName}`,
+      detail: 'Lead được phân công cho nhân viên',
+      time: l.date,
+      badge: 'Assign',
+      badgeClass: 'bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-300',
+      type: 'other',
+      note: 'Lead được phân công cho nhân viên',
+      date: new Date().toISOString().slice(0, 16),
+      aiSuggestion:
+        `👋 Checklist bắt đầu cho ${l.assigneeName}:\n\n` +
+        `• Gửi tin nhắn/email giới thiệu bản thân trong 2h\n` +
+        `• Tìm hiểu thêm về ${l.companyName ?? l.title} trên mạng\n` +
+        `• Lên lịch Cold Call trong 24–48h tiếp theo\n\n` +
+        `💡 First impression rất quan trọng — cá nhân hóa ngay từ đầu.`,
+    })
   }
-  items.push({ id: 'c1', title: 'Lead được tạo', detail: `Nguồn: ${l.source ?? 'Không rõ'}`, time: l.date, badge: 'Tạo mới', badgeClass: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200' })
+  items.push({
+    id: 'c1',
+    title: 'Lead được tạo',
+    detail: `Nguồn: ${l.source ?? 'Không rõ'}`,
+    time: l.date,
+    badge: 'Tạo mới',
+    badgeClass: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
+    type: 'other',
+    note: `Nguồn: ${l.source ?? 'Không rõ'}`,
+    date: new Date().toISOString().slice(0, 16),
+    aiSuggestion: generateAiSuggestion('call', 'Cold Call', '', ctx),
+  })
   return items
 })
 
-const history = ref([
-  { id: 'h1', title: 'Chuyển sang ' + 'giai đoạn hiện tại', time: 'Tự động cập nhật' },
-  { id: 'h2', title: 'Lead được nhập vào hệ thống', time: 'Khi tạo' },
+// ── Lịch sử thay đổi ─────────────────────────────────────────
+
+type HistoryType = 'created' | 'stage_change' | 'field_update' | 'activity' | 'note' | 'assigned' | 'deal_linked' | 'deleted'
+
+interface HistoryEntry {
+  id: string
+  type: HistoryType
+  description: string
+  user: string
+  userInitial: string
+  userColor: string
+  time: string
+  field?: string
+  from?: string
+  to?: string
+}
+
+const HISTORY_BADGE: Record<HistoryType, { label: string; cls: string }> = {
+  created:      { label: 'Tạo mới',       cls: 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400' },
+  stage_change: { label: 'Đổi giai đoạn', cls: 'bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-400' },
+  field_update: { label: 'Cập nhật',      cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
+  activity:     { label: 'Hoạt động',     cls: 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' },
+  note:         { label: 'Ghi chú',       cls: 'bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400' },
+  assigned:     { label: 'Phân công',     cls: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400' },
+  deal_linked:  { label: 'Liên kết Deal', cls: 'bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-400' },
+  deleted:      { label: 'Xóa',           cls: 'bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-400' },
+}
+
+const history = ref<HistoryEntry[]>([
+  {
+    id: 'h-1',
+    type: 'stage_change',
+    description: 'Chuyển giai đoạn lead',
+    user: 'Nguyễn Văn An',
+    userInitial: 'A',
+    userColor: 'bg-brand-500',
+    time: '14:30, Hôm nay',
+    from: 'Liên hệ',
+    to: 'Cơ hội',
+  },
+  {
+    id: 'h-2',
+    type: 'activity',
+    description: 'Ghi nhận cuộc gọi Follow-up thành công',
+    user: 'Nguyễn Văn An',
+    userInitial: 'A',
+    userColor: 'bg-brand-500',
+    time: '09:15, Hôm nay',
+  },
+  {
+    id: 'h-3',
+    type: 'deal_linked',
+    description: 'Tạo Deal từ lead này',
+    user: 'Hệ thống',
+    userInitial: 'HT',
+    userColor: 'bg-purple-500',
+    time: '14:31, Hôm nay',
+    to: 'Sunrise Beach Resort — Gói Marketing AI 360',
+  },
+  {
+    id: 'h-4',
+    type: 'field_update',
+    description: 'Cập nhật thông tin liên hệ',
+    user: 'Trần Minh Quân',
+    userInitial: 'Q',
+    userColor: 'bg-success-500',
+    time: '16:45, Hôm qua',
+    field: 'Số điện thoại',
+    from: '0901 234 567',
+    to: '0912 345 678',
+  },
+  {
+    id: 'h-5',
+    type: 'field_update',
+    description: 'Cập nhật nguồn lead',
+    user: 'Trần Minh Quân',
+    userInitial: 'Q',
+    userColor: 'bg-success-500',
+    time: '16:40, Hôm qua',
+    field: 'Nguồn',
+    from: 'Chưa xác định',
+    to: 'Facebook Ads',
+  },
+  {
+    id: 'h-6',
+    type: 'assigned',
+    description: 'Phân công lead cho nhân viên',
+    user: 'Lê Hoa Phương',
+    userInitial: 'P',
+    userColor: 'bg-warning-500',
+    time: '10:00, 14/11/2024',
+    from: 'Chưa phân công',
+    to: 'Nguyễn Văn An',
+  },
+  {
+    id: 'h-7',
+    type: 'note',
+    description: 'Thêm ghi chú: Khách hàng quan tâm gói enterprise, cần báo giá tuỳ chỉnh',
+    user: 'Nguyễn Văn An',
+    userInitial: 'A',
+    userColor: 'bg-brand-500',
+    time: '15:30, 13/11/2024',
+  },
+  {
+    id: 'h-8',
+    type: 'created',
+    description: 'Lead được nhập vào hệ thống',
+    user: 'Hệ thống',
+    userInitial: 'HT',
+    userColor: 'bg-gray-400',
+    time: '09:00, 12/11/2024',
+  },
 ])
 
 // ─── Quick Actions ────────────────────────────────────────────
@@ -527,12 +779,102 @@ const quickActions = [
   { label: 'Gọi điện', icon: Phone },
 ]
 
-function handleQuickAction(action: string): void {
-  toast.info(`Đang mở: ${action}`)
+const QUICK_ACTION_TYPE_MAP: Record<string, string> = {
+  'Ghi chú': 'note',
+  'Tác vụ': 'task',
+  'Email': 'email',
+  'Gọi điện': 'call',
 }
 
-function handleConvertToDeal(): void {
-  toast.success(`Đang chuyển "${lead.value.title}" thành Deal`)
+function handleQuickAction(action: string): void {
+  const type = QUICK_ACTION_TYPE_MAP[action]
+  if (type) {
+    activityDialogInitialType.value = type
+    activeTab.value = 'activity'
+    showActivityDialog.value = true
+  } else {
+    toast.info(`Đang mở: ${action}`)
+  }
+}
+
+const ACTIVITY_BADGE_MAP: Record<string, string> = {
+  call: 'Gọi điện',
+  email: 'Email',
+  message: 'Nhắn tin',
+  social: 'Social',
+  meeting: 'Gặp mặt',
+  note: 'Ghi chú',
+  task: 'Tác vụ',
+  other: 'Khác',
+}
+
+const ACTIVITY_BADGE_CLASS_MAP: Record<string, string> = {
+  call: 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300',
+  email: 'bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-300',
+  message: 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-300',
+  social: 'bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-300',
+  note: 'bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300',
+  task: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300',
+  meeting: 'bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300',
+  other: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
+}
+
+const allActivities = computed<CardActivityItem[]>(() => [
+  ...localActivities.value.filter((a) => !deletedIds.value.has(a.id)),
+  ...timeline.value
+    .filter((item) => !deletedIds.value.has(item.id))
+    .map((item) => ({ ...item, ...(activityOverrides.value[item.id] ?? {}) })),
+])
+
+watch(showActivityDialog, (open) => {
+  if (!open) activityDialogInitialType.value = ''
+})
+
+function handleActivitySubmitted(payload: ActivitySubmitPayload): void {
+  const ctx = { name: lead.value.title, company: lead.value.companyName }
+  localActivities.value.unshift({
+    id: `local-${Date.now()}`,
+    title: payload.form.title || ACTIVITY_BADGE_MAP[payload.type] || 'Hoạt động',
+    detail: [payload.subType ? `Loại: ${payload.subType}` : '', payload.form.note].filter(Boolean).join(' · '),
+    note: payload.form.note,
+    date: payload.form.date,
+    duration: payload.form.duration,
+    time: new Date(payload.form.date).toLocaleString('vi-VN'),
+    badge: ACTIVITY_BADGE_MAP[payload.type] ?? 'Hoạt động',
+    badgeClass: ACTIVITY_BADGE_CLASS_MAP[payload.type] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
+    aiSuggestion: generateAiSuggestion(payload.type, payload.subType, payload.form.note, ctx),
+    type: payload.type,
+    subType: payload.subType,
+    isNew: true,
+  })
+}
+
+function onActivityUpdate(id: string, changes: Partial<CardActivityItem>): void {
+  const localIdx = localActivities.value.findIndex((a) => a.id === id)
+  if (localIdx >= 0) {
+    Object.assign(localActivities.value[localIdx], changes)
+  } else {
+    activityOverrides.value[id] = { ...(activityOverrides.value[id] ?? {}), ...changes }
+  }
+}
+
+function onActivityRemove(id: string): void {
+  const localIdx = localActivities.value.findIndex((a) => a.id === id)
+  if (localIdx >= 0) {
+    localActivities.value.splice(localIdx, 1)
+  } else {
+    deletedIds.value.add(id)
+  }
+  toast.success('Đã xóa hoạt động')
+}
+
+function onActivityResult(id: string, data: ActivityResultData): void {
+  const resultText = data.note ? `${data.outcome} — ${data.note}` : data.outcome
+  const followNote = data.followUpDate
+    ? ` · Follow-up: ${new Date(data.followUpDate).toLocaleDateString('vi-VN')}`
+    : ''
+  onActivityUpdate(id, { result: resultText + followNote, isClosed: data.close })
+  toast.success(data.close ? 'Đã đóng hoạt động' : 'Đã ghi nhận kết quả')
 }
 
 function handleEdit(): void {
@@ -546,7 +888,19 @@ function handleDelete(): void {
 
 function handleStageChange(stage: LeadStage): void {
   if (stage === lead.value.stage) return
-  toast.info(`Chuyển sang giai đoạn: ${STAGE_LABEL[stage]}`)
+
+  // Auto-create a deal when lead reaches Customer stage
+  if (stage === 'customer') {
+    toast.success(`Lead "${lead.value.title}" đã chuyển thành Customer — Deal mới đã được tạo tự động!`, {
+      action: {
+        label: 'Xem Deal',
+        onClick: () => void router.push('/crm-deals'),
+      },
+      duration: 6000,
+    })
+  } else {
+    toast.info(`Chuyển sang giai đoạn: ${STAGE_LABEL[stage]}`)
+  }
 }
 </script>
 

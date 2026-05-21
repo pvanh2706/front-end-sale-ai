@@ -94,10 +94,10 @@
             <text x="30" y="67" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#2b3446">Salio</text>
             <!-- Group title -->
             <text x="12" y="86" font-family="Inter,sans-serif" font-size="6" font-weight="600" fill="#5f74bf" letter-spacing="0.8">MENU CHÍNH</text>
-            <!-- Item 1: Chat tài liệu (inactive) -->
+            <!-- Item 1: Tài liệu hỗ trợ (inactive) -->
             <rect x="10" y="93" width="110" height="20" rx="6" fill="transparent"/>
             <rect x="18" y="97" width="9" height="9" rx="2" fill="#c3d3ff"/>
-            <text x="32" y="106" font-family="Inter,sans-serif" font-size="7.5" fill="#47556b">Chat tài liệu</text>
+            <text x="32" y="106" font-family="Inter,sans-serif" font-size="7.5" fill="#47556b">Tài liệu hỗ trợ</text>
             <polyline points="111,99 115,102 111,105" fill="none" stroke="#d8dee7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             <!-- Item 2: CRM & Công việc (ACTIVE) -->
             <rect x="10" y="117" width="110" height="20" rx="6" fill="#edf1ff" stroke="#c3d3ff" stroke-width="1"/>

@@ -30,6 +30,14 @@
                   : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
                 @click="switchTab('deal')"
               >Deal</button>
+              <button
+                type="button"
+                class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
+                :class="activeTab === 'customer'
+                  ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
+                @click="switchTab('customer')"
+              >Khách hàng</button>
             </div>
 
             <!-- Pipeline selector (Deal only) -->
@@ -70,9 +78,9 @@
 
           <!-- Right actions -->
           <div class="flex items-center gap-2">
-            <!-- View mode switcher (Deal only) -->
+            <!-- View mode switcher (hidden on customer tab) -->
             <div
-              v-if="activeTab === 'deal'"
+              v-if="activeTab !== 'customer'"
               class="flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-800"
             >
               <button
@@ -90,21 +98,24 @@
               </button>
             </div>
 
-            <button class="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
-              <Search class="h-4 w-4" />
-            </button>
-            <button class="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
-              <SlidersHorizontal class="h-4 w-4" />
-            </button>
             <button
-              v-if="activeTab === 'deal'"
+              v-if="activeTab !== 'customer'"
               class="rounded-full p-2 text-gray-500 hover:bg-warning-50 hover:text-warning-600 dark:text-gray-400 dark:hover:bg-warning-900/20"
               title="Automation Rules"
               @click.stop="showAutomationDialog = true"
             >
               <Zap class="h-4 w-4" />
             </button>
+            <button
+              v-if="activeTab !== 'customer'"
+              class="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+              title="Cài đặt giai đoạn"
+              @click.stop="activeTab === 'deal' ? openDealStageSettings() : leadBoardRef?.openStageSettings()"
+            >
+              <Settings class="h-4 w-4" />
+            </button>
             <Button
+              v-if="activeTab !== 'customer'"
               class="gap-1.5 bg-primary-700 text-white hover:bg-primary-800"
               size="sm"
               @click="activeTab === 'deal' ? openCreateDialog() : leadBoardRef?.openCreateDialog()"
@@ -182,10 +193,21 @@
       </transition>
 
       <!-- ─── Lead board ──────────────────────────────────────────── -->
-      <LeadKanbanBoard v-if="activeTab === 'lead'" ref="leadBoardRef" class="min-h-0 flex-1" />
+      <LeadKanbanBoard
+        v-if="activeTab === 'lead'"
+        ref="leadBoardRef"
+        :view-mode="viewMode"
+        class="min-h-0 flex-1"
+      />
+
+      <!-- ─── Customer board ────────────────────────────────────── -->
+      <CrmCustomerBoard
+        v-else-if="activeTab === 'customer'"
+        class="min-h-0 flex-1"
+      />
 
       <!-- ─── Deal board ──────────────────────────────────────────── -->
-      <template v-else>
+      <template v-else-if="activeTab === 'deal'">
 
         <!-- Deal search / filter bar (kanban only) -->
         <div v-if="viewMode === 'kanban'" ref="dealSearchBarRef" class="relative shrink-0 px-2 pt-1.5">
@@ -577,18 +599,292 @@
           </div>
         </div>
 
-        <!-- List view stub -->
-        <div v-else-if="viewMode === 'list'" class="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-          <LayoutList class="h-12 w-12 text-gray-300 dark:text-gray-600" />
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Chế độ danh sách đang phát triển</p>
-          <p class="text-xs text-gray-400 dark:text-gray-600">Sắp ra mắt — hỗ trợ sort, filter và inline edit</p>
+        <!-- List view -->
+        <div v-else-if="viewMode === 'list'" class="custom-scrollbar flex-1 overflow-auto p-3">
+          <!-- Selection toolbar -->
+          <Transition name="fade">
+            <div v-if="selectedDealIds.length > 0" class="mb-2 flex items-center gap-3 rounded-lg border border-error-200 bg-error-50 px-4 py-2 dark:border-error-500/30 dark:bg-error-900/20">
+              <span class="text-sm font-medium text-error-600 dark:text-error-400">Đã chọn <strong>{{ selectedDealIds.length }}</strong> deal</span>
+              <button
+                class="ml-auto flex items-center gap-1.5 rounded-lg bg-error-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-error-600"
+                @click="deleteSelectedDeals"
+              >
+                <Trash2 class="h-3.5 w-3.5" />
+                Xóa đã chọn
+              </button>
+            </div>
+          </Transition>
+          <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-xs dark:border-gray-700 dark:bg-gray-800">
+            <!-- Header -->
+            <div class="sticky top-0 z-10 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/90">
+              <div class="flex min-w-[960px] items-center gap-3 px-4 py-2.5">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-brand-500"
+                  :checked="allDealsSelected"
+                  @change="toggleAllDeals(($event.target as HTMLInputElement).checked)"
+                />
+                <span class="w-[210px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Tên deal</span>
+                <span class="w-[170px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Công ty / Liên hệ</span>
+                <span class="w-[120px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Giai đoạn</span>
+                <span class="w-[90px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Nguồn</span>
+                <span class="w-[110px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Giá trị</span>
+                <span class="w-[140px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Ngày đóng</span>
+                <span class="w-[160px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Người phụ trách</span>
+                <span class="ml-auto shrink-0"></span>
+              </div>
+            </div>
+            <!-- Empty state -->
+            <div v-if="allDealCards.length === 0" class="flex items-center justify-center py-12">
+              <p class="text-sm text-gray-400 dark:text-gray-600">Không có deal nào phù hợp</p>
+            </div>
+            <!-- Rows -->
+            <div
+              v-for="(item, idx) in allDealCards"
+              :key="item.id"
+              class="group flex min-w-[960px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-700/40"
+              :class="[
+                idx !== allDealCards.length - 1 ? 'border-b border-gray-100 dark:border-gray-700/50' : '',
+                selectedDealIds.includes(item.id) ? 'bg-brand-50/60 dark:bg-brand-900/10' : '',
+              ]"
+              :style="{ borderLeft: `3px solid ${item.stageColor}` }"
+            >
+              <!-- Checkbox -->
+              <input
+                type="checkbox"
+                class="h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-brand-500"
+                :checked="selectedDealIds.includes(item.id)"
+                @change="toggleDealRow(item.id, ($event.target as HTMLInputElement).checked)"
+                @click.stop
+              />
+              <!-- Name -->
+              <div class="w-[210px] min-w-0 shrink-0">
+                <RouterLink
+                  :to="`/crm-deals/${item.id}`"
+                  class="block truncate text-sm font-semibold text-gray-900 hover:text-brand-500 dark:text-white dark:hover:text-brand-400"
+                >{{ item.title }}</RouterLink>
+                <div v-if="item.aiScore" class="mt-0.5 flex items-center gap-0.5 text-brand-500">
+                  <Star class="h-2.5 w-2.5 fill-current" />
+                  <span class="text-[10px] font-bold">{{ item.aiScore }}</span>
+                </div>
+              </div>
+              <!-- Company / Contact -->
+              <div class="w-[170px] min-w-0 shrink-0">
+                <p v-if="item.company" class="truncate text-sm text-gray-700 dark:text-gray-300">{{ item.company }}</p>
+                <p v-if="item.contactName" class="truncate text-xs text-gray-400 dark:text-gray-500">{{ item.contactName }}</p>
+              </div>
+              <!-- Stage -->
+              <div class="w-[120px] shrink-0">
+                <span
+                  class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  :style="{ background: item.stageColor + '22', color: item.stageColor }"
+                >{{ item.stageName }}</span>
+              </div>
+              <!-- Source -->
+              <div class="w-[90px] shrink-0">
+                <span
+                  class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                  :style="sourceStyle(item.source ?? '')"
+                >{{ item.source ?? '—' }}</span>
+              </div>
+              <!-- Value -->
+              <div class="w-[110px] shrink-0">
+                <p class="text-sm font-bold text-[#6366F1] dark:text-[#818CF8]">{{ item.value }}</p>
+              </div>
+              <!-- Close date -->
+              <div class="w-[140px] shrink-0">
+                <template v-if="item.closeDate">
+                  <span
+                    class="flex items-center gap-1 text-xs"
+                    :class="item.isOverdue
+                      ? 'font-semibold text-error-500'
+                      : isCloseSoon(item.closeDate)
+                        ? 'font-medium text-warning-500'
+                        : 'text-gray-700 dark:text-gray-300'"
+                  >
+                    <Calendar class="h-3 w-3 shrink-0" />
+                    {{ formatCloseDate(item.closeDate) }}
+                  </span>
+                  <span
+                    class="mt-0.5 block text-[10px] leading-tight"
+                    :class="item.isOverdue
+                      ? 'text-error-400'
+                      : isCloseSoon(item.closeDate)
+                        ? 'text-warning-400'
+                        : 'text-gray-400 dark:text-gray-500'"
+                  >{{ daysLabel(item.closeDate) }}</span>
+                </template>
+                <span v-else class="text-xs text-gray-300 dark:text-gray-600">—</span>
+              </div>
+              <!-- Assignee -->
+              <div class="flex w-[160px] shrink-0 items-center gap-2">
+                <template v-if="item.assigneeName">
+                  <div
+                    class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-white dark:ring-gray-800"
+                    :style="{ background: item.assigneeColor || '#6B7280' }"
+                    :title="item.assigneeName"
+                  >{{ cardInitials(item.assigneeName) }}</div>
+                  <span class="truncate text-xs font-medium text-gray-700 dark:text-gray-300">{{ item.assigneeName }}</span>
+                </template>
+                <span v-else class="text-xs text-gray-300 dark:text-gray-600">—</span>
+              </div>
+              <!-- Actions -->
+              <div class="ml-auto flex shrink-0 items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-gray-700"
+                  @click="openEditDialog(item, item.stage)"
+                ><Pencil class="h-3.5 w-3.5" /></button>
+                <button
+                  class="rounded p-1 text-gray-400 hover:bg-error-50 hover:text-error-500 dark:hover:bg-error-900/20"
+                  @click="removeDeal(item.id)"
+                ><Trash2 class="h-3.5 w-3.5" /></button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Calendar view stub -->
-        <div v-else class="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-          <CalendarDays class="h-12 w-12 text-gray-300 dark:text-gray-600" />
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Chế độ lịch đang phát triển</p>
-          <p class="text-xs text-gray-400 dark:text-gray-600">Sắp ra mắt — xem deal theo ngày dự kiến đóng</p>
+        <!-- Calendar view — Priority Action List -->
+        <div v-else class="custom-scrollbar flex-1 overflow-auto p-4">
+
+          <!-- Stats + filter bar -->
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div
+                v-if="dealCalendarActions.filter(a => !a.done && a.priority === 'urgent').length"
+                class="flex items-center gap-1.5 rounded-xl bg-error-50 px-3 py-1.5 dark:bg-error-900/20"
+              >
+                <span class="h-2 w-2 rounded-full bg-error-500"></span>
+                <span class="text-xs font-semibold text-error-600 dark:text-error-400">
+                  {{ dealCalendarActions.filter(a => !a.done && a.priority === 'urgent').length }} khẩn cấp
+                </span>
+              </div>
+              <span class="text-sm text-gray-500 dark:text-gray-400">
+                <span class="font-semibold text-gray-700 dark:text-gray-300">{{ dealCalendarActions.filter(a => !a.done).length }}</span>
+                việc chưa xử lý
+              </span>
+            </div>
+            <!-- Filter tabs -->
+            <div class="flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-800">
+              <button
+                v-for="f in CALENDAR_FILTERS"
+                :key="f.id"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                :class="dealCalendarFilter === f.id
+                  ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
+                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+                @click="dealCalendarFilter = f.id"
+              >{{ f.name }}</button>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <div
+            v-if="filteredDealCalendarActions.length === 0"
+            class="flex flex-col items-center justify-center gap-3 py-20 text-center"
+          >
+            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-success-50 dark:bg-success-900/20">
+              <CheckCircle2 class="h-7 w-7 text-success-500" />
+            </div>
+            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Tất cả đã xử lý!</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">Không còn việc nào cần xử lý trong bộ lọc này</p>
+          </div>
+
+          <!-- Action list -->
+          <div v-else class="space-y-2">
+            <div
+              v-for="action in filteredDealCalendarActions"
+              :key="action.id"
+              class="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-theme-xs transition-all dark:border-gray-700 dark:bg-gray-800"
+              :class="['border-l-[3px]', PRIORITY_BORDER[action.priority], action.done ? 'opacity-55' : '']"
+            >
+              <!-- Priority badge -->
+              <span
+                class="shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                :class="PRIORITY_BADGE[action.priority]"
+              >{{ PRIORITY_LABEL[action.priority] }}</span>
+
+              <!-- Action type badge -->
+              <span
+                class="shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-[10px] font-semibold"
+                :class="ACTION_TYPE_BADGE[action.type] ?? 'bg-gray-100 text-gray-600'"
+              >{{ action.type }}</span>
+
+              <!-- Description + linked deal -->
+              <div class="min-w-0 flex-1">
+                <p
+                  class="truncate text-sm font-medium"
+                  :class="action.done
+                    ? 'text-gray-400 line-through dark:text-gray-500'
+                    : 'text-gray-800 dark:text-gray-200'"
+                >{{ action.description }}</p>
+                <div class="mt-0.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                  <RouterLink
+                    :to="`/crm-deals/${action.dealId}`"
+                    class="truncate font-medium text-brand-500 hover:underline dark:text-brand-400"
+                  >{{ action.dealTitle }}</RouterLink>
+                  <span v-if="action.company">· {{ action.company }}</span>
+                </div>
+              </div>
+
+              <!-- Due date -->
+              <div class="w-[110px] shrink-0 text-right">
+                <p
+                  class="text-xs font-medium"
+                  :class="action.done
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : action.isOverdue
+                      ? 'text-error-500'
+                      : isCloseSoon(action.dueDate) ? 'text-warning-500' : 'text-gray-600 dark:text-gray-400'"
+                >
+                  <Calendar class="mr-0.5 inline-block h-3 w-3" />
+                  {{ formatCloseDate(action.dueDate) }}
+                </p>
+                <p
+                  class="mt-0.5 text-[10px]"
+                  :class="action.done
+                    ? 'text-gray-300 dark:text-gray-600'
+                    : action.isOverdue
+                      ? 'text-error-400'
+                      : isCloseSoon(action.dueDate) ? 'text-warning-400' : 'text-gray-400 dark:text-gray-500'"
+                >{{ action.done ? 'Đã xong' : daysLabel(action.dueDate) }}</p>
+              </div>
+
+              <!-- Assignee -->
+              <div class="flex w-[130px] shrink-0 items-center gap-1.5">
+                <div
+                  v-if="action.assigneeName"
+                  class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-white dark:ring-gray-800"
+                  :style="{ background: action.assigneeColor || '#6B7280' }"
+                  :title="action.assigneeName"
+                >{{ cardInitials(action.assigneeName) }}</div>
+                <span v-if="action.assigneeName" class="truncate text-xs text-gray-500 dark:text-gray-400">
+                  {{ action.assigneeName }}
+                </span>
+              </div>
+
+              <!-- Done button — checkmark chỉ hiện khi đã xử lý -->
+              <button
+                type="button"
+                class="shrink-0 flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all"
+                :class="action.done
+                  ? 'border-success-300 bg-success-50 text-success-600 dark:border-success-600 dark:bg-success-900/20 dark:text-success-400'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-success-300 hover:bg-success-50 hover:text-success-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:border-success-600 dark:hover:bg-success-900/20 dark:hover:text-success-400'"
+                @click="markDealActionDone(action.id)"
+              >
+                <span :class="[
+                  'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all',
+                  action.done
+                    ? 'border-success-500 bg-success-500'
+                    : 'border-gray-300 bg-white dark:border-gray-500 dark:bg-transparent'
+                ]">
+                  <Check v-if="action.done" class="h-2.5 w-2.5 text-white" />
+                </span>
+                Đã xử lý
+              </button>
+            </div>
+          </div>
+
         </div>
 
       </template>
@@ -633,11 +929,13 @@
             <Zap class="h-5 w-5 text-warning-500" />
             Automation Rules
           </DialogTitle>
-          <DialogDescription class="text-sm text-gray-500">Tự động hóa khi deal chuyển giai đoạn</DialogDescription>
+          <DialogDescription class="text-sm text-gray-500">
+            {{ activeTab === 'deal' ? 'Tự động hóa khi deal chuyển giai đoạn' : 'Tự động hóa khi lead chuyển giai đoạn' }}
+          </DialogDescription>
         </DialogHeader>
         <div class="space-y-2.5 py-4">
           <div
-            v-for="rule in automationRules"
+            v-for="rule in activeTab === 'deal' ? automationRules : leadAutomationRules"
             :key="rule.id"
             class="flex items-start gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50"
           >
@@ -672,6 +970,155 @@
       </DialogContent>
     </Dialog>
 
+    <!-- ─── Deal Stage Settings Dialog ──────────────────────────── -->
+    <Dialog :open="showDealStageSettings" @update:open="val => { showDealStageSettings = val; dealColorPickerIdx = null; showAddDealStageForm = false }">
+      <DialogContent class="sm:max-w-md max-h-[85vh] overflow-y-auto" @click="dealColorPickerIdx = null">
+        <DialogHeader>
+          <DialogTitle class="text-base font-semibold text-gray-900 dark:text-white">Cài đặt giai đoạn Deal</DialogTitle>
+          <DialogDescription class="text-sm text-gray-500">Thêm, đổi tên hoặc xóa giai đoạn — kéo thả để sắp xếp lại</DialogDescription>
+        </DialogHeader>
+
+        <!-- Stage list -->
+        <div class="max-h-[220px] space-y-1.5 overflow-y-auto py-1 pr-1">
+          <div
+            v-for="(stage, idx) in dealStageDraft"
+            :key="stage.id"
+            :draggable="true"
+            :class="[
+              'flex items-center gap-2 rounded-lg border px-3 py-2 transition-all select-none',
+              dealDragIdx === idx ? 'opacity-40' : '',
+              dealDragOverIdx === idx && dealDragIdx !== idx
+                ? 'border-brand-400 bg-brand-50 dark:border-brand-500 dark:bg-brand-900/20'
+                : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50',
+            ]"
+            @dragstart="onDealDragStart(idx)"
+            @dragover="onDealDragOver($event, idx)"
+            @drop.prevent="onDealDrop(idx)"
+            @dragend="onDealDragEnd"
+          >
+            <!-- Drag handle -->
+            <GripVertical class="h-4 w-4 shrink-0 cursor-grab text-gray-300 dark:text-gray-600" />
+
+            <!-- Color swatch + picker -->
+            <div class="relative shrink-0">
+              <button
+                type="button"
+                class="h-6 w-6 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-110 dark:border-gray-700 dark:ring-gray-600"
+                :style="{ background: stage.color }"
+                title="Chọn màu"
+                @click.stop="dealColorPickerIdx = dealColorPickerIdx === idx ? null : idx"
+              />
+              <transition name="fade">
+                <div
+                  v-if="dealColorPickerIdx === idx"
+                  class="absolute left-0 top-full z-20 mt-1.5 grid grid-cols-5 gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
+                  @click.stop
+                >
+                  <button
+                    v-for="c in STAGE_COLOR_PALETTE"
+                    :key="c"
+                    type="button"
+                    class="h-5 w-5 rounded-full transition-transform hover:scale-125"
+                    :style="{ background: c, outline: stage.color === c ? `2px solid ${c}` : 'none', outlineOffset: '2px' }"
+                    @click.stop="stage.color = c; dealColorPickerIdx = null"
+                  />
+                </div>
+              </transition>
+            </div>
+
+            <!-- Name input -->
+            <input
+              v-model="stage.name"
+              class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500"
+              placeholder="Tên giai đoạn"
+              maxlength="40"
+              @keyup.enter="stage.name.trim() !== (dealStageOrigNames[stage.id] ?? '') && saveDealStageName(stage)"
+            />
+
+            <!-- Per-stage save (shown when name is dirty) -->
+            <button
+              v-if="stage.name.trim() && stage.name.trim() !== (dealStageOrigNames[stage.id] ?? '')"
+              type="button"
+              class="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-success-600 transition-colors hover:bg-success-50 dark:text-success-400 dark:hover:bg-success-900/20"
+              title="Lưu tên"
+              @click.stop="saveDealStageName(stage)"
+            >✓ Lưu</button>
+
+            <!-- Delete -->
+            <button
+              type="button"
+              class="shrink-0 rounded-md p-1.5 text-gray-400 transition-colors hover:bg-error-50 hover:text-error-500 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-error-900/20"
+              :disabled="dealStageDraft.length <= 1"
+              :title="dealStageDraft.length <= 1 ? 'Pipeline phải có ít nhất 1 giai đoạn' : 'Xóa giai đoạn'"
+              @click="removeDealStage(idx)"
+            >
+              <Trash2 class="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Add stage sub-form -->
+        <div
+          v-if="showAddDealStageForm"
+          class="rounded-xl border border-brand-200 bg-brand-50/60 p-3 space-y-3 dark:border-brand-700/60 dark:bg-brand-900/20"
+          @click.stop
+        >
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">Giai đoạn mới</p>
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Tên giai đoạn</label>
+            <input
+              v-model="newDealStageName"
+              class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500"
+              placeholder="VD: Chờ ký hợp đồng"
+              maxlength="40"
+              @keyup.enter="confirmAddDealStage"
+              @keyup.esc="showAddDealStageForm = false; newDealStageName = ''"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Vị trí</label>
+            <select
+              v-model="newDealStagePosition"
+              class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            >
+              <option value="first">Đứng đầu tiên</option>
+              <option v-for="s in dealStageDraft" :key="s.id" :value="s.id">Sau: {{ s.name || '(chưa đặt tên)' }}</option>
+              <option value="last">Cuối danh sách</option>
+            </select>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button
+              type="button"
+              class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+              @click="showAddDealStageForm = false; newDealStageName = ''"
+            >Hủy</button>
+            <button
+              v-if="newDealStageName.trim()"
+              type="button"
+              class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+              @click="confirmAddDealStage"
+            >Lưu</button>
+          </div>
+        </div>
+
+        <!-- Toggle add button (shown when sub-form is hidden) -->
+        <button
+          v-if="!showAddDealStageForm"
+          type="button"
+          class="flex w-full items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 px-3 py-2.5 text-sm font-medium text-gray-400 transition-colors hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:hover:border-brand-600 dark:hover:text-brand-400"
+          @click="showAddDealStageForm = true; newDealStagePosition = 'last'"
+        >
+          <Plus class="h-4 w-4" />
+          Thêm giai đoạn mới
+        </button>
+
+        <DialogFooter class="gap-2">
+          <Button variant="outline" @click="showDealStageSettings = false; showAddDealStageForm = false">Hủy</Button>
+          <Button class="bg-brand-500 text-white hover:bg-brand-600" @click="saveDealStages">Lưu thay đổi</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- ─── Deal Dialog ─────────────────────────────────────────── -->
     <Dialog :open="showDealDialog" @update:open="showDealDialog = $event">
       <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -685,20 +1132,87 @@
             <Label for="deal-title">Tên deal <span class="text-error-500">*</span></Label>
             <Input id="deal-title" v-model="form.title" placeholder="VD: Triển khai ERP giai đoạn 1" />
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="space-y-1.5">
-              <Label for="deal-company">Công ty</Label>
-              <Input id="deal-company" v-model="form.company" placeholder="Tên công ty" />
-            </div>
-            <div class="space-y-1.5">
-              <Label for="deal-contact">Người liên hệ</Label>
-              <Input id="deal-contact" v-model="form.contact" placeholder="Họ tên" />
-            </div>
-          </div>
+          <!-- Customer type toggle -->
           <div class="space-y-1.5">
-            <Label for="deal-contact-title">Chức vụ người liên hệ</Label>
-            <Input id="deal-contact-title" v-model="form.contactTitle" placeholder="VD: Giám đốc mua hàng, Trưởng phòng IT" />
+            <Label>Loại khách hàng</Label>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                class="flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-medium transition-all"
+                :class="form.customerType === 'company'
+                  ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-600'"
+                @click="form.customerType = 'company'"
+              >
+                <Building2 class="h-4 w-4 shrink-0" />
+                Công ty
+              </button>
+              <button
+                type="button"
+                class="flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-medium transition-all"
+                :class="form.customerType === 'household'
+                  ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-600'"
+                @click="form.customerType = 'household'; form.contactTitle = ''"
+              >
+                <Store class="h-4 w-4 shrink-0" />
+                Hộ kinh doanh
+              </button>
+              <button
+                type="button"
+                class="flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-medium transition-all"
+                :class="form.customerType === 'individual'
+                  ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-600'"
+                @click="form.customerType = 'individual'; form.company = ''; form.contactTitle = ''"
+              >
+                <User class="h-4 w-4 shrink-0" />
+                Cá nhân
+              </button>
+            </div>
           </div>
+
+          <!-- Company customer fields -->
+          <template v-if="form.customerType === 'company'">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <Label for="deal-company">Tên công ty</Label>
+                <Input id="deal-company" v-model="form.company" placeholder="VD: Tập đoàn Vinhomes" />
+              </div>
+              <div class="space-y-1.5">
+                <Label for="deal-contact">Người liên hệ</Label>
+                <Input id="deal-contact" v-model="form.contact" placeholder="Họ và tên" />
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <Label for="deal-contact-title">Chức vụ người liên hệ</Label>
+              <Input id="deal-contact-title" v-model="form.contactTitle" placeholder="VD: Giám đốc mua hàng, Trưởng phòng IT" />
+            </div>
+          </template>
+
+          <!-- Household business fields -->
+          <template v-else-if="form.customerType === 'household'">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <Label for="deal-hkd-name">Tên hộ kinh doanh</Label>
+                <Input id="deal-hkd-name" v-model="form.company" placeholder="VD: Cửa hàng Minh Phát" />
+              </div>
+              <div class="space-y-1.5">
+                <Label for="deal-hkd-contact">Chủ hộ / Người liên hệ</Label>
+                <Input id="deal-hkd-contact" v-model="form.contact" placeholder="Họ và tên" />
+              </div>
+            </div>
+          </template>
+
+          <!-- Individual customer fields -->
+          <template v-else>
+            <div class="space-y-1.5">
+              <Label for="deal-contact">Tên khách hàng</Label>
+              <Input id="deal-contact" v-model="form.contact" placeholder="Họ và tên khách hàng" />
+            </div>
+          </template>
+
+          <!-- Common: phone + email -->
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1.5">
               <Label for="deal-phone">Số điện thoại</Label>
@@ -718,6 +1232,16 @@
               <Label for="deal-close-date">Ngày dự kiến đóng</Label>
               <Input id="deal-close-date" v-model="form.closeDate" type="date" />
             </div>
+          </div>
+          <!-- Phụ trách -->
+          <div class="space-y-1.5">
+            <Label for="deal-assignee">Người phụ trách</Label>
+            <Input id="deal-assignee" v-model="form.assigneeName" placeholder="Tên nhân viên phụ trách" />
+          </div>
+          <!-- Team Lead -->
+          <div class="space-y-1.5">
+            <Label for="deal-teamlead">Team Lead quản lý</Label>
+            <Input id="deal-teamlead" v-model="form.teamLeadName" placeholder="Tên team lead" />
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1.5">
@@ -780,15 +1304,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import LeadKanbanBoard from '@/components/crm/LeadKanbanBoard.vue'
+import CrmCustomerBoard from '@/components/crm/CrmCustomerBoard.vue'
 import { getSocket, disconnectSocket } from '@/lib/socket'
 import { createDeal, deleteDeal, listDealsKanban, updateDeal, updateDealStage } from '@/services/deals'
 import type { DealCard, DealStage, DealsKanbanPayload, KanbanColumn, KanbanKpi } from '@/types/deals'
 import {
   AlertTriangle,
+  Building2,
   Calendar,
   CalendarDays,
   Check,
+  CheckCircle2,
   ChevronDown,
+  GripVertical,
   LayoutGrid,
   LayoutList,
   Loader2,
@@ -799,9 +1327,12 @@ import {
   Phone,
   Plus,
   Search,
+  Settings,
   SlidersHorizontal,
   Star,
+  Store,
   Trash2,
+  User,
   X,
   Zap,
 } from 'lucide-vue-next'
@@ -809,10 +1340,11 @@ import { toast } from 'vue-sonner'
 
 // ─── Types ────────────────────────────────────────────────────
 
-type KanbanTab = 'lead' | 'deal'
+type KanbanTab = 'lead' | 'deal' | 'customer'
 type ViewMode = 'kanban' | 'list' | 'calendar'
 
 interface DealForm {
+  customerType: 'company' | 'household' | 'individual'
   title: string
   company: string
   contact: string
@@ -824,6 +1356,8 @@ interface DealForm {
   stage: DealStage
   source: string
   description: string
+  assigneeName: string
+  teamLeadName: string
 }
 
 interface AutomationRule {
@@ -831,6 +1365,33 @@ interface AutomationRule {
   condition: string
   action: string
   enabled: boolean
+}
+
+type ActionPriority = 'urgent' | 'high' | 'normal' | 'low'
+type ActionType = 'Gọi điện' | 'Gửi email' | 'Demo' | 'Gặp mặt' | 'Báo giá' | 'Ghi chú'
+
+interface CalendarAction {
+  id: string
+  dealId: string
+  dealTitle: string
+  company?: string
+  type: ActionType
+  description: string
+  priority: ActionPriority
+  dueDate: string
+  isOverdue?: boolean
+  assigneeName?: string
+  assigneeColor?: string
+  done: boolean
+}
+
+type CalendarFilterId = 'all' | 'urgent' | 'today' | 'week'
+
+interface StageDraft {
+  id: string
+  name: string
+  color: string
+  isNew?: boolean
 }
 
 // ─── Constants ────────────────────────────────────────────────
@@ -859,6 +1420,50 @@ const QUICK_FILTERS = [
 ] as const
 
 const ACTIVITY_TYPES = ['Gọi điện', 'Email', 'Gặp mặt', 'Demo', 'Ghi chú']
+
+const STAGE_COLOR_PALETTE = [
+  '#64748B', '#3B82F6', '#06B6D4', '#10B981', '#0D9488',
+  '#8B5CF6', '#6366F1', '#F59E0B', '#EF4444', '#EC4899',
+]
+
+const PRIORITY_LABEL: Record<ActionPriority, string> = {
+  urgent: 'Khẩn cấp',
+  high:   'Cao',
+  normal: 'Bình thường',
+  low:    'Thấp',
+}
+
+const PRIORITY_BADGE: Record<ActionPriority, string> = {
+  urgent: 'bg-error-50 text-error-600 dark:bg-error-900/30 dark:text-error-400',
+  high:   'bg-warning-50 text-warning-600 dark:bg-warning-900/30 dark:text-warning-400',
+  normal: 'bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400',
+  low:    'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
+}
+
+const PRIORITY_BORDER: Record<ActionPriority, string> = {
+  urgent: 'border-l-error-500',
+  high:   'border-l-warning-400',
+  normal: 'border-l-brand-400',
+  low:    'border-l-gray-300 dark:border-l-gray-600',
+}
+
+const PRIORITY_ORDER: Record<ActionPriority, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
+
+const CALENDAR_FILTERS: { id: CalendarFilterId; name: string }[] = [
+  { id: 'all',    name: 'Tất cả' },
+  { id: 'urgent', name: '🔴 Khẩn cấp' },
+  { id: 'today',  name: 'Hôm nay' },
+  { id: 'week',   name: 'Tuần này' },
+]
+
+const ACTION_TYPE_BADGE: Record<string, string> = {
+  'Gọi điện': 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+  'Gửi email': 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+  'Demo':      'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+  'Gặp mặt':  'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
+  'Báo giá':  'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400',
+  'Ghi chú':  'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+}
 
 const DEMO_CARDS: Record<DealStage, DealCard[]> = {
   new: [
@@ -1096,6 +1701,26 @@ function matchesDealDateRange(dateStr: string | undefined, range: string): boole
   return true
 }
 
+const allDealCards = computed(() =>
+  dealFilteredColumns.value.flatMap((col) =>
+    col.cards.map((card) => ({
+      ...card,
+      stage: col.id as DealStage,
+      stageName: col.name,
+      stageColor: col.color,
+    }))
+  )
+)
+
+// ─── List selection ────────────────────────────────────────────
+const selectedDealIds = ref<string[]>([])
+const allDealsSelected = computed(() =>
+  allDealCards.value.length > 0 && allDealCards.value.every(d => selectedDealIds.value.includes(d.id))
+)
+const someDealsSelected = computed(() =>
+  selectedDealIds.value.length > 0 && !allDealsSelected.value
+)
+
 const dealFilteredColumns = computed(() => {
   if (!hasDealFilters.value) return columns.value
   const q = dealFilterText.value.trim().toLowerCase()
@@ -1266,6 +1891,206 @@ const automationRules = ref<AutomationRule[]>([
   { id: '4', condition: 'Khi deal → Thua', action: 'Tạo lead chăm sóc lại sau 30 ngày', enabled: false },
 ])
 
+const leadAutomationRules = ref<AutomationRule[]>([
+  { id: 'l1', condition: 'Khi lead → MQL', action: 'Gửi email chào mừng tự động', enabled: true },
+  { id: 'l2', condition: 'Khi lead → SQL', action: 'Tạo task gọi điện tư vấn', enabled: true },
+  { id: 'l3', condition: 'Khi lead → Customer', action: 'Tạo deal mới trong pipeline', enabled: true },
+  { id: 'l4', condition: 'Khi lead không hoạt động 7 ngày', action: 'Thông báo cho người phụ trách', enabled: false },
+])
+
+// ─── Deal Stage Settings ──────────────────────────────────────
+
+const showDealStageSettings = ref(false)
+const dealStageDraft = ref<StageDraft[]>([])
+const dealColorPickerIdx = ref<number | null>(null)
+const dealStageOrigNames = ref<Record<string, string>>({})
+
+// Add-stage sub-form
+const showAddDealStageForm = ref(false)
+const newDealStageName = ref('')
+const newDealStagePosition = ref<string>('last')
+
+// Drag-drop
+const dealDragIdx = ref<number | null>(null)
+const dealDragOverIdx = ref<number | null>(null)
+
+function openDealStageSettings(): void {
+  dealStageDraft.value = columns.value.map((col) => ({
+    id: col.id,
+    name: col.name,
+    color: col.color,
+  }))
+  dealStageOrigNames.value = Object.fromEntries(columns.value.map((col) => [col.id, col.name]))
+  dealColorPickerIdx.value = null
+  showAddDealStageForm.value = false
+  newDealStageName.value = ''
+  newDealStagePosition.value = 'last'
+  showDealStageSettings.value = true
+}
+
+function confirmAddDealStage(): void {
+  const name = newDealStageName.value.trim()
+  if (!name) { toast.error('Tên giai đoạn không được để trống'); return }
+  const color = STAGE_COLOR_PALETTE[dealStageDraft.value.length % STAGE_COLOR_PALETTE.length]
+  const newStage: StageDraft = { id: `new_${Date.now()}`, name, color, isNew: true }
+  if (newDealStagePosition.value === 'first') {
+    dealStageDraft.value.unshift(newStage)
+  } else if (newDealStagePosition.value === 'last') {
+    dealStageDraft.value.push(newStage)
+  } else {
+    const afterIdx = dealStageDraft.value.findIndex((s) => s.id === newDealStagePosition.value)
+    dealStageDraft.value.splice(afterIdx >= 0 ? afterIdx + 1 : dealStageDraft.value.length, 0, newStage)
+  }
+  dealStageOrigNames.value[newStage.id] = name
+  showAddDealStageForm.value = false
+  newDealStageName.value = ''
+  newDealStagePosition.value = 'last'
+}
+
+function removeDealStage(idx: number): void {
+  const draft = dealStageDraft.value[idx]
+  if (!draft.isNew) {
+    const col = columns.value.find((c) => c.id === draft.id)
+    if (col && col.cards.length > 0) {
+      toast.error(`Không thể xóa — giai đoạn đang có ${col.cards.length} deal`)
+      return
+    }
+  }
+  dealStageDraft.value.splice(idx, 1)
+  if (dealColorPickerIdx.value === idx) dealColorPickerIdx.value = null
+}
+
+function saveDealStageName(stage: StageDraft): void {
+  if (!stage.name.trim()) { toast.error('Tên không được để trống'); return }
+  stage.name = stage.name.trim()
+  dealStageOrigNames.value[stage.id] = stage.name
+  toast.success('Đã lưu tên giai đoạn')
+}
+
+function onDealDragStart(idx: number): void { dealDragIdx.value = idx }
+function onDealDragOver(e: DragEvent, idx: number): void { e.preventDefault(); dealDragOverIdx.value = idx }
+function onDealDrop(idx: number): void {
+  const from = dealDragIdx.value
+  if (from === null || from === idx) { dealDragIdx.value = null; dealDragOverIdx.value = null; return }
+  const list = [...dealStageDraft.value]
+  const [moved] = list.splice(from, 1)
+  list.splice(idx, 0, moved)
+  dealStageDraft.value = list
+  dealDragIdx.value = null
+  dealDragOverIdx.value = null
+}
+function onDealDragEnd(): void { dealDragIdx.value = null; dealDragOverIdx.value = null }
+
+function saveDealStages(): void {
+  if (dealStageDraft.value.length === 0) {
+    toast.error('Pipeline phải có ít nhất 1 giai đoạn')
+    return
+  }
+  if (dealStageDraft.value.some((s) => !s.name.trim())) {
+    toast.error('Tên giai đoạn không được để trống')
+    return
+  }
+  columns.value = dealStageDraft.value.map((draft) => {
+    const existing = columns.value.find((c) => c.id === draft.id)
+    if (existing) return { ...existing, name: draft.name.trim(), color: draft.color }
+    const slug = draft.name.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + `_${Date.now()}`
+    return { id: slug, name: draft.name.trim(), color: draft.color, total: '₫ 0', cards: [] } as KanbanColumn
+  })
+  showDealStageSettings.value = false
+  toast.success('Đã lưu cài đặt giai đoạn')
+}
+
+// ─── Calendar view (Deal) ─────────────────────────────────────
+
+const dealCalendarFilter = ref<CalendarFilterId>('all')
+
+const dealCalendarActions = ref<CalendarAction[]>([
+  {
+    id: 'dca-1', dealId: 'demo-4', dealTitle: 'Hệ thống POS chuỗi F&B',
+    company: 'Golden Gate Group', type: 'Gọi điện',
+    description: 'Xác nhận tiến độ đàm phán với giám đốc mua hàng',
+    priority: 'urgent', dueDate: '2026-05-19', isOverdue: true,
+    assigneeName: 'Minh Tú', assigneeColor: '#3B82F6', done: false,
+  },
+  {
+    id: 'dca-2', dealId: 'demo-2', dealTitle: 'Phần mềm quản lý kho',
+    company: 'Masan Group', type: 'Gửi email',
+    description: 'Gửi lại báo giá đã cập nhật phần chiết khấu 10%',
+    priority: 'urgent', dueDate: '2026-05-20', isOverdue: true,
+    assigneeName: 'Lan Ngọc', assigneeColor: '#10B981', done: false,
+  },
+  {
+    id: 'dca-3', dealId: 'demo-4', dealTitle: 'Hệ thống POS chuỗi F&B',
+    company: 'Golden Gate Group', type: 'Gặp mặt',
+    description: 'Họp trực tiếp xem xét hợp đồng lần cuối',
+    priority: 'high', dueDate: '2026-05-23',
+    assigneeName: 'Minh Tú', assigneeColor: '#3B82F6', done: false,
+  },
+  {
+    id: 'dca-4', dealId: 'demo-3', dealTitle: 'Dịch vụ Cloud B2B 2026',
+    company: 'FPT Corporation', type: 'Demo',
+    description: 'Demo sản phẩm cho team kỹ thuật FPT — 3 giờ chiều',
+    priority: 'high', dueDate: '2026-05-27',
+    assigneeName: 'Hùng Phát', assigneeColor: '#8B5CF6', done: false,
+  },
+  {
+    id: 'dca-5', dealId: 'demo-5', dealTitle: 'Tích hợp CRM + ERP',
+    company: 'Thaco Auto', type: 'Báo giá',
+    description: 'Chuẩn bị và gửi báo giá chính thức giai đoạn 1',
+    priority: 'normal', dueDate: '2026-06-01',
+    assigneeName: 'Đức Long', assigneeColor: '#F59E0B', done: false,
+  },
+  {
+    id: 'dca-6', dealId: 'demo-1', dealTitle: 'Triển khai ERP giai đoạn 1',
+    company: 'Tập đoàn Vingroup', type: 'Gặp mặt',
+    description: 'Họp kickoff dự án với PM và stakeholders Vingroup',
+    priority: 'normal', dueDate: '2026-06-05',
+    assigneeName: 'Minh Tú', assigneeColor: '#3B82F6', done: false,
+  },
+  {
+    id: 'dca-7', dealId: 'demo-1', dealTitle: 'Triển khai ERP giai đoạn 1',
+    company: 'Tập đoàn Vingroup', type: 'Ghi chú',
+    description: 'Cập nhật ghi chú nội bộ sau buổi họp với Vingroup',
+    priority: 'low', dueDate: '2026-06-15',
+    assigneeName: 'Minh Tú', assigneeColor: '#3B82F6', done: false,
+  },
+])
+
+const filteredDealCalendarActions = computed(() => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const endOfWeek = new Date(today)
+  endOfWeek.setDate(today.getDate() + 7)
+
+  return dealCalendarActions.value
+    .filter((a) => {
+      if (dealCalendarFilter.value === 'urgent') return !a.done && a.priority === 'urgent'
+      if (dealCalendarFilter.value === 'today') {
+        const d = new Date(a.dueDate); d.setHours(0, 0, 0, 0)
+        return !a.done && d.getTime() === today.getTime()
+      }
+      if (dealCalendarFilter.value === 'week') {
+        const d = new Date(a.dueDate); d.setHours(0, 0, 0, 0)
+        return !a.done && d >= today && d <= endOfWeek
+      }
+      return true // 'all' — hiện tất cả (done + chưa done)
+    })
+    .sort((a, b) => {
+      if (a.done !== b.done) return a.done ? 1 : -1 // done xuống cuối
+      const diff = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
+      if (diff !== 0) return diff
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    })
+})
+
+function markDealActionDone(id: string): void {
+  const action = dealCalendarActions.value.find((a) => a.id === id)
+  if (action) {
+    action.done = !action.done
+    if (action.done) toast.success('Đã đánh dấu hoàn thành')
+  }
+}
+
 // ─── Deal dialog state ────────────────────────────────────────
 
 const showDealDialog = ref(false)
@@ -1273,9 +2098,11 @@ const isSubmitting = ref(false)
 const editingDealId = ref<string | null>(null)
 
 const form = ref<DealForm>({
+  customerType: 'company',
   title: '', company: '', contact: '', contactTitle: '',
   phone: '', email: '', value: '', closeDate: '',
   stage: 'new', source: 'website', description: '',
+  assigneeName: '', teamLeadName: '',
 })
 
 let socket: ReturnType<typeof getSocket> | null = null
@@ -1293,6 +2120,18 @@ function isCloseSoon(dateStr: string): boolean {
 
 function formatCloseDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function daysLabel(dateStr: string): string {
+  const d = new Date(dateStr)
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  d.setHours(0, 0, 0, 0)
+  const diff = Math.round((d.getTime() - now.getTime()) / 86_400_000)
+  if (diff < 0) return `Quá hạn ${Math.abs(diff)} ngày`
+  if (diff === 0) return 'Đến hạn hôm nay'
+  if (diff === 1) return 'Đến hạn ngày mai'
+  return `Còn ${diff} ngày`
 }
 
 // ─── Multi-select ─────────────────────────────────────────────
@@ -1320,6 +2159,7 @@ function bulkMoveCards(toStage: DealStage): void {
 function switchTab(tab: KanbanTab): void {
   if (tab === activeTab.value) return
   activeTab.value = tab
+  if (tab !== 'customer') viewMode.value = 'kanban'
   if (tab === 'deal') {
     kpis.value = []
     void loadKanban()
@@ -1408,9 +2248,11 @@ async function submitQuickDeal(stage: DealStage): Promise<void> {
 
 function resetForm(stage: DealStage = 'new'): void {
   form.value = {
+    customerType: 'company',
     title: '', company: '', contact: '', contactTitle: '',
     phone: '', email: '', value: '', closeDate: '',
     stage, source: 'website', description: '',
+    assigneeName: '', teamLeadName: '',
   }
 }
 
@@ -1422,9 +2264,11 @@ function openCreateDialog(stage?: DealStage): void {
 
 function openEditDialog(card: DealCard, stage: DealStage): void {
   editingDealId.value = card.id
+  const hasCompany = !!(card.company && card.company !== '—')
   form.value = {
+    customerType: hasCompany ? 'company' : 'individual',
     title: card.title,
-    company: card.company,
+    company: hasCompany ? card.company : '',
     contact: card.contactName ?? '',
     contactTitle: '',
     phone: card.phone ?? '',
@@ -1434,6 +2278,8 @@ function openEditDialog(card: DealCard, stage: DealStage): void {
     stage,
     source: card.source?.toLowerCase() ?? 'website',
     description: '',
+    assigneeName: card.assigneeName ?? '',
+    teamLeadName: card.teamLeadName ?? '',
   }
   showDealDialog.value = true
 }
@@ -1457,6 +2303,8 @@ async function submitDeal(): Promise<void> {
       phone: form.value.phone || undefined,
       email: form.value.email || undefined,
       closeDate: form.value.closeDate || undefined,
+      assigneeName: form.value.assigneeName.trim() || undefined,
+      teamLeadName: form.value.teamLeadName.trim() || undefined,
       hasActions: true, isOptimistic: true,
     })
 
@@ -1488,6 +2336,8 @@ async function submitDeal(): Promise<void> {
       card.phone = form.value.phone || undefined
       card.email = form.value.email || undefined
       card.closeDate = form.value.closeDate || undefined
+      card.assigneeName = form.value.assigneeName.trim() || undefined
+      card.teamLeadName = form.value.teamLeadName.trim() || undefined
     }
 
     const result = await updateDeal(dealId, {
@@ -1520,6 +2370,19 @@ async function removeDeal(dealId: string): Promise<void> {
     return
   }
   toast.success('Đã xóa deal')
+}
+
+function toggleAllDeals(checked: boolean): void {
+  selectedDealIds.value = checked ? allDealCards.value.map(d => d.id) : []
+}
+function toggleDealRow(id: string, checked: boolean): void {
+  if (checked) selectedDealIds.value = [...selectedDealIds.value, id]
+  else selectedDealIds.value = selectedDealIds.value.filter(x => x !== id)
+}
+async function deleteSelectedDeals(): Promise<void> {
+  const ids = [...selectedDealIds.value]
+  selectedDealIds.value = []
+  for (const id of ids) await removeDeal(id)
 }
 
 // ─── Drag-drop ────────────────────────────────────────────────
@@ -1610,6 +2473,9 @@ onUnmounted(() => {
 .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,.04); border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-4px); }
 
 .kanban-container {
   display: flex;

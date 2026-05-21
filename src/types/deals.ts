@@ -24,6 +24,7 @@ export interface Deal {
   contactName?: string | null
   companyName?: string | null
   assigneeId: string
+  teamLeadName?: string | null
   expectedCloseDate?: string | null
   aiScore?: number | null
   tags: string[]
@@ -51,6 +52,7 @@ export interface DealCard {
   assignees?: number[]
   assigneeName?: string
   assigneeColor?: string
+  teamLeadName?: string
   lastActivityAt?: string
   closeDate?: string
   isOverdue?: boolean

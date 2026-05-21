@@ -196,7 +196,7 @@ const menuGroups = [
         items: [
             {
                 icon: Message2Line,
-                name: "Chat tài liệu",
+                name: "Tài liệu hỗ trợ",
                 path: "/chat-tai-lieu",
                 subItems: [
                     { name: "Tong quan", path: "/chat-tai-lieu", pro: false, new: false },
@@ -209,7 +209,7 @@ const menuGroups = [
                 name: "CRM & Công việc",
                 path: "/crm-work",
                 subItems: [
-                    { name: "Deals Kanban", path: "/crm-deals", pro: false, new: false },
+                    { name: "Kanban", path: "/crm-deals", pro: false, new: false },
                     { name: "Kiểm tra trùng", path: "/crm-duplicate-check", pro: false, new: false },
                 ],
             },
