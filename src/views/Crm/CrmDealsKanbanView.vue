@@ -2,7 +2,7 @@
   <AdminLayout>
     <div
       class="kanban-bg flex h-[calc(100vh-64px)] min-h-0 flex-col overflow-hidden"
-      @click="showPipelineMenu = false"
+      @click="showPipelineMenu = false; showCardFieldsPopup = false"
     >
 
       <!-- ─── Toolbar ─────────────────────────────────────────────── -->
@@ -96,6 +96,106 @@
               >
                 <component :is="mode.icon" class="h-4 w-4" />
               </button>
+            </div>
+
+            <!-- Card field visibility toggle -->
+            <div v-if="activeTab !== 'customer'" class="relative">
+              <button
+                ref="cardFieldsBtn"
+                type="button"
+                class="rounded p-1.5 transition-colors"
+                :class="showCardFieldsPopup
+                  ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
+                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+                title="Tùy chỉnh trường hiển thị"
+                @click.stop="toggleCardFieldsPopup"
+              >
+                <SlidersHorizontal class="h-4 w-4" />
+              </button>
+
+              <!-- Field config popup — teleported to body to escape overflow-hidden + z-index -->
+              <Teleport to="body">
+                <div
+                  v-if="showCardFieldsPopup"
+                  class="fixed z-[100001] w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
+                  :style="cardFieldsPopupStyle"
+                  @click.stop
+                >
+                  <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                      {{ activeTab === 'deal' ? 'Trường Deal' : 'Trường Lead' }}
+                    </p>
+                    <p class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">Quản lý trường hiển thị khi mở chi tiết</p>
+                  </div>
+                  <div class="max-h-[65vh] overflow-y-auto p-4">
+                    <!-- Deal: field-level toggles grouped by section -->
+                    <template v-if="activeTab === 'deal'">
+                      <div class="space-y-4">
+                        <div v-for="section in DEAL_SECTIONS" :key="section.id">
+                          <div class="mb-2 flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              :checked="dealFieldStore.visibleCountInSection(section.id) === dealFieldStore.totalCountInSection(section.id)"
+                              class="h-4 w-4 cursor-pointer rounded border-gray-300 accent-brand-500"
+                              @change="toggleDealSection(section.id, ($event.target as HTMLInputElement).checked)"
+                            />
+                            <span class="flex-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ section.name }}</span>
+                            <span class="tabular-nums text-[10px] text-gray-400 dark:text-gray-500">
+                              {{ dealFieldStore.visibleCountInSection(section.id) }}/{{ dealFieldStore.totalCountInSection(section.id) }}
+                            </span>
+                          </div>
+                          <div class="ml-6 space-y-0.5">
+                            <label
+                              v-for="field in DEAL_FIELDS.filter(f => f.sectionId === section.id)"
+                              :key="field.fieldId"
+                              class="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                            >
+                              <input
+                                type="checkbox"
+                                :checked="dealFieldStore.isVisible(field.fieldId)"
+                                class="h-3.5 w-3.5 cursor-pointer rounded border-gray-300 accent-brand-500"
+                                @change="dealFieldStore.setFieldVisible(field.fieldId, ($event.target as HTMLInputElement).checked); dealFieldStore.saveConfig()"
+                              />
+                              <span class="text-sm text-gray-700 dark:text-gray-300">{{ field.labelVI }}</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                    <!-- Lead: field-level toggles grouped by section -->
+                    <template v-else>
+                      <div class="space-y-4">
+                        <div v-for="section in LEAD_SECTIONS" :key="section.id">
+                          <div class="mb-2 flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              :checked="leadFieldStore.isSectionFullyVisible(section.id)"
+                              class="h-4 w-4 cursor-pointer rounded border-gray-300 accent-brand-500"
+                              @change="leadFieldStore.setSectionVisible(section.id, ($event.target as HTMLInputElement).checked); leadFieldStore.saveConfig()"
+                            />
+                            <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ section.name }}</span>
+                          </div>
+                          <div class="ml-6 space-y-0.5">
+                            <label
+                              v-for="field in LEAD_FIELDS.filter(f => f.sectionId === section.id)"
+                              :key="field.fieldId"
+                              class="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                            >
+                              <input
+                                type="checkbox"
+                                :checked="leadFieldStore.isVisible(field.fieldId)"
+                                class="h-3.5 w-3.5 cursor-pointer rounded border-gray-300 accent-brand-500"
+                                @change="leadFieldStore.setFieldVisible(field.fieldId, ($event.target as HTMLInputElement).checked); leadFieldStore.saveConfig()"
+                              />
+                              <span class="text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </Teleport>
             </div>
 
             <button
@@ -488,9 +588,11 @@
                   <!-- Row 1: Source badge + badges + actions -->
                   <div class="mb-1.5 flex items-start justify-between gap-1">
                     <span
+                      v-if="card.source"
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
                       :style="sourceStyle(card.source)"
                     >{{ card.source }}</span>
+                    <span v-else class="shrink-0" />
                     <div class="flex shrink-0 items-center gap-1">
                       <span
                         v-if="card.commentCount"
@@ -520,10 +622,10 @@
                   >{{ card.title }}</RouterLink>
 
                   <!-- Contact + Company -->
-                  <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                  <p v-if="card.contactName || card.company" class="mb-2 text-xs text-gray-500 dark:text-gray-400">
                     <span v-if="card.contactName" class="font-medium text-gray-700 dark:text-gray-300">{{ card.contactName }}</span>
                     <span v-if="card.contactName && card.company"> · </span>
-                    {{ card.company }}
+                    <span v-if="card.company">{{ card.company }}</span>
                   </p>
 
                   <!-- Value + AI score -->
@@ -926,14 +1028,26 @@
       <DialogContent class="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle class="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white">
+            <button
+              v-if="kanbanRulesView !== 'list'"
+              type="button"
+              class="rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors -ml-1"
+              @click="kanbanRulesView = kanbanRulesView === 'action' ? 'trigger' : 'list'"
+            >
+              <ArrowLeft class="h-4 w-4" />
+            </button>
             <Zap class="h-5 w-5 text-warning-500" />
-            Automation Rules
+            {{ kanbanRulesView === 'list' ? 'Automation Rules' : kanbanRulesView === 'trigger' ? 'Chọn trigger' : 'Cấu hình hành động' }}
           </DialogTitle>
           <DialogDescription class="text-sm text-gray-500">
-            {{ activeTab === 'deal' ? 'Tự động hóa khi deal chuyển giai đoạn' : 'Tự động hóa khi lead chuyển giai đoạn' }}
+            <template v-if="kanbanRulesView === 'list'">{{ activeTab === 'deal' ? 'Tự động hóa khi deal chuyển giai đoạn' : 'Tự động hóa khi lead chuyển giai đoạn' }}</template>
+            <template v-else-if="kanbanRulesView === 'trigger'">Chọn sự kiện để bắt đầu luồng automation</template>
+            <template v-else>Đặt tên rule và chọn hành động thực hiện</template>
           </DialogDescription>
         </DialogHeader>
-        <div class="space-y-2.5 py-4">
+
+        <!-- VIEW: LIST -->
+        <div v-if="kanbanRulesView === 'list'" class="space-y-2.5 py-4">
           <div
             v-for="rule in activeTab === 'deal' ? automationRules : leadAutomationRules"
             :key="rule.id"
@@ -959,13 +1073,94 @@
           <button
             type="button"
             class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20"
+            @click="kanbanRulesView = 'trigger'"
           >
             <Plus class="h-4 w-4" />Thêm rule mới
           </button>
         </div>
+
+        <!-- VIEW: SELECT TRIGGER -->
+        <div v-else-if="kanbanRulesView === 'trigger'" class="py-4">
+          <div class="grid grid-cols-2 gap-3">
+            <button
+              v-for="t in KANBAN_TRIGGERS"
+              :key="t.id"
+              type="button"
+              class="text-left rounded-xl border-2 p-4 transition-all"
+              :class="kanbanSelectedTrigger === t.id
+                ? 'border-brand-400 bg-brand-50 dark:border-brand-500 dark:bg-brand-500/10'
+                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-brand-200 hover:bg-white dark:hover:border-brand-500/30'"
+              @click="kanbanSelectedTrigger = t.id"
+            >
+              <div
+                class="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
+                :class="kanbanSelectedTrigger === t.id ? 'bg-brand-100 dark:bg-brand-500/20' : 'bg-white dark:bg-gray-700'"
+              >
+                <component :is="t.icon" class="h-5 w-5" :class="kanbanSelectedTrigger === t.id ? 'text-brand-500' : 'text-gray-400'" />
+              </div>
+              <p class="text-sm font-semibold text-gray-900 dark:text-white leading-snug mb-1">{{ t.label }}</p>
+              <p class="text-xs text-gray-400 leading-snug">{{ t.desc }}</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW: SELECT ACTIONS -->
+        <div v-else-if="kanbanRulesView === 'action'" class="py-4 space-y-4">
+          <div>
+            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1.5">Tên rule</label>
+            <input
+              v-model="kanbanNewRuleName"
+              type="text"
+              class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-500/20 transition"
+              placeholder="Đặt tên cho automation rule này"
+            />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">Hành động (chọn nhiều)</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                v-for="a in KANBAN_ACTIONS"
+                :key="a.id"
+                type="button"
+                class="flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-all"
+                :class="kanbanSelectedActions.includes(a.id)
+                  ? 'border-brand-400 bg-brand-50 dark:border-brand-500 dark:bg-brand-500/10'
+                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'"
+                @click="toggleKanbanAction(a.id)"
+              >
+                <div
+                  class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  :class="kanbanSelectedActions.includes(a.id) ? 'bg-brand-100 dark:bg-brand-500/20' : 'bg-white dark:bg-gray-700'"
+                >
+                  <component :is="a.icon" class="h-3.5 w-3.5" :class="kanbanSelectedActions.includes(a.id) ? 'text-brand-500' : 'text-gray-400'" />
+                </div>
+                <span class="text-xs font-medium" :class="kanbanSelectedActions.includes(a.id) ? 'text-brand-700 dark:text-brand-300' : 'text-gray-600 dark:text-gray-400'">{{ a.label }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <DialogFooter>
-          <Button variant="outline" @click="showAutomationDialog = false">Đóng</Button>
-          <Button class="bg-brand-500 text-white hover:bg-brand-600" @click="showAutomationDialog = false">Lưu</Button>
+          <template v-if="kanbanRulesView === 'list'">
+            <Button variant="outline" @click="showAutomationDialog = false">Đóng</Button>
+            <Button class="bg-brand-500 text-white hover:bg-brand-600" @click="showAutomationDialog = false">Lưu</Button>
+          </template>
+          <template v-else-if="kanbanRulesView === 'trigger'">
+            <Button variant="outline" @click="kanbanRulesView = 'list'">Quay lại</Button>
+            <Button
+              :disabled="!kanbanSelectedTrigger"
+              class="bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed"
+              @click="kanbanRulesView = 'action'"
+            >Tiếp theo →</Button>
+          </template>
+          <template v-else>
+            <Button variant="outline" @click="kanbanRulesView = 'trigger'">Quay lại</Button>
+            <Button
+              :disabled="kanbanSelectedActions.length === 0 || !kanbanNewRuleName.trim()"
+              class="bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed"
+              @click="saveKanbanRule"
+            >Lưu rule</Button>
+          </template>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1283,11 +1478,32 @@
       </DialogContent>
     </Dialog>
 
+    <!-- Delete confirmation dialog -->
+    <Dialog :open="showDeleteDealConfirm" @update:open="showDeleteDealConfirm = $event">
+      <DialogContent class="max-w-sm">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2 text-error-600 dark:text-error-400">
+            <span class="material-symbols-outlined text-[20px]">delete_forever</span>
+            Xóa Deal
+          </DialogTitle>
+          <DialogDescription class="text-gray-600 dark:text-gray-400">
+            Bạn có chắc chắn muốn xóa deal này? Hành động này <span class="font-semibold text-gray-800 dark:text-gray-200">không thể hoàn tác</span>.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="gap-2 pt-2">
+          <Button variant="outline" @click="showDeleteDealConfirm = false">Hủy</Button>
+          <Button class="bg-error-500 text-white hover:bg-error-600" @click="confirmDeleteDeal">
+            Xác nhận xóa
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import {
@@ -1304,18 +1520,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import LeadKanbanBoard from '@/components/crm/LeadKanbanBoard.vue'
+import { useDealFieldConfigStore } from '@/stores/useDealFieldConfigStore'
+import { useLeadFieldConfigStore, LEAD_SECTIONS, LEAD_FIELDS } from '@/stores/useLeadFieldConfigStore'
+import { DEAL_SECTIONS, DEAL_FIELDS } from '@/types/dealFields'
 import CrmCustomerBoard from '@/components/crm/CrmCustomerBoard.vue'
 import { getSocket, disconnectSocket } from '@/lib/socket'
 import { createDeal, deleteDeal, listDealsKanban, updateDeal, updateDealStage } from '@/services/deals'
 import type { DealCard, DealStage, DealsKanbanPayload, KanbanColumn, KanbanKpi } from '@/types/deals'
 import {
   AlertTriangle,
+  ArrowLeft,
+  Bell,
   Building2,
   Calendar,
   CalendarDays,
   Check,
   CheckCircle2,
   ChevronDown,
+  GitBranch,
   GripVertical,
   LayoutGrid,
   LayoutList,
@@ -1326,9 +1548,11 @@ import {
   Pencil,
   Phone,
   Plus,
+  RefreshCw,
   Search,
   Settings,
   SlidersHorizontal,
+  SquareCheckBig,
   Star,
   Store,
   Trash2,
@@ -1898,6 +2122,62 @@ const leadAutomationRules = ref<AutomationRule[]>([
   { id: 'l4', condition: 'Khi lead không hoạt động 7 ngày', action: 'Thông báo cho người phụ trách', enabled: false },
 ])
 
+type KanbanTriggerType = 'stage_change' | 'field_update' | 'no_activity' | 'activity_added'
+type KanbanActionType = 'send_notification' | 'create_task' | 'send_email' | 'change_assignee' | 'change_stage' | 'add_tag'
+
+const KANBAN_TRIGGERS = [
+  { id: 'stage_change' as KanbanTriggerType, label: 'Khi giai đoạn thay đổi', desc: 'Kích hoạt mỗi khi deal/lead chuyển giai đoạn mới', icon: GitBranch },
+  { id: 'field_update' as KanbanTriggerType, label: 'Khi trường được cập nhật', desc: 'Kích hoạt khi bất kỳ trường dữ liệu nào bị thay đổi', icon: RefreshCw },
+  { id: 'no_activity' as KanbanTriggerType, label: 'Không có hoạt động', desc: 'Kích hoạt khi không có hoạt động trong một khoảng thời gian', icon: Bell },
+  { id: 'activity_added' as KanbanTriggerType, label: 'Khi thêm hoạt động', desc: 'Kích hoạt mỗi khi ghi nhận cuộc gọi, email, hay ghi chú mới', icon: SquareCheckBig },
+]
+
+const KANBAN_ACTIONS = [
+  { id: 'send_notification' as KanbanActionType, label: 'Gửi thông báo', icon: Bell },
+  { id: 'create_task' as KanbanActionType, label: 'Tạo tác vụ', icon: SquareCheckBig },
+  { id: 'send_email' as KanbanActionType, label: 'Gửi email', icon: Mail },
+  { id: 'change_assignee' as KanbanActionType, label: 'Đổi phụ trách', icon: User },
+  { id: 'change_stage' as KanbanActionType, label: 'Chuyển giai đoạn', icon: GitBranch },
+  { id: 'add_tag' as KanbanActionType, label: 'Thêm nhãn', icon: Zap },
+]
+
+const kanbanRulesView = ref<'list' | 'trigger' | 'action'>('list')
+const kanbanSelectedTrigger = ref<KanbanTriggerType | null>(null)
+const kanbanSelectedActions = ref<KanbanActionType[]>([])
+const kanbanNewRuleName = ref('')
+
+function toggleKanbanAction(id: KanbanActionType) {
+  const idx = kanbanSelectedActions.value.indexOf(id)
+  if (idx === -1) kanbanSelectedActions.value.push(id)
+  else kanbanSelectedActions.value.splice(idx, 1)
+}
+
+function saveKanbanRule() {
+  if (!kanbanSelectedTrigger.value || kanbanSelectedActions.value.length === 0 || !kanbanNewRuleName.value.trim()) return
+  const trigger = KANBAN_TRIGGERS.find((t) => t.id === kanbanSelectedTrigger.value)!
+  const targetRules = activeTab.value === 'deal' ? automationRules : leadAutomationRules
+  targetRules.value.unshift({
+    id: Date.now().toString(),
+    condition: kanbanNewRuleName.value.trim(),
+    action: trigger.label,
+    enabled: true,
+  })
+  toast.success('Đã tạo automation rule')
+  kanbanRulesView.value = 'list'
+  kanbanSelectedTrigger.value = null
+  kanbanSelectedActions.value = []
+  kanbanNewRuleName.value = ''
+}
+
+watch(showAutomationDialog, (val) => {
+  if (!val) {
+    kanbanRulesView.value = 'list'
+    kanbanSelectedTrigger.value = null
+    kanbanSelectedActions.value = []
+    kanbanNewRuleName.value = ''
+  }
+})
+
 // ─── Deal Stage Settings ──────────────────────────────────────
 
 const showDealStageSettings = ref(false)
@@ -2091,9 +2371,50 @@ function markDealActionDone(id: string): void {
   }
 }
 
+// ─── Card field visibility ────────────────────────────────────
+
+const dealFieldStore = useDealFieldConfigStore()
+const leadFieldStore = useLeadFieldConfigStore()
+
+const showCardFieldsPopup = ref(false)
+const cardFieldsBtn = ref<HTMLElement | null>(null)
+const cardFieldsPopupStyle = ref<{ top: string; right: string }>({ top: '0px', right: '0px' })
+
+function toggleCardFieldsPopup(): void {
+  if (!showCardFieldsPopup.value && cardFieldsBtn.value) {
+    const rect = cardFieldsBtn.value.getBoundingClientRect()
+    cardFieldsPopupStyle.value = {
+      top: `${rect.bottom + 8}px`,
+      right: `${window.innerWidth - rect.right}px`,
+    }
+  }
+  showCardFieldsPopup.value = !showCardFieldsPopup.value
+}
+
+watch(showCardFieldsPopup, (open) => {
+  if (open) {
+    nextTick(() => document.addEventListener('click', closeCardFieldsPopupOutside))
+  } else {
+    document.removeEventListener('click', closeCardFieldsPopupOutside)
+  }
+})
+
+function closeCardFieldsPopupOutside(): void {
+  showCardFieldsPopup.value = false
+}
+
+function toggleDealSection(sectionId: string, visible: boolean): void {
+  DEAL_FIELDS
+    .filter((f) => f.sectionId === sectionId)
+    .forEach((f) => dealFieldStore.setFieldVisible(f.fieldId, visible))
+  dealFieldStore.saveConfig()
+}
+
 // ─── Deal dialog state ────────────────────────────────────────
 
 const showDealDialog = ref(false)
+const showDeleteDealConfirm = ref(false)
+const deletingDealId = ref<string | null>(null)
 const isSubmitting = ref(false)
 const editingDealId = ref<string | null>(null)
 
@@ -2360,10 +2681,19 @@ async function submitDeal(): Promise<void> {
   showDealDialog.value = false
 }
 
-async function removeDeal(dealId: string): Promise<void> {
+function removeDeal(dealId: string): void {
+  deletingDealId.value = dealId
+  showDeleteDealConfirm.value = true
+}
+
+async function confirmDeleteDeal(): Promise<void> {
+  if (!deletingDealId.value) return
+  const id = deletingDealId.value
+  showDeleteDealConfirm.value = false
+  deletingDealId.value = null
   const snapshot = structuredClone(columns.value)
-  if (!removeCardById(dealId)) return
-  const result = await deleteDeal(dealId)
+  if (!removeCardById(id)) return
+  const result = await deleteDeal(id)
   if (!result.isSuccess) {
     columns.value = snapshot
     toast.error(result.error || 'Xóa deal thất bại')
@@ -2382,7 +2712,13 @@ function toggleDealRow(id: string, checked: boolean): void {
 async function deleteSelectedDeals(): Promise<void> {
   const ids = [...selectedDealIds.value]
   selectedDealIds.value = []
-  for (const id of ids) await removeDeal(id)
+  for (const id of ids) {
+    const snapshot = structuredClone(columns.value)
+    if (!removeCardById(id)) continue
+    const result = await deleteDeal(id)
+    if (!result.isSuccess) { columns.value = snapshot; toast.error(result.error || 'Xóa deal thất bại') }
+    else toast.success('Đã xóa deal')
+  }
 }
 
 // ─── Drag-drop ────────────────────────────────────────────────
@@ -2428,6 +2764,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopColumnResize()
   document.removeEventListener('click', handleDealOutsideClick)
+  document.removeEventListener('click', closeCardFieldsPopupOutside)
   if (socket) {
     socket.off('deal.created')
     socket.off('deal.updated')

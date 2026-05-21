@@ -141,7 +141,43 @@
             <span class="text-[11px] leading-tight">{{ action.label }}</span>
           </Button>
         </div>
+
+        <!-- Automation Rules Button -->
+        <Button
+          type="button"
+          variant="outline"
+          class="w-full gap-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400"
+          @click="showAutomation = true"
+        >
+          <Zap class="h-4 w-4 text-warning-500" />
+          Automation Rules
+        </Button>
+
+        <!-- AI Chat Button -->
+        <Button
+          type="button"
+          class="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-600 text-white shadow-theme-xs gap-2"
+          @click="showAiChat = true"
+        >
+          <Sparkles class="h-4 w-4" />
+          Hỏi AI về deal này
+        </Button>
       </aside>
+
+      <!-- AI Chat Dialog -->
+      <AiChatDialog
+        :open="showAiChat"
+        entity-type="deal"
+        :entity-name="deal.title"
+        @update:open="showAiChat = $event"
+      />
+
+      <AutomationRulesDialog
+        :open="showAutomation"
+        entity-type="deal"
+        :entity-name="deal.title"
+        @update:open="showAutomation = $event"
+      />
 
       <!-- ===== RIGHT CONTENT (70%) ===== -->
       <div class="flex-1 min-w-0 flex flex-col">
@@ -173,9 +209,17 @@
 
           <!-- Action buttons -->
           <div class="flex items-center gap-2 shrink-0">
-            <Button type="button" variant="outline" class="border-gray-200 dark:border-gray-700 text-theme-xs" @click="handleSave">
-              <Save class="mr-1.5 h-3.5 w-3.5" />
-              Lưu
+            <Button
+              type="button"
+              class="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-600 text-white text-theme-xs gap-1.5 shadow-theme-xs"
+              @click="showAiChat = true"
+            >
+              <Sparkles class="h-3.5 w-3.5" />
+              Hỏi AI về deal này
+            </Button>
+            <Button type="button" variant="outline" class="border-gray-200 dark:border-gray-700 text-theme-xs" @click="handleEdit">
+              <Pencil class="mr-1.5 h-3.5 w-3.5" />
+              Sửa
             </Button>
             <Button type="button" variant="outline" class="border-error-200 text-error-500 hover:bg-error-50 dark:border-error-500/30 text-theme-xs" @click="handleDelete">
               <Trash2 class="mr-1.5 h-3.5 w-3.5" />
@@ -209,25 +253,6 @@
         <div class="flex-1 p-5 space-y-4 pb-10 overflow-y-auto">
           <!-- Tổng quan tab -->
           <template v-if="activeTab === 'overview'">
-            <!-- Admin notice banner -->
-            <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg px-4 py-3 flex items-center justify-between border-l-4 border-gray-300 dark:border-gray-600">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-gray-400 text-[20px]">visibility_off</span>
-                <p class="text-theme-sm text-gray-500 dark:text-gray-400">
-                  Đang hiển thị
-                  <span class="font-bold text-gray-700 dark:text-gray-300">{{ fieldConfigStore.totalVisible }}/{{ fieldConfigStore.totalFields }}</span>
-                  trường dữ liệu.
-                </p>
-              </div>
-              <button
-                class="text-theme-sm text-brand-500 font-medium hover:underline flex items-center gap-1 shrink-0"
-                @click="showFieldConfigModal = true"
-              >
-                <span class="material-symbols-outlined text-[16px]">tune</span>
-                Tuỳ chỉnh
-              </button>
-            </div>
-
             <!-- Loading skeleton -->
             <div v-if="loading" class="space-y-3">
               <div v-for="i in 3" :key="i" class="rounded-xl border border-gray-200 dark:border-gray-800 p-5 animate-pulse">
@@ -286,7 +311,6 @@
                           class="text-theme-sm text-gray-900 dark:text-white border-b border-transparent hover:border-gray-200 dark:hover:border-gray-700 py-1 transition-all"
                           :class="getFieldValue(field.fieldId) === '—' ? 'text-gray-300 dark:text-gray-600 italic' : ''"
                         >
-                          <!-- Special rendering for specific field types -->
                           <template v-if="field.fieldId === 'general_amount'">
                             <span class="text-theme-xl font-semibold text-brand-500">{{ deal.value }}</span>
                           </template>
@@ -321,9 +345,6 @@
               <div v-if="fieldConfigStore.visibleSections.length === 0" class="text-center py-16 text-gray-400">
                 <span class="material-symbols-outlined text-[48px] mb-3 block">visibility_off</span>
                 <p class="text-theme-sm">Tất cả trường đã bị ẩn.</p>
-                <button class="mt-3 text-brand-500 text-theme-sm hover:underline" @click="showFieldConfigModal = true">
-                  Tuỳ chỉnh hiển thị
-                </button>
               </div>
             </template>
           </template>
@@ -554,60 +575,67 @@
                 <span class="text-theme-xs text-gray-400">{{ history.length }} thao tác</span>
               </div>
 
-              <!-- Timeline -->
-              <div>
-                <div
-                  v-for="(entry, idx) in history"
-                  :key="entry.id"
-                  class="flex gap-4"
-                >
-                  <!-- Avatar + connector line -->
-                  <div class="flex flex-col items-center shrink-0">
-                    <div
-                      class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
-                      :class="entry.userColor"
+              <!-- Table -->
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead>
+                    <tr class="border-b border-gray-200 dark:border-gray-700">
+                      <th class="text-left text-theme-xs font-semibold text-gray-500 dark:text-gray-400 pb-3 pr-4 w-44">Người thực hiện</th>
+                      <th class="text-left text-theme-xs font-semibold text-gray-500 dark:text-gray-400 pb-3 pr-4 w-36">Thời gian</th>
+                      <th class="text-left text-theme-xs font-semibold text-gray-500 dark:text-gray-400 pb-3 pr-4 w-36">Lịch sử thay đổi</th>
+                      <th class="text-left text-theme-xs font-semibold text-gray-500 dark:text-gray-400 pb-3">Chi tiết thay đổi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="entry in history"
+                      :key="entry.id"
+                      class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                     >
-                      {{ entry.userInitial }}
-                    </div>
-                    <div
-                      v-if="idx < history.length - 1"
-                      class="w-px flex-1 bg-gray-200 dark:bg-gray-700 mt-1.5 min-h-[24px]"
-                    />
-                  </div>
-
-                  <!-- Content -->
-                  <div class="flex-1 min-w-0 pb-5" :class="{ 'pb-0': idx === history.length - 1 }">
-                    <!-- Top row: user · time · badge -->
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
-                      <span class="text-theme-sm font-semibold text-gray-900 dark:text-white">{{ entry.user }}</span>
-                      <span class="text-gray-300 dark:text-gray-600">·</span>
-                      <span class="text-theme-xs text-gray-400">{{ entry.time }}</span>
-                      <span
-                        class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                        :class="HISTORY_BADGE[entry.type].cls"
-                      >
-                        {{ HISTORY_BADGE[entry.type].label }}
-                      </span>
-                    </div>
-
-                    <!-- Description -->
-                    <p class="text-theme-sm text-gray-700 dark:text-gray-300">{{ entry.description }}</p>
-
-                    <!-- Field change: from → to -->
-                    <div v-if="entry.from || entry.to" class="mt-2 flex flex-wrap items-center gap-2">
-                      <span v-if="entry.field" class="text-theme-xs text-gray-400 font-medium">{{ entry.field }}:</span>
-                      <span
-                        v-if="entry.from"
-                        class="text-theme-xs bg-error-50 dark:bg-error-500/10 text-error-600 dark:text-error-400 px-2 py-0.5 rounded line-through"
-                      >{{ entry.from }}</span>
-                      <span v-if="entry.from && entry.to" class="text-gray-400">→</span>
-                      <span
-                        v-if="entry.to"
-                        class="text-theme-xs bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 px-2 py-0.5 rounded font-medium"
-                      >{{ entry.to }}</span>
-                    </div>
-                  </div>
-                </div>
+                      <!-- Người thực hiện -->
+                      <td class="py-3 pr-4 align-top">
+                        <div class="flex items-center gap-2.5">
+                          <div
+                            class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
+                            :class="entry.userColor"
+                          >
+                            {{ entry.userInitial }}
+                          </div>
+                          <span class="text-theme-sm font-medium text-gray-900 dark:text-white">{{ entry.user }}</span>
+                        </div>
+                      </td>
+                      <!-- Thời gian -->
+                      <td class="py-3 pr-4 align-top">
+                        <span class="text-theme-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ entry.time }}</span>
+                      </td>
+                      <!-- Lịch sử thay đổi -->
+                      <td class="py-3 pr-4 align-top">
+                        <span
+                          class="text-[10px] font-semibold px-2 py-1 rounded-full whitespace-nowrap"
+                          :class="HISTORY_BADGE[entry.type].cls"
+                        >
+                          {{ HISTORY_BADGE[entry.type].label }}
+                        </span>
+                      </td>
+                      <!-- Chi tiết thay đổi -->
+                      <td class="py-3 align-top">
+                        <p class="text-theme-sm text-gray-700 dark:text-gray-300">{{ entry.description }}</p>
+                        <div v-if="entry.from || entry.to" class="mt-1.5 flex flex-wrap items-center gap-2">
+                          <span v-if="entry.field" class="text-theme-xs text-gray-400 font-medium">{{ entry.field }}:</span>
+                          <span
+                            v-if="entry.from"
+                            class="text-theme-xs bg-error-50 dark:bg-error-500/10 text-error-600 dark:text-error-400 px-2 py-0.5 rounded line-through"
+                          >{{ entry.from }}</span>
+                          <span v-if="entry.from && entry.to" class="text-gray-400">→</span>
+                          <span
+                            v-if="entry.to"
+                            class="text-theme-xs bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 px-2 py-0.5 rounded font-medium"
+                          >{{ entry.to }}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
                 <!-- Empty state -->
                 <div v-if="history.length === 0" class="text-center py-12 text-gray-400">
@@ -635,8 +663,83 @@
       </div>
     </div>
 
-    <!-- Field Config Modal -->
-    <DealFieldConfigModal v-model:open="showFieldConfigModal" />
+    <!-- Edit Deal Dialog -->
+    <Dialog :open="showEditDealDialog" @update:open="showEditDealDialog = $event">
+      <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <Pencil class="h-4 w-4 text-brand-500" />
+            Chỉnh sửa Deal
+          </DialogTitle>
+          <DialogDescription class="text-gray-500 dark:text-gray-400 text-theme-xs">
+            Cập nhật thông tin deal. Chỉ các trường đang được hiển thị mới xuất hiện ở đây.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-6 py-2">
+          <template v-for="section in fieldConfigStore.visibleSections" :key="section.id">
+            <div>
+              <h4 class="flex items-center gap-1.5 text-theme-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                <span class="material-symbols-outlined text-[14px]">{{ section.icon }}</span>
+                {{ section.title }}
+              </h4>
+              <div class="grid grid-cols-2 gap-3">
+                <div
+                  v-for="field in visibleFieldsInSection(section.id)"
+                  :key="field.fieldId"
+                  class="space-y-1.5"
+                >
+                  <Label class="text-theme-xs font-medium text-gray-600 dark:text-gray-400">
+                    {{ field.labelVI }}
+                    <span v-if="field.required" class="text-error-500 ml-0.5">*</span>
+                  </Label>
+                  <Input
+                    v-if="!READONLY_DEAL_FIELDS.has(field.fieldId)"
+                    v-model="editDealValues[field.fieldId]"
+                    :type="getInputType(field.type)"
+                    :placeholder="field.labelVI"
+                  />
+                  <div
+                    v-else
+                    class="text-theme-sm text-gray-400 dark:text-gray-500 py-1.5 px-3 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700 italic"
+                  >
+                    {{ getFieldValue(field.fieldId) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <DialogFooter class="border-t border-gray-200 dark:border-gray-700 pt-4 gap-2">
+          <Button variant="outline" @click="showEditDealDialog = false">Hủy</Button>
+          <Button variant="outline" @click="submitDealEdit">
+            Lưu thay đổi
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Delete Deal confirmation dialog -->
+    <Dialog :open="showDeleteDealConfirm" @update:open="showDeleteDealConfirm = $event">
+      <DialogContent class="max-w-sm">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2 text-error-600 dark:text-error-400">
+            <Trash2 class="h-4 w-4" />
+            Xóa Deal
+          </DialogTitle>
+          <DialogDescription class="text-gray-600 dark:text-gray-400">
+            Bạn có chắc chắn muốn xóa deal <span class="font-semibold text-gray-800 dark:text-gray-200">{{ deal.title }}</span>? Hành động này không thể hoàn tác.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="gap-2 pt-2">
+          <Button variant="outline" @click="showDeleteDealConfirm = false">Hủy</Button>
+          <Button class="bg-error-500 text-white hover:bg-error-600" @click="confirmDeleteDeal">
+            Xác nhận xóa
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- Add Activity Dialog -->
     <AddActivityDialog
@@ -649,23 +752,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { ArrowLeft, Flag, Mail, MessageSquare, Pencil, Phone, Plus, Save, SquareCheckBig, Trash2 } from 'lucide-vue-next'
+import { ArrowLeft, Flag, Mail, MessageSquare, Pencil, Phone, Plus, Save, Sparkles, SquareCheckBig, Trash2, Zap } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { deleteDeal, getDealById, updateDeal } from '@/services/deals'
 import { useDealFieldConfigStore } from '@/stores/useDealFieldConfigStore'
 import { DEAL_FIELDS } from '@/types/dealFields'
-import DealFieldConfigModal from '@/components/crm/DealFieldConfigModal.vue'
 import AddActivityDialog from '@/components/crm/AddActivityDialog.vue'
 import type { ActivitySubmitPayload } from '@/components/crm/AddActivityDialog.vue'
 import ActivityItemCard from '@/components/crm/ActivityItemCard.vue'
 import type { ActivityResultData, CardActivityItem } from '@/components/crm/ActivityItemCard.vue'
 import { generateAiSuggestion } from '@/composables/useAiSuggestion'
 import type { Deal, DealStage } from '@/types/deals'
+import AiChatDialog from '@/components/crm/AiChatDialog.vue'
+import AutomationRulesDialog from '@/components/crm/AutomationRulesDialog.vue'
 
 interface StageItem {
   id: string
@@ -677,9 +784,10 @@ interface StageItem {
 
 const route = useRoute()
 const router = useRouter()
+const showAiChat = ref(false)
+const showAutomation = ref(false)
 const loading = ref(true)
 const dealData = ref<Deal | null>(null)
-const showFieldConfigModal = ref(false)
 const showActivityDialog = ref(false)
 const activityDialogInitialType = ref('')
 const localActivities = ref<CardActivityItem[]>([])
@@ -782,7 +890,7 @@ const stageProgress = computed(() => {
 })
 
 // Mock field values for custom fields (real API will provide these)
-const mockFieldValues: Record<string, string> = {
+const mockFieldValues = reactive<Record<string, string>>({
   hotel_city: 'Đà Nẵng',
   hotel_rooms: '185 phòng',
   hotel_name: 'Sunrise Beach Resort & Spa',
@@ -816,6 +924,79 @@ const mockFieldValues: Record<string, string> = {
   system_id: dealData.value?.id ?? '--',
   system_contact: dealData.value?.contactName ?? '--',
   system_company: dealData.value?.companyName ?? '--',
+})
+
+const showEditDealDialog = ref(false)
+const showDeleteDealConfirm = ref(false)
+const editDealValues = reactive<Record<string, string>>({})
+
+const READONLY_DEAL_FIELDS = new Set([
+  'general_created_at', 'general_updated_at', 'general_created_by',
+  'general_modified_by', 'general_begin_date', 'general_stage',
+  'general_pipeline', 'system_id',
+])
+
+function getInputType(fieldType: string): string {
+  if (fieldType === 'double') return 'number'
+  if (fieldType === 'date') return 'date'
+  if (fieldType === 'datetime') return 'datetime-local'
+  return 'text'
+}
+
+function getRawEditValue(fieldId: string): string {
+  const d = dealData.value
+  if (!d) return ''
+  const rawMap: Record<string, () => string> = {
+    general_deal_title: () => d.title,
+    general_amount: () => String(d.value ?? 0),
+    general_probability: () => String(d.probability ?? 0),
+    general_close_date: () => d.expectedCloseDate ? new Date(d.expectedCloseDate).toISOString().split('T')[0] : '',
+    general_assigned_to: () => d.assigneeId ?? '',
+    general_source: () => d.source ?? '',
+    system_contact: () => d.contactName ?? '',
+    system_company: () => d.companyName ?? '',
+  }
+  return rawMap[fieldId]?.() ?? mockFieldValues[fieldId] ?? ''
+}
+
+function handleEdit(): void {
+  // Populate editDealValues from all currently visible fields
+  for (const section of fieldConfigStore.visibleSections) {
+    for (const field of visibleFieldsInSection(section.id)) {
+      editDealValues[field.fieldId] = getRawEditValue(field.fieldId)
+    }
+  }
+  showEditDealDialog.value = true
+}
+
+async function submitDealEdit(): Promise<void> {
+  if (!dealData.value) return
+  const d = dealData.value
+  const updates: Partial<typeof d> = {}
+
+  if ('general_deal_title' in editDealValues) (updates as Record<string, unknown>).title = editDealValues.general_deal_title
+  if ('general_amount' in editDealValues) (updates as Record<string, unknown>).value = Number(editDealValues.general_amount) || 0
+  if ('general_probability' in editDealValues) (updates as Record<string, unknown>).probability = Number(editDealValues.general_probability) || 0
+  if ('general_close_date' in editDealValues) (updates as Record<string, unknown>).expectedCloseDate = editDealValues.general_close_date || null
+  if ('general_source' in editDealValues) (updates as Record<string, unknown>).source = editDealValues.general_source
+  if ('general_assigned_to' in editDealValues) (updates as Record<string, unknown>).assigneeId = editDealValues.general_assigned_to
+  if ('system_contact' in editDealValues) (updates as Record<string, unknown>).contactName = editDealValues.system_contact
+  if ('system_company' in editDealValues) (updates as Record<string, unknown>).companyName = editDealValues.system_company
+
+  const standardKeys = new Set([
+    'general_deal_title', 'general_amount', 'general_probability', 'general_close_date',
+    'general_source', 'general_assigned_to', 'system_contact', 'system_company',
+    ...READONLY_DEAL_FIELDS,
+  ])
+  for (const [k, v] of Object.entries(editDealValues)) {
+    if (!standardKeys.has(k)) mockFieldValues[k] = v
+  }
+
+  const result = await updateDeal(d.id, updates as Parameters<typeof updateDeal>[1])
+  if (!result.isSuccess) { toast.error(result.error); return }
+  toast.success('Đã lưu thông tin deal')
+  showEditDealDialog.value = false
+  void fetchDeal()
 }
 
 function getFieldValue(fieldId: string): string {
@@ -844,12 +1025,6 @@ function getFieldValue(fieldId: string): string {
   return standardValues[fieldId]?.() ?? mockFieldValues[fieldId] ?? '—'
 }
 
-function visibleFieldsInSection(sectionId: string) {
-  return DEAL_FIELDS.filter(
-    (f) => f.sectionId === sectionId && fieldConfigStore.isVisible(f.fieldId),
-  )
-}
-
 function toggleSection(sectionId: string): void {
   if (expandedSections.value.has(sectionId)) {
     expandedSections.value.delete(sectionId)
@@ -857,6 +1032,13 @@ function toggleSection(sectionId: string): void {
     expandedSections.value.add(sectionId)
   }
 }
+
+function visibleFieldsInSection(sectionId: string) {
+  return DEAL_FIELDS.filter(
+    (f) => f.sectionId === sectionId && fieldConfigStore.isVisible(f.fieldId),
+  )
+}
+
 
 function handleStageClick(stage: StageItem): void {
   if (!dealData.value || stage.current) return
@@ -1171,30 +1353,15 @@ async function fetchDeal(): Promise<void> {
   }
 }
 
-function handleSave(): void {
-  if (!dealData.value) return
-
-  void updateDeal(dealData.value.id, {
-    title: dealData.value.title,
-    probability: dealData.value.probability,
-  }).then((result) => {
-    if (!result.isSuccess) {
-      toast.error(result.error)
-      return
-    }
-    toast.success('Đã lưu thông tin deal')
-    void fetchDeal()
-  })
+function handleDelete(): void {
+  showDeleteDealConfirm.value = true
 }
 
-function handleDelete(): void {
+function confirmDeleteDeal(): void {
   if (!dealData.value) return
-
+  showDeleteDealConfirm.value = false
   void deleteDeal(dealData.value.id).then((result) => {
-    if (!result.isSuccess) {
-      toast.error(result.error)
-      return
-    }
+    if (!result.isSuccess) { toast.error(result.error); return }
     toast.success('Đã xóa deal')
     void router.push('/crm-deals')
   })

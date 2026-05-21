@@ -48,6 +48,18 @@
   --color-white: var(--color-bg);
   --color-black: var(--color-text-primary);
 
+  --color-brand-25: #f5f7ff;
+  --color-brand-50: #ecf3ff;
+  --color-brand-100: #d9e5ff;
+  --color-brand-200: #b3cbff;
+  --color-brand-300: #84a9ff;
+  --color-brand-400: #5e8eff;
+  --color-brand-500: #465fff;
+  --color-brand-600: #3641f5;
+  --color-brand-700: #2b31d4;
+  --color-brand-800: #2128ab;
+  --color-brand-900: #1a2087;
+
   --color-primary-50: #f6f8ff;
   --color-primary-100: #edf1ff;
   --color-primary-200: #dbe5ff;

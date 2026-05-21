@@ -28,7 +28,10 @@
       "Bash(dir \"D:\\\\Dự án CodeOn\\\\Sales.AI\\\\src\\\\components\\\\crm\")",
       "Bash(findstr /i \"kanban lead deal\")",
       "Bash(Get-ChildItem -Path \"D:\\\\Dự án CodeOn\\\\Sales.AI\\\\src\" -Directory)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(findstr /i \"dev\\\\|start\\\\|port\")",
+      "Bash(node backend/server.mjs)",
+      "Bash(npx vite *)"
     ]
   }
 }

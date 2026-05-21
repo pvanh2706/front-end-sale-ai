@@ -377,7 +377,7 @@
                 >{{ card.title }}</RouterLink>
 
                 <!-- Assignee + Company -->
-                <p class="mb-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p v-if="card.assigneeName || card.companyName" class="mb-1.5 text-xs text-gray-500 dark:text-gray-400">
                   <span v-if="card.assigneeName" class="font-medium" :style="{ color: card.assigneeColor ?? '#465fff' }">{{ card.assigneeName }}</span>
                   <span v-if="card.assigneeName && card.companyName"> · </span>
                   <span v-if="card.companyName" class="font-medium text-primary-500 dark:text-primary-400">{{ card.companyName }}</span>
@@ -1021,6 +1021,27 @@
       </DialogContent>
     </Dialog>
 
+    <!-- Delete confirmation dialog -->
+    <Dialog :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
+      <DialogContent class="max-w-sm">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2 text-error-600 dark:text-error-400">
+            <span class="material-symbols-outlined text-[20px]">delete_forever</span>
+            Xóa Lead
+          </DialogTitle>
+          <DialogDescription class="text-gray-600 dark:text-gray-400">
+            Bạn có chắc chắn muốn xóa lead này? Hành động này <span class="font-semibold text-gray-800 dark:text-gray-200">không thể hoàn tác</span>.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="gap-2 pt-2">
+          <Button variant="outline" @click="showDeleteConfirm = false">Hủy</Button>
+          <Button class="bg-error-500 text-white hover:bg-error-600" @click="confirmDeleteLead">
+            Xác nhận xóa
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
   </div>
 </template>
 
@@ -1308,17 +1329,17 @@ const columns = ref<LeadColumn[]>([
         id: 'l1', title: 'Tram Máy Sapa', isRepeat: true,
         assigneeName: 'Nguyễn Anh Tùng', assigneeColor: '#465fff',
         date: '13 May', isViewed: true, activityTime: '2 Minutes',
-        avatarInitials: 'AT', avatarColor: '#465fff', badgeCount: 0,
+        avatarInitials: 'AT', avatarColor: '#465fff', badgeCount: 0, source: 'Referral',
       },
       {
         id: 'l2', title: '[AFF] D-Mart Hotel',
         date: 'Hôm nay, 3:54 CH', activityTime: 'Hôm nay 3:54 CH',
-        avatarInitials: 'DM', avatarColor: '#10B981', badgeCount: 0,
+        avatarInitials: 'DM', avatarColor: '#10B981', badgeCount: 0, source: 'Website',
       },
       {
         id: 'l3', title: 'Forever Green Resort',
         date: '15 Tháng 4', activityTime: 'Hôm nay 3:00 CH',
-        avatarInitials: 'FG', avatarColor: '#8B5CF6', badgeCount: 0,
+        avatarInitials: 'FG', avatarColor: '#8B5CF6', badgeCount: 0, source: 'Inbound',
       },
     ],
   },
@@ -1334,22 +1355,22 @@ const columns = ref<LeadColumn[]>([
         assigneeName: 'Chi Hồng', assigneeColor: '#10B981',
         companyName: 'CÔNG TY TNHH TM VÀ DV DL ĐẠI PHÁT',
         date: '38 phút trước', activityTime: '37 Minutes',
-        avatarInitials: 'CH', avatarColor: '#10B981', badgeCount: 0,
+        avatarInitials: 'CH', avatarColor: '#10B981', badgeCount: 0, source: 'Website',
       },
       {
         id: 'm2', title: 'POPUP ĐĂNG KÝ DÙNG THỬ API', isRepeat: true,
         date: '38 phút trước', activityTime: '38 Minutes',
-        avatarInitials: 'PO', avatarColor: '#F59E0B', badgeCount: 0,
+        avatarInitials: 'PO', avatarColor: '#F59E0B', badgeCount: 0, source: 'Website',
       },
       {
         id: 'm3', title: 'POPUP ĐĂNG KÝ DÙNG THỬ API — Nam', isRepeat: true,
         date: '39 phút trước', activityTime: '39 Minutes',
-        avatarInitials: 'NA', avatarColor: '#EF4444', badgeCount: 0,
+        avatarInitials: 'NA', avatarColor: '#EF4444', badgeCount: 0, source: 'Website',
       },
       {
         id: 'm4', title: 'FORM ĐĂNG KÝ DÙNG THỬ API', isRepeat: true,
         date: '41 phút trước', activityTime: '41 Minutes',
-        avatarInitials: 'FK', avatarColor: '#6366F1', badgeCount: 0,
+        avatarInitials: 'FK', avatarColor: '#6366F1', badgeCount: 0, source: 'Website',
       },
     ],
   },
@@ -1365,22 +1386,22 @@ const columns = ref<LeadColumn[]>([
         assigneeName: 'Chi Hồng', assigneeColor: '#10B981',
         companyName: 'CÔNG TY TNHH TM VÀ DV DL ĐẠI PHÁT',
         date: 'Hôm nay, 4:28 CH', activityTime: 'Hôm nay 4:28 CH',
-        avatarInitials: 'KE', avatarColor: '#10B981', badgeCount: 0,
+        avatarInitials: 'KE', avatarColor: '#10B981', badgeCount: 0, source: 'Inbound',
       },
       {
         id: 's2', title: '[AFF] Khách sạn Thành Cao',
         date: 'Hôm nay, 4:12 CH', activityTime: 'Hôm nay 4:12 CH',
-        avatarInitials: 'TC', avatarColor: '#06B6D4', badgeCount: 0,
+        avatarInitials: 'TC', avatarColor: '#06B6D4', badgeCount: 0, source: 'Referral',
       },
       {
         id: 's3', title: 'Marisol Hotel Đà Nẵng',
         date: '15 Tháng 4', activityTime: 'Hôm nay 4:05 CH',
-        avatarInitials: 'MH', avatarColor: '#8B5CF6', badgeCount: 0,
+        avatarInitials: 'MH', avatarColor: '#8B5CF6', badgeCount: 0, source: 'Event',
       },
       {
         id: 's4', title: 'Khách sạn 43p_Đà Lạt',
         date: '15 Tháng 4',
-        avatarInitials: 'DL', avatarColor: '#F59E0B', badgeCount: 0,
+        avatarInitials: 'DL', avatarColor: '#F59E0B', badgeCount: 0, source: 'Facebook',
       },
     ],
   },
@@ -1394,22 +1415,22 @@ const columns = ref<LeadColumn[]>([
       {
         id: 'o1', title: 'Golden Hotel',
         date: '13 May', activityTime: '13 May',
-        avatarInitials: 'GH', avatarColor: '#0EA5E9', badgeCount: 0,
+        avatarInitials: 'GH', avatarColor: '#0EA5E9', badgeCount: 0, source: 'Outbound',
       },
       {
         id: 'o2', title: 'Lovera Signature',
         date: '12 May', activityTime: '12 May',
-        avatarInitials: 'LS', avatarColor: '#EC4899', badgeCount: 0,
+        avatarInitials: 'LS', avatarColor: '#EC4899', badgeCount: 0, source: 'Referral',
       },
       {
         id: 'o3', title: '[AFF] MonSoon Boutique Hotel Da Lat',
         date: '5 May', activityTime: '5 May',
-        avatarInitials: 'MB', avatarColor: '#10B981', badgeCount: 0,
+        avatarInitials: 'MB', avatarColor: '#10B981', badgeCount: 0, source: 'Website',
       },
       {
         id: 'o4', title: '[AFF] Khách Sạn Cường Thanh 1 & 2',
         date: '23 March',
-        avatarInitials: 'CT', avatarColor: '#6366F1', badgeCount: 0,
+        avatarInitials: 'CT', avatarColor: '#6366F1', badgeCount: 0, source: 'Zalo',
       },
     ],
   },
@@ -1425,19 +1446,19 @@ const columns = ref<LeadColumn[]>([
         assigneeName: 'Bảo Trần', assigneeColor: '#465fff',
         companyName: 'CÔNG TY CỔ PHẦN THƯƠNG MẠI - DỊCH VỤ DU LỊCH KHÁNH DƯƠNG MĂNG ĐEN',
         date: '15 May', activityTime: '15 May',
-        avatarInitials: 'BT', avatarColor: '#465fff', badgeCount: 0,
+        avatarInitials: 'BT', avatarColor: '#465fff', badgeCount: 0, source: 'Inbound',
       },
       {
         id: 'c2', title: 'FORM ĐĂNG KÝ DÙNG THỬ API Trần Thế Hùng', isRepeat: true,
         date: '13 May', activityTime: '13 May',
-        avatarInitials: 'TH', avatarColor: '#8B5CF6', badgeCount: 0,
+        avatarInitials: 'TH', avatarColor: '#8B5CF6', badgeCount: 0, source: 'Website',
       },
       {
         id: 'c3', title: 'Agarwood Hotel_16p_ezCloudhotel nâng cao', isRepeat: true,
         assigneeName: 'Chi Hương', assigneeColor: '#10B981',
         companyName: 'CHI NHÁNH CÔNG TY TNHH MỸ NGHỆ THẮNG TRÌNH - KHÁCH SẠN TRĂM HƯƠNG',
         date: '6 Apr', activityTime: '6 Apr',
-        avatarInitials: 'CH', avatarColor: '#10B981', badgeCount: 0,
+        avatarInitials: 'CH', avatarColor: '#10B981', badgeCount: 0, source: 'Referral',
       },
     ],
   },
@@ -1968,6 +1989,8 @@ onUnmounted(() => {
 
 const showDialog = ref(false)
 const editingId = ref<string | null>(null)
+const showDeleteConfirm = ref(false)
+const deletingId = ref<string | null>(null)
 
 const form = ref<LeadForm>({
   customerType: 'company',
@@ -2106,8 +2129,16 @@ function submitForm(): void {
 }
 
 function removeCard(id: string): void {
-  removeCardById(id)
+  deletingId.value = id
+  showDeleteConfirm.value = true
+}
+
+function confirmDeleteLead(): void {
+  if (!deletingId.value) return
+  removeCardById(deletingId.value)
   toast.success('Đã xóa lead')
+  showDeleteConfirm.value = false
+  deletingId.value = null
 }
 
 function toggleAllLeads(checked: boolean): void {
@@ -2120,7 +2151,7 @@ function toggleLeadRow(id: string, checked: boolean): void {
 function deleteSelectedLeads(): void {
   const ids = [...selectedLeadIds.value]
   selectedLeadIds.value = []
-  ids.forEach(id => removeCard(id))
+  ids.forEach(id => { removeCardById(id); toast.success('Đã xóa lead') })
 }
 
 // ─── Drag-drop ────────────────────────────────────────────────

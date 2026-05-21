@@ -156,7 +156,43 @@
             <span class="text-[11px] leading-tight">{{ action.label }}</span>
           </Button>
         </div>
+
+        <!-- Automation Rules Button -->
+        <Button
+          type="button"
+          variant="outline"
+          class="w-full gap-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400"
+          @click="showAutomation = true"
+        >
+          <Zap class="h-4 w-4 text-warning-500" />
+          Automation Rules
+        </Button>
+
+        <!-- AI Chat Button -->
+        <Button
+          type="button"
+          class="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-600 text-white shadow-theme-xs gap-2"
+          @click="showAiChat = true"
+        >
+          <Sparkles class="h-4 w-4" />
+          Hỏi AI về lead này
+        </Button>
       </aside>
+
+      <!-- AI Chat Dialog -->
+      <AiChatDialog
+        :open="showAiChat"
+        entity-type="lead"
+        :entity-name="lead.title"
+        @update:open="showAiChat = $event"
+      />
+
+      <AutomationRulesDialog
+        :open="showAutomation"
+        entity-type="lead"
+        :entity-name="lead.title"
+        @update:open="showAutomation = $event"
+      />
 
       <!-- ===== RIGHT CONTENT (70%) ===== -->
       <div class="flex-1 min-w-0 flex flex-col">
@@ -180,6 +216,14 @@
 
           <!-- Right: action buttons -->
           <div class="flex items-center gap-2 shrink-0">
+            <Button
+              type="button"
+              class="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-600 text-white text-theme-xs gap-1.5 shadow-theme-xs"
+              @click="showAiChat = true"
+            >
+              <Sparkles class="h-3.5 w-3.5" />
+              Hỏi AI về lead này
+            </Button>
             <Button type="button" variant="outline" class="border-gray-200 dark:border-gray-700 text-theme-xs" @click="handleEdit">
               <Pencil class="mr-1.5 h-3.5 w-3.5" />
               Sửa
@@ -243,7 +287,7 @@
             </div>
 
             <!-- Contact info section -->
-            <section class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-theme-xs overflow-hidden">
+            <section v-if="leadFieldStore.isSectionVisible('contact')" class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-theme-xs overflow-hidden">
               <div class="px-5 py-4 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" @click="toggle('contact')">
                 <h3 class="text-theme-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <User class="h-4 w-4 text-brand-500" />
@@ -271,7 +315,7 @@
             </section>
 
             <!-- Lead info section -->
-            <section class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-theme-xs overflow-hidden">
+            <section v-if="leadFieldStore.isSectionVisible('leadinfo')" class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-theme-xs overflow-hidden">
               <div class="px-5 py-4 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" @click="toggle('leadinfo')">
                 <h3 class="text-theme-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <BarChart2 class="h-4 w-4 text-brand-500" />
@@ -337,60 +381,67 @@
                 <span class="text-theme-xs text-gray-400">{{ history.length }} thao tác</span>
               </div>
 
-              <!-- Timeline -->
-              <div>
-                <div
-                  v-for="(entry, idx) in history"
-                  :key="entry.id"
-                  class="flex gap-4"
-                >
-                  <!-- Avatar + connector -->
-                  <div class="flex flex-col items-center shrink-0">
-                    <div
-                      class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
-                      :class="entry.userColor"
+              <!-- Table -->
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead>
+                    <tr class="border-b border-gray-200 dark:border-gray-700">
+                      <th class="text-left text-theme-xs font-semibold text-gray-500 dark:text-gray-400 pb-3 pr-4 w-44">Người thực hiện</th>
+                      <th class="text-left text-theme-xs font-semibold text-gray-500 dark:text-gray-400 pb-3 pr-4 w-36">Thời gian</th>
+                      <th class="text-left text-theme-xs font-semibold text-gray-500 dark:text-gray-400 pb-3 pr-4 w-36">Lịch sử thay đổi</th>
+                      <th class="text-left text-theme-xs font-semibold text-gray-500 dark:text-gray-400 pb-3">Chi tiết thay đổi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="entry in history"
+                      :key="entry.id"
+                      class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                     >
-                      {{ entry.userInitial }}
-                    </div>
-                    <div
-                      v-if="idx < history.length - 1"
-                      class="w-px flex-1 bg-gray-200 dark:bg-gray-700 mt-1.5 min-h-[24px]"
-                    />
-                  </div>
-
-                  <!-- Content -->
-                  <div class="flex-1 min-w-0 pb-5" :class="{ 'pb-0': idx === history.length - 1 }">
-                    <!-- Top row: user · time · badge -->
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
-                      <span class="text-theme-sm font-semibold text-gray-900 dark:text-white">{{ entry.user }}</span>
-                      <span class="text-gray-300 dark:text-gray-600">·</span>
-                      <span class="text-theme-xs text-gray-400">{{ entry.time }}</span>
-                      <span
-                        class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                        :class="HISTORY_BADGE[entry.type].cls"
-                      >
-                        {{ HISTORY_BADGE[entry.type].label }}
-                      </span>
-                    </div>
-
-                    <!-- Description -->
-                    <p class="text-theme-sm text-gray-700 dark:text-gray-300">{{ entry.description }}</p>
-
-                    <!-- Field change: from → to -->
-                    <div v-if="entry.from || entry.to" class="mt-2 flex flex-wrap items-center gap-2">
-                      <span v-if="entry.field" class="text-theme-xs text-gray-400 font-medium">{{ entry.field }}:</span>
-                      <span
-                        v-if="entry.from"
-                        class="text-theme-xs bg-error-50 dark:bg-error-500/10 text-error-600 dark:text-error-400 px-2 py-0.5 rounded line-through"
-                      >{{ entry.from }}</span>
-                      <span v-if="entry.from && entry.to" class="text-gray-400">→</span>
-                      <span
-                        v-if="entry.to"
-                        class="text-theme-xs bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 px-2 py-0.5 rounded font-medium"
-                      >{{ entry.to }}</span>
-                    </div>
-                  </div>
-                </div>
+                      <!-- Người thực hiện -->
+                      <td class="py-3 pr-4 align-top">
+                        <div class="flex items-center gap-2.5">
+                          <div
+                            class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
+                            :class="entry.userColor"
+                          >
+                            {{ entry.userInitial }}
+                          </div>
+                          <span class="text-theme-sm font-medium text-gray-900 dark:text-white">{{ entry.user }}</span>
+                        </div>
+                      </td>
+                      <!-- Thời gian -->
+                      <td class="py-3 pr-4 align-top">
+                        <span class="text-theme-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ entry.time }}</span>
+                      </td>
+                      <!-- Lịch sử thay đổi -->
+                      <td class="py-3 pr-4 align-top">
+                        <span
+                          class="text-[10px] font-semibold px-2 py-1 rounded-full whitespace-nowrap"
+                          :class="HISTORY_BADGE[entry.type].cls"
+                        >
+                          {{ HISTORY_BADGE[entry.type].label }}
+                        </span>
+                      </td>
+                      <!-- Chi tiết thay đổi -->
+                      <td class="py-3 align-top">
+                        <p class="text-theme-sm text-gray-700 dark:text-gray-300">{{ entry.description }}</p>
+                        <div v-if="entry.from || entry.to" class="mt-1.5 flex flex-wrap items-center gap-2">
+                          <span v-if="entry.field" class="text-theme-xs text-gray-400 font-medium">{{ entry.field }}:</span>
+                          <span
+                            v-if="entry.from"
+                            class="text-theme-xs bg-error-50 dark:bg-error-500/10 text-error-600 dark:text-error-400 px-2 py-0.5 rounded line-through"
+                          >{{ entry.from }}</span>
+                          <span v-if="entry.from && entry.to" class="text-gray-400">→</span>
+                          <span
+                            v-if="entry.to"
+                            class="text-theme-xs bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 px-2 py-0.5 rounded font-medium"
+                          >{{ entry.to }}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
                 <!-- Empty state -->
                 <div v-if="history.length === 0" class="text-center py-12 text-gray-400">
@@ -404,6 +455,110 @@
         </div>
       </div>
     </div>
+
+    <!-- Edit Lead Dialog -->
+    <Dialog :open="showEditLeadDialog" @update:open="showEditLeadDialog = $event">
+      <DialogContent class="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <Pencil class="h-4 w-4 text-brand-500" />
+            Chỉnh sửa Lead
+          </DialogTitle>
+          <DialogDescription class="text-gray-500 dark:text-gray-400 text-theme-xs">
+            Cập nhật thông tin lead. Các trường có dấu <span class="text-error-500">*</span> là bắt buộc.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-2">
+          <!-- Tên -->
+          <div class="space-y-1.5">
+            <Label class="text-theme-xs font-medium">Tên Lead <span class="text-error-500">*</span></Label>
+            <Input v-model="editLeadForm.title" placeholder="Nhập tên lead" />
+          </div>
+          <!-- Công ty -->
+          <div class="space-y-1.5">
+            <Label class="text-theme-xs font-medium">Công ty</Label>
+            <Input v-model="editLeadForm.companyName" placeholder="Tên công ty" />
+          </div>
+          <!-- Phone + Email -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1.5">
+              <Label class="text-theme-xs font-medium">Điện thoại</Label>
+              <Input v-model="editLeadForm.phone" type="tel" placeholder="0901 234 567" />
+            </div>
+            <div class="space-y-1.5">
+              <Label class="text-theme-xs font-medium">Email</Label>
+              <Input v-model="editLeadForm.email" type="email" placeholder="email@example.com" />
+            </div>
+          </div>
+          <!-- Người phụ trách -->
+          <div class="space-y-1.5">
+            <Label class="text-theme-xs font-medium">Người phụ trách</Label>
+            <Input v-model="editLeadForm.assigneeName" placeholder="Tên nhân viên" />
+          </div>
+          <!-- Nguồn + Giai đoạn -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1.5">
+              <Label class="text-theme-xs font-medium">Nguồn</Label>
+              <Select v-model="editLeadForm.source">
+                <SelectTrigger><SelectValue placeholder="Chọn nguồn" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="website">Website</SelectItem>
+                  <SelectItem value="inbound">Inbound</SelectItem>
+                  <SelectItem value="outbound">Outbound</SelectItem>
+                  <SelectItem value="referral">Referral</SelectItem>
+                  <SelectItem value="event">Event</SelectItem>
+                  <SelectItem value="zalo">Zalo</SelectItem>
+                  <SelectItem value="facebook">Facebook</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="space-y-1.5">
+              <Label class="text-theme-xs font-medium">Giai đoạn</Label>
+              <Select v-model="editLeadForm.stage">
+                <SelectTrigger><SelectValue placeholder="Chọn giai đoạn" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lead">Lead</SelectItem>
+                  <SelectItem value="mql">MQL</SelectItem>
+                  <SelectItem value="sql">SQL</SelectItem>
+                  <SelectItem value="opportunity">Opportunity</SelectItem>
+                  <SelectItem value="customer">Customer</SelectItem>
+                  <SelectItem value="evangelist">Evangelist</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter class="border-t border-gray-200 dark:border-gray-700 pt-4 gap-2">
+          <Button variant="outline" @click="showEditLeadDialog = false">Hủy</Button>
+          <Button class="bg-brand-500 text-white hover:bg-brand-600" @click="submitLeadEdit">
+            Lưu thay đổi
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Delete confirmation dialog -->
+    <Dialog :open="showDeleteLeadConfirm" @update:open="showDeleteLeadConfirm = $event">
+      <DialogContent class="max-w-sm">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2 text-error-600 dark:text-error-400">
+            <Trash2 class="h-4 w-4" />
+            Xóa Lead
+          </DialogTitle>
+          <DialogDescription class="text-gray-600 dark:text-gray-400">
+            Bạn có chắc chắn muốn xóa lead <span class="font-semibold text-gray-800 dark:text-gray-200">{{ lead.title }}</span>? Hành động này không thể hoàn tác.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="gap-2 pt-2">
+          <Button variant="outline" @click="showDeleteLeadConfirm = false">Hủy</Button>
+          <Button class="bg-error-500 text-white hover:bg-error-600" @click="confirmDeleteLead">
+            Xác nhận xóa
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- Add Activity Dialog -->
     <AddActivityDialog
@@ -429,9 +584,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
+import { useLeadFieldConfigStore } from '@/stores/useLeadFieldConfigStore'
 import {
   ArrowLeft,
   ArrowRight,
@@ -447,14 +603,21 @@ import {
   SquareCheckBig,
   Trash2,
   User,
+  Zap,
 } from 'lucide-vue-next'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import AddActivityDialog from '@/components/crm/AddActivityDialog.vue'
 import type { ActivitySubmitPayload } from '@/components/crm/AddActivityDialog.vue'
 import ActivityItemCard from '@/components/crm/ActivityItemCard.vue'
 import type { ActivityResultData, CardActivityItem } from '@/components/crm/ActivityItemCard.vue'
 import { generateAiSuggestion } from '@/composables/useAiSuggestion'
+import AiChatDialog from '@/components/crm/AiChatDialog.vue'
+import AutomationRulesDialog from '@/components/crm/AutomationRulesDialog.vue'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -504,7 +667,7 @@ const STAGE_STYLE: Record<LeadStage, { bg: string; text: string; border: string 
 
 // ─── Mock lead data (mirrors LeadKanbanBoard cards) ───────────
 
-const ALL_LEADS: LeadData[] = [
+const ALL_LEADS = reactive<LeadData[]>([
   { id: 'l1', title: 'Tram Máy Sapa', stage: 'lead', isRepeat: true, assigneeName: 'Nguyễn Anh Tùng', assigneeColor: '#465fff', date: '13 May', isViewed: true, activityTime: '2 Minutes', avatarInitials: 'AT', avatarColor: '#465fff', badgeCount: 0, source: 'website' },
   { id: 'l2', title: '[AFF] D-Mart Hotel', stage: 'lead', date: 'Hôm nay, 3:54 CH', activityTime: 'Hôm nay 3:54 CH', avatarInitials: 'DM', avatarColor: '#10B981', badgeCount: 0, source: 'inbound' },
   { id: 'l3', title: 'Forever Green Resort', stage: 'lead', date: '15 Tháng 4', activityTime: 'Hôm nay 3:00 CH', avatarInitials: 'FG', avatarColor: '#8B5CF6', badgeCount: 0, source: 'referral' },
@@ -523,12 +686,14 @@ const ALL_LEADS: LeadData[] = [
   { id: 'c1', title: 'Resort Dakke Mang Den_56p_ezCloudhotel', stage: 'customer', isRepeat: true, assigneeName: 'Bảo Trần', assigneeColor: '#465fff', companyName: 'CÔNG TY CỔ PHẦN THƯƠNG MẠI - DỊCH VỤ DU LỊCH KHÁNH DƯƠNG MĂNG ĐEN', date: '15 May', activityTime: '15 May', avatarInitials: 'BT', avatarColor: '#465fff', badgeCount: 0, source: 'referral' },
   { id: 'c2', title: 'FORM ĐĂNG KÝ DÙNG THỬ API Trần Thế Hùng', stage: 'customer', isRepeat: true, date: '13 May', activityTime: '13 May', avatarInitials: 'TH', avatarColor: '#8B5CF6', badgeCount: 0, source: 'website' },
   { id: 'c3', title: 'Agarwood Hotel_16p_ezCloudhotel nâng cao', stage: 'customer', isRepeat: true, assigneeName: 'Chi Hương', assigneeColor: '#10B981', companyName: 'CHI NHÁNH CÔNG TY TNHH MỸ NGHỆ THẮNG TRÌNH - KHÁCH SẠN TRĂM HƯƠNG', date: '6 Apr', activityTime: '6 Apr', avatarInitials: 'CH', avatarColor: '#10B981', badgeCount: 0, source: 'inbound' },
-]
+])
 
 // ─── Route / Router ───────────────────────────────────────────
 
 const route = useRoute()
 const router = useRouter()
+const showAiChat = ref(false)
+const showAutomation = ref(false)
 
 const lead = computed<LeadData>(() => {
   const id = String(route.params.leadId)
@@ -550,6 +715,17 @@ const activeTab = ref('overview')
 const expanded = ref<Set<string>>(new Set(['contact', 'leadinfo']))
 const showActivityDialog = ref(false)
 const activityDialogInitialType = ref('')
+const showEditLeadDialog = ref(false)
+const showDeleteLeadConfirm = ref(false)
+const editLeadForm = reactive({
+  title: '',
+  companyName: '',
+  phone: '',
+  email: '',
+  assigneeName: '',
+  source: '',
+  stage: 'lead' as LeadStage,
+})
 const localActivities = ref<CardActivityItem[]>([])
 const deletedIds = ref<Set<string>>(new Set())
 const activityOverrides = ref<Record<string, Partial<CardActivityItem>>>({})
@@ -565,29 +741,40 @@ function toggle(section: string): void {
   else expanded.value.add(section)
 }
 
+// ─── Field config store ────────────────────────────────────────
+
+const leadFieldStore = useLeadFieldConfigStore()
+
 // ─── Computed field lists ─────────────────────────────────────
 
-const contactFields = computed(() => [
-  { label: 'Tên', value: lead.value.title },
-  { label: 'Công ty', value: lead.value.companyName ?? '—' },
-  { label: 'Điện thoại', value: lead.value.phone ?? '—', href: lead.value.phone ? `tel:${lead.value.phone}` : undefined },
-  { label: 'Email', value: lead.value.email ?? '—', href: lead.value.email ? `mailto:${lead.value.email}` : undefined },
-  { label: 'Người phụ trách', value: lead.value.assigneeName ?? '—' },
-])
+const contactFields = computed(() => {
+  const all = [
+    { fieldId: 'contact_name',     label: 'Tên',              value: lead.value.title },
+    { fieldId: 'contact_company',  label: 'Công ty',          value: lead.value.companyName ?? '—' },
+    { fieldId: 'contact_phone',    label: 'Điện thoại',       value: lead.value.phone ?? '—',  href: lead.value.phone  ? `tel:${lead.value.phone}`      : undefined },
+    { fieldId: 'contact_email',    label: 'Email',            value: lead.value.email ?? '—',  href: lead.value.email  ? `mailto:${lead.value.email}`   : undefined },
+    { fieldId: 'contact_assignee', label: 'Người phụ trách',  value: lead.value.assigneeName ?? '—' },
+  ]
+  return all.filter((f) => leadFieldStore.isVisible(f.fieldId))
+})
 
-const leadInfoFields = computed(() => [
-  {
-    label: 'Giai đoạn',
-    value: STAGE_LABEL[lead.value.stage],
-    badge: true,
-    badgeStyle: { background: STAGE_STYLE[lead.value.stage].bg, color: STAGE_STYLE[lead.value.stage].text },
-  },
-  { label: 'Nguồn', value: lead.value.source ?? '—', badge: false },
-  { label: 'Loại', value: lead.value.isRepeat ? 'Repeat' : 'New', badge: false },
-  { label: 'Ngày tạo', value: lead.value.date, badge: false },
-  { label: 'Hoạt động gần nhất', value: lead.value.activityTime ?? '—', badge: false },
-  { label: 'Đã xem', value: lead.value.isViewed ? 'Có' : 'Chưa', badge: false },
-])
+const leadInfoFields = computed(() => {
+  const all = [
+    {
+      fieldId: 'lead_stage',
+      label: 'Giai đoạn',
+      value: STAGE_LABEL[lead.value.stage],
+      badge: true,
+      badgeStyle: { background: STAGE_STYLE[lead.value.stage].bg, color: STAGE_STYLE[lead.value.stage].text },
+    },
+    { fieldId: 'lead_source',   label: 'Nguồn',               value: lead.value.source ?? '—',                badge: false },
+    { fieldId: 'lead_type',     label: 'Loại',                value: lead.value.isRepeat ? 'Repeat' : 'New',  badge: false },
+    { fieldId: 'lead_date',     label: 'Ngày tạo',            value: lead.value.date,                         badge: false },
+    { fieldId: 'lead_activity', label: 'Hoạt động gần nhất',  value: lead.value.activityTime ?? '—',          badge: false },
+    { fieldId: 'lead_viewed',   label: 'Đã xem',              value: lead.value.isViewed ? 'Có' : 'Chưa',     badge: false },
+  ]
+  return all.filter((f) => leadFieldStore.isVisible(f.fieldId))
+})
 
 // ─── Timeline & History ───────────────────────────────────────
 
@@ -878,10 +1065,37 @@ function onActivityResult(id: string, data: ActivityResultData): void {
 }
 
 function handleEdit(): void {
-  toast.info('Chức năng chỉnh sửa lead')
+  const l = lead.value
+  editLeadForm.title = l.title
+  editLeadForm.companyName = l.companyName ?? ''
+  editLeadForm.phone = l.phone ?? ''
+  editLeadForm.email = l.email ?? ''
+  editLeadForm.assigneeName = l.assigneeName ?? ''
+  editLeadForm.source = l.source ?? ''
+  editLeadForm.stage = l.stage
+  showEditLeadDialog.value = true
+}
+
+function submitLeadEdit(): void {
+  const l = ALL_LEADS.find(x => x.id === lead.value.id)
+  if (!l) return
+  l.title = editLeadForm.title.trim() || l.title
+  l.companyName = editLeadForm.companyName.trim() || undefined
+  l.phone = editLeadForm.phone.trim() || undefined
+  l.email = editLeadForm.email.trim() || undefined
+  l.assigneeName = editLeadForm.assigneeName.trim() || undefined
+  l.source = editLeadForm.source || undefined
+  l.stage = editLeadForm.stage
+  showEditLeadDialog.value = false
+  toast.success('Đã lưu thông tin lead')
 }
 
 function handleDelete(): void {
+  showDeleteLeadConfirm.value = true
+}
+
+function confirmDeleteLead(): void {
+  showDeleteLeadConfirm.value = false
   toast.success('Đã xóa lead')
   void router.push('/crm-work')
 }
