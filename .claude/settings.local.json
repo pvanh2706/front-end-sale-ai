@@ -22,7 +22,13 @@
       "Bash(npx vue-tsc *)",
       "PowerShell(Get-Process -Id 12076)",
       "Bash(npx tsc *)",
-      "Bash(git -C \"D:\\\\Dự án CodeOn\\\\Sales.AI\" log --oneline -5)"
+      "Bash(git -C \"D:\\\\Dự án CodeOn\\\\Sales.AI\" log --oneline -5)",
+      "Bash(Start-Sleep -Seconds 5)",
+      "Bash(Get-Content \"C:\\\\Users\\\\AnhBT\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--D---n-CodeOn-Sales-AI\\\\64276bba-f51c-48e1-a164-6d42b8fa616c\\\\tasks\\\\bil6ok4dc.output\" -Tail 30)",
+      "Bash(dir \"D:\\\\Dự án CodeOn\\\\Sales.AI\\\\src\\\\components\\\\crm\")",
+      "Bash(findstr /i \"kanban lead deal\")",
+      "Bash(Get-ChildItem -Path \"D:\\\\Dự án CodeOn\\\\Sales.AI\\\\src\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }
