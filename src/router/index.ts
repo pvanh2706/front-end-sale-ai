@@ -81,6 +81,12 @@ const router = createRouter({
             meta: { title: 'Chi tiết Lead' },
         },
         {
+            path: '/crm-deployment/:deploymentId',
+            name: 'CrmDeploymentDetail',
+            component: () => import('../views/Crm/CrmDeploymentDetailView.vue'),
+            meta: { title: 'Chi tiết dự án triển khai' },
+        },
+        {
             path: '/crm-duplicate-check',
             name: 'CrmDuplicateCheck',
             component: () => import('../views/Crm/CrmDuplicateCheckView.vue'),

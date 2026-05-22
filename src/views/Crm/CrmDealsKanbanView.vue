@@ -33,6 +33,14 @@
               <button
                 type="button"
                 class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
+                :class="activeTab === 'deployment'
+                  ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
+                @click="switchTab('deployment')"
+              >Triển khai</button>
+              <button
+                type="button"
+                class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
                 :class="activeTab === 'customer'
                   ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
                   : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
@@ -57,7 +65,7 @@
                 @click.stop
               >
                 <button
-                  v-for="pipeline in PIPELINES"
+                  v-for="pipeline in pipelines"
                   :key="pipeline.id"
                   type="button"
                   class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -71,6 +79,15 @@
                     :class="selectedPipelineId === pipeline.id ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'"
                   />
                   {{ pipeline.name }}
+                </button>
+                <div class="my-1 border-t border-gray-100 dark:border-gray-700" />
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                  @click="openPipelineSettings"
+                >
+                  <Settings class="h-4 w-4" />
+                  Cài đặt pipeline
                 </button>
               </div>
             </div>
@@ -99,7 +116,7 @@
             </div>
 
             <!-- Card field visibility toggle -->
-            <div v-if="activeTab !== 'customer'" class="relative">
+            <div v-if="activeTab !== 'customer' && activeTab !== 'deployment'" class="relative">
               <button
                 ref="cardFieldsBtn"
                 type="button"
@@ -210,7 +227,7 @@
               v-if="activeTab !== 'customer'"
               class="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
               title="Cài đặt giai đoạn"
-              @click.stop="activeTab === 'deal' ? openDealStageSettings() : leadBoardRef?.openStageSettings()"
+              @click.stop="activeTab === 'deal' ? openDealStageSettings() : activeTab === 'deployment' ? undefined : leadBoardRef?.openStageSettings()"
             >
               <Settings class="h-4 w-4" />
             </button>
@@ -218,10 +235,10 @@
               v-if="activeTab !== 'customer'"
               class="gap-1.5 bg-primary-700 text-white hover:bg-primary-800"
               size="sm"
-              @click="activeTab === 'deal' ? openCreateDialog() : leadBoardRef?.openCreateDialog()"
+              @click="activeTab === 'deal' ? openCreateDialog() : activeTab === 'deployment' ? deployBoardRef?.openCreateDialog() : leadBoardRef?.openCreateDialog()"
             >
               <Plus class="h-4 w-4" />
-              {{ activeTab === 'deal' ? 'Tạo Deal' : 'Tạo Lead' }}
+              {{ activeTab === 'deal' ? 'Tạo Deal' : activeTab === 'deployment' ? 'Tạo dự án TK' : 'Tạo Lead' }}
             </Button>
           </div>
         </div>
@@ -303,6 +320,14 @@
       <!-- ─── Customer board ────────────────────────────────────── -->
       <CrmCustomerBoard
         v-else-if="activeTab === 'customer'"
+        class="min-h-0 flex-1"
+      />
+
+      <!-- ─── Deployment board ─────────────────────────────────── -->
+      <CrmDeploymentBoard
+        v-else-if="activeTab === 'deployment'"
+        ref="deployBoardRef"
+        :view-mode="viewMode"
         class="min-h-0 flex-1"
       />
 
@@ -1166,12 +1191,34 @@
     </Dialog>
 
     <!-- ─── Deal Stage Settings Dialog ──────────────────────────── -->
-    <Dialog :open="showDealStageSettings" @update:open="val => { showDealStageSettings = val; dealColorPickerIdx = null; showAddDealStageForm = false }">
-      <DialogContent class="sm:max-w-md max-h-[85vh] overflow-y-auto" @click="dealColorPickerIdx = null">
+    <Dialog :open="showDealStageSettings" @update:open="val => { showDealStageSettings = val; dealColorPickerIdx = null; showAddDealStageForm = false; showAddFieldForm = false }">
+      <DialogContent class="sm:max-w-lg max-h-[85vh] overflow-y-auto" @click="dealColorPickerIdx = null">
         <DialogHeader>
-          <DialogTitle class="text-base font-semibold text-gray-900 dark:text-white">Cài đặt giai đoạn Deal</DialogTitle>
-          <DialogDescription class="text-sm text-gray-500">Thêm, đổi tên hoặc xóa giai đoạn — kéo thả để sắp xếp lại</DialogDescription>
+          <DialogTitle class="text-base font-semibold text-gray-900 dark:text-white">Cài đặt Deal</DialogTitle>
+          <DialogDescription class="sr-only">Quản lý giai đoạn và trường thông tin deal</DialogDescription>
         </DialogHeader>
+
+        <!-- Tab switcher -->
+        <div class="flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+          <button
+            type="button"
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="dealSettingsTab === 'stages'
+              ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            @click="dealSettingsTab = 'stages'"
+          >Giai đoạn</button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="dealSettingsTab === 'fields'
+              ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            @click="dealSettingsTab = 'fields'"
+          >Trường thông tin</button>
+        </div>
+
+        <div v-show="dealSettingsTab === 'stages'">
 
         <!-- Stage list -->
         <div class="max-h-[220px] space-y-1.5 overflow-y-auto py-1 pr-1">
@@ -1311,6 +1358,328 @@
           <Button variant="outline" @click="showDealStageSettings = false; showAddDealStageForm = false">Hủy</Button>
           <Button class="bg-brand-500 text-white hover:bg-brand-600" @click="saveDealStages">Lưu thay đổi</Button>
         </DialogFooter>
+        </div>
+
+        <!-- ─── Tab: Trường thông tin ───────────────────────────── -->
+        <div v-show="dealSettingsTab === 'fields'" class="space-y-3">
+
+          <!-- Search -->
+          <div class="relative">
+            <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+            <input
+              v-model="fieldSearchQuery"
+              placeholder="Tìm trường..."
+              class="w-full rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-sm text-gray-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+
+          <!-- Field groups -->
+          <div class="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+            <div v-for="group in filteredFieldGroups" :key="group.section.id">
+              <!-- Section header -->
+              <div class="mb-1 flex items-center justify-between">
+                <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  {{ group.section.name }}
+                  <span class="ml-1 font-normal text-gray-400">({{ group.total }})</span>
+                </span>
+                <button
+                  v-if="customFieldStore.customSections.some(s => s.id === group.section.id)"
+                  type="button"
+                  class="rounded p-0.5 text-gray-300 transition-colors hover:bg-error-50 hover:text-error-500"
+                  title="Xoá nhóm"
+                  @click="customFieldStore.deleteSection(group.section.id)"
+                >
+                  <Trash2 class="h-3 w-3" />
+                </button>
+              </div>
+
+              <!-- Static fields -->
+              <div
+                v-for="field in group.staticFields"
+                :key="field.fieldId"
+                class="flex items-center gap-1.5 rounded-lg px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              >
+                <!-- Inline edit mode -->
+                <template v-if="fieldEditingId === field.fieldId">
+                  <input
+                    v-model="fieldEditingLabel"
+                    class="h-7 flex-1 rounded-md border border-brand-300 bg-white px-2 text-sm outline-none focus:ring-2 focus:ring-brand-100 dark:border-brand-600 dark:bg-gray-800 dark:text-white"
+                    @keyup.enter="saveFieldEdit(field.fieldId, false)"
+                    @keyup.escape="cancelFieldEdit"
+                    autofocus
+                  />
+                  <button type="button" class="rounded p-1 text-success-500 hover:bg-success-50" title="Lưu" @click="saveFieldEdit(field.fieldId, false)">
+                    <Check class="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" class="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" title="Huỷ" @click="cancelFieldEdit">
+                    <X class="h-3.5 w-3.5" />
+                  </button>
+                </template>
+
+                <!-- Normal mode -->
+                <template v-else-if="fieldDeleteConfirmId !== field.fieldId">
+                  <span class="flex-1 text-sm text-gray-700 dark:text-gray-300">
+                    {{ customFieldStore.getStaticLabel(field.fieldId, field.labelVI) }}
+                  </span>
+                  <span
+                    v-if="customFieldStore.isStaticRequired(field.fieldId, !!field.required)"
+                    class="shrink-0 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] text-brand-500 dark:bg-brand-900/30"
+                  >bắt buộc</span>
+                  <button
+                    type="button"
+                    class="rounded p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+                    title="Sửa tên"
+                    @click="startEditField(field.fieldId, customFieldStore.getStaticLabel(field.fieldId, field.labelVI))"
+                  ><Pencil class="h-3 w-3" /></button>
+                  <button
+                    type="button"
+                    class="rounded p-1 transition-colors"
+                    :class="customFieldStore.isStaticRequired(field.fieldId, !!field.required)
+                      ? 'text-error-500 hover:bg-error-50'
+                      : 'text-gray-300 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700'"
+                    title="Bắt buộc"
+                    @click="toggleFieldRequired(field.fieldId, false, customFieldStore.isStaticRequired(field.fieldId, !!field.required))"
+                  ><Asterisk class="h-3 w-3" /></button>
+                  <button
+                    type="button"
+                    class="rounded p-1 text-gray-300 transition-colors hover:bg-error-50 hover:text-error-500"
+                    title="Xoá trường"
+                    @click="startDeleteField(field.fieldId)"
+                  ><Trash2 class="h-3.5 w-3.5" /></button>
+                </template>
+
+                <!-- Delete confirmation mode -->
+                <template v-else>
+                  <span class="flex-1 text-xs text-error-600 dark:text-error-400">Xoá trường này?</span>
+                  <button
+                    type="button"
+                    class="rounded px-2 py-0.5 text-xs font-medium bg-error-500 text-white hover:bg-error-600"
+                    @click="confirmDeleteField(field.fieldId, false)"
+                  >Xoá</button>
+                  <button
+                    type="button"
+                    class="rounded px-2 py-0.5 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    @click="cancelDeleteField"
+                  >Huỷ</button>
+                </template>
+              </div>
+
+              <!-- Custom fields -->
+              <div
+                v-for="field in group.customFields"
+                :key="field.id"
+                class="flex items-center gap-1.5 rounded-lg px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              >
+                <!-- Inline edit mode -->
+                <template v-if="fieldEditingId === field.id">
+                  <input
+                    v-model="fieldEditingLabel"
+                    class="h-7 flex-1 rounded-md border border-brand-300 bg-white px-2 text-sm outline-none focus:ring-2 focus:ring-brand-100 dark:border-brand-600 dark:bg-gray-800 dark:text-white"
+                    @keyup.enter="saveFieldEdit(field.id, true)"
+                    @keyup.escape="cancelFieldEdit"
+                    autofocus
+                  />
+                  <button type="button" class="rounded p-1 text-success-500 hover:bg-success-50" title="Lưu" @click="saveFieldEdit(field.id, true)">
+                    <Check class="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" class="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" title="Huỷ" @click="cancelFieldEdit">
+                    <X class="h-3.5 w-3.5" />
+                  </button>
+                </template>
+
+                <!-- Normal mode -->
+                <template v-else-if="fieldDeleteConfirmId !== field.id">
+                  <span class="flex-1 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
+                  <span class="shrink-0 rounded-full bg-success-50 px-1.5 py-0.5 text-[10px] text-success-600 dark:bg-success-900/20">tuỳ chỉnh</span>
+                  <span v-if="field.required" class="shrink-0 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] text-brand-500 dark:bg-brand-900/30">bắt buộc</span>
+                  <button
+                    type="button"
+                    class="rounded p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+                    title="Sửa tên"
+                    @click="startEditField(field.id, field.label)"
+                  ><Pencil class="h-3 w-3" /></button>
+                  <button
+                    type="button"
+                    class="rounded p-1 transition-colors"
+                    :class="field.required
+                      ? 'text-error-500 hover:bg-error-50'
+                      : 'text-gray-300 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700'"
+                    title="Bắt buộc"
+                    @click="toggleFieldRequired(field.id, true, !!field.required)"
+                  ><Asterisk class="h-3 w-3" /></button>
+                  <button
+                    type="button"
+                    class="rounded p-1 text-gray-300 transition-colors hover:bg-error-50 hover:text-error-500"
+                    title="Xoá trường"
+                    @click="startDeleteField(field.id)"
+                  ><Trash2 class="h-3.5 w-3.5" /></button>
+                </template>
+
+                <!-- Delete confirmation mode -->
+                <template v-else>
+                  <span class="flex-1 text-xs text-error-600 dark:text-error-400">Xoá trường này?</span>
+                  <button
+                    type="button"
+                    class="rounded px-2 py-0.5 text-xs font-medium bg-error-500 text-white hover:bg-error-600"
+                    @click="confirmDeleteField(field.id, true)"
+                  >Xoá</button>
+                  <button
+                    type="button"
+                    class="rounded px-2 py-0.5 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    @click="cancelDeleteField"
+                  >Huỷ</button>
+                </template>
+              </div>
+            </div>
+
+            <p v-if="filteredFieldGroups.length === 0" class="py-4 text-center text-sm text-gray-400">
+              Không tìm thấy trường phù hợp
+            </p>
+          </div>
+
+          <!-- Add field form -->
+          <div
+            v-if="showAddFieldForm"
+            class="space-y-3 rounded-xl border border-brand-200 bg-brand-50/60 p-3 dark:border-brand-700/60 dark:bg-brand-900/20"
+          >
+            <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">Trường mới</p>
+
+            <div class="space-y-1">
+              <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Tên trường <span class="text-error-500">*</span></label>
+              <input
+                v-model="newFieldLabel"
+                placeholder="VD: Ghi chú nội bộ"
+                class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                @keyup.enter="addCustomField"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div class="space-y-1">
+                <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Loại dữ liệu</label>
+                <select
+                  v-model="newFieldType"
+                  class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  @change="newFieldOptions = []; newFieldOptionInput = ''"
+                >
+                  <option value="string">Văn bản</option>
+                  <option value="double">Số</option>
+                  <option value="date">Ngày</option>
+                  <option value="single_select">Danh sách 1 lựa chọn</option>
+                  <option value="multi_select">Danh sách nhiều lựa chọn</option>
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Thuộc nhóm <span class="text-error-500">*</span></label>
+                <select
+                  v-model="newFieldSectionId"
+                  class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  @change="newFieldIsNewSection = newFieldSectionId === '__new__'"
+                >
+                  <option value="" disabled>Chọn nhóm...</option>
+                  <option v-for="s in allSectionsForFields" :key="s.id" :value="s.id">{{ s.name }}</option>
+                  <option value="__new__">+ Tạo nhóm mới...</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Type hint panel -->
+            <div class="rounded-lg border border-gray-200 bg-gray-50 p-2.5 dark:border-gray-700 dark:bg-gray-800/60">
+              <div class="mb-1 flex items-center gap-1.5">
+                <component :is="FIELD_TYPE_HINTS[newFieldType].icon" class="h-3.5 w-3.5 text-brand-500" />
+                <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">{{ FIELD_TYPE_HINTS[newFieldType].label }}</span>
+              </div>
+              <p class="mb-2 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">{{ FIELD_TYPE_HINTS[newFieldType].desc }}</p>
+              <div class="flex flex-wrap gap-1">
+                <button
+                  v-for="ex in FIELD_TYPE_HINTS[newFieldType].examples"
+                  :key="ex"
+                  type="button"
+                  class="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[10px] text-gray-500 transition-colors hover:border-brand-300 hover:text-brand-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:text-brand-400"
+                  :title="`Dùng '${ex}' làm tên trường`"
+                  @click="newFieldLabel = !newFieldLabel.trim() ? ex : newFieldLabel"
+                >{{ ex }}</button>
+              </div>
+
+              <!-- Options editor for list types -->
+              <template v-if="newFieldType === 'single_select' || newFieldType === 'multi_select'">
+                <div class="mt-2.5 border-t border-gray-200 pt-2.5 dark:border-gray-700">
+                  <div class="mb-1.5 flex items-center justify-between">
+                    <label class="text-[11px] font-medium text-gray-600 dark:text-gray-400">
+                      Các lựa chọn
+                      <span v-if="newFieldOptions.length" class="ml-1 text-gray-400">({{ newFieldOptions.length }})</span>
+                    </label>
+                  </div>
+                  <div v-if="newFieldOptions.length" class="mb-1.5 flex flex-wrap gap-1">
+                    <span
+                      v-for="(opt, i) in newFieldOptions"
+                      :key="i"
+                      class="flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] text-brand-600 dark:bg-brand-900/30 dark:text-brand-400"
+                    >
+                      {{ opt }}
+                      <button type="button" class="text-brand-400 hover:text-brand-700 dark:hover:text-brand-300" @click="newFieldOptions.splice(i, 1)">
+                        <X class="h-2.5 w-2.5" />
+                      </button>
+                    </span>
+                  </div>
+                  <div class="flex gap-1.5">
+                    <input
+                      v-model="newFieldOptionInput"
+                      placeholder="Thêm lựa chọn và nhấn Enter..."
+                      class="flex-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs outline-none focus:border-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                      @keyup.enter="addFieldOptionTag"
+                      @keydown.comma.prevent="addFieldOptionTag"
+                    />
+                    <button
+                      type="button"
+                      class="rounded-md bg-brand-500 px-2 py-1 text-xs text-white hover:bg-brand-600"
+                      @click="addFieldOptionTag"
+                    ><Plus class="h-3 w-3" /></button>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <div v-if="newFieldIsNewSection" class="space-y-1">
+              <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Tên nhóm mới <span class="text-error-500">*</span></label>
+              <input
+                v-model="newFieldNewSectionName"
+                placeholder="VD: Thông tin bổ sung"
+                class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              />
+            </div>
+
+            <div class="flex justify-end gap-2">
+              <button
+                type="button"
+                class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                @click="showAddFieldForm = false; newFieldLabel = ''; newFieldIsNewSection = false"
+              >Huỷ</button>
+              <button
+                type="button"
+                class="rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-40"
+                :disabled="!newFieldLabel.trim() || (!newFieldSectionId && !newFieldIsNewSection) || (newFieldIsNewSection && !newFieldNewSectionName.trim())"
+                @click="addCustomField"
+              >Thêm trường</button>
+            </div>
+          </div>
+
+          <!-- Toggle add button -->
+          <button
+            v-if="!showAddFieldForm"
+            type="button"
+            class="flex w-full items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 px-3 py-2.5 text-sm font-medium text-gray-400 transition-colors hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:hover:border-brand-600 dark:hover:text-brand-400"
+            @click="showAddFieldForm = true"
+          >
+            <Plus class="h-4 w-4" />
+            Thêm trường thông tin mới
+          </button>
+
+          <DialogFooter>
+            <Button variant="outline" @click="showDealStageSettings = false">Đóng</Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
 
@@ -1499,6 +1868,167 @@
       </DialogContent>
     </Dialog>
 
+    <!-- ─── Pipeline Settings Dialog ───────────────────────────── -->
+    <Dialog v-model:open="showPipelineSettingsDialog">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Cài đặt Pipeline</DialogTitle>
+          <DialogDescription>Thêm, sửa hoặc xoá pipeline của bạn.</DialogDescription>
+        </DialogHeader>
+
+        <!-- Danh sách pipelines -->
+        <div class="space-y-1.5">
+          <div
+            v-for="pipeline in pipelines"
+            :key="pipeline.id"
+            class="rounded-lg border px-3 py-2 transition-colors"
+            :class="pipelineDeleteId === pipeline.id && pipelineDeletePhase === 'confirm'
+              ? 'flex flex-col gap-2 border-error-400 bg-error-50 dark:border-error-600 dark:bg-error-900/20'
+              : pipelineDeleteId === pipeline.id && pipelineDeletePhase === 'countdown'
+                ? 'flex items-center gap-2 border-error-300 bg-error-50/60 dark:border-error-700 dark:bg-error-900/10'
+                : 'flex items-center gap-2 border-gray-200 dark:border-gray-700'"
+          >
+            <!-- Đang edit -->
+            <template v-if="pipelineEditingId === pipeline.id">
+              <Input
+                v-model="pipelineEditingName"
+                class="h-7 flex-1 text-sm"
+                @keyup.enter="saveEditPipeline"
+                @keyup.escape="cancelEditPipeline"
+                autofocus
+              />
+              <button
+                type="button"
+                class="rounded p-1 text-success-500 hover:bg-success-50"
+                title="Lưu"
+                @click="saveEditPipeline"
+              >
+                <Check class="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                class="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                title="Huỷ"
+                @click="cancelEditPipeline"
+              >
+                <X class="h-4 w-4" />
+              </button>
+            </template>
+
+            <!-- Xác nhận xoá -->
+            <template v-else-if="pipelineDeleteId === pipeline.id && pipelineDeletePhase === 'confirm'">
+              <!-- Tiêu đề + nút huỷ -->
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <AlertTriangle class="h-4 w-4 shrink-0 text-error-500" />
+                  <span class="text-sm font-semibold text-error-700 dark:text-error-400">Xoá pipeline "{{ pipeline.name }}"</span>
+                </div>
+                <button
+                  type="button"
+                  class="rounded px-2 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 transition-colors"
+                  @click="cancelDeletePipeline"
+                >Huỷ</button>
+              </div>
+
+              <!-- Khối cảnh báo đỏ -->
+              <div class="rounded-lg border border-error-300 bg-error-100 px-3 py-2.5 dark:border-error-700 dark:bg-error-900/40">
+                <div class="flex items-start gap-2">
+                  <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-error-600 dark:text-error-400" />
+                  <div class="space-y-1">
+                    <p class="text-xs font-bold uppercase tracking-wide text-error-700 dark:text-error-300">⚠ Cảnh báo không thể hoàn tác</p>
+                    <p class="text-xs text-error-700 dark:text-error-300">
+                      Toàn bộ <strong>deal, lịch sử hoạt động và dữ liệu liên quan</strong> trong pipeline này sẽ bị
+                      <strong>xoá vĩnh viễn</strong>. Hành động này <strong>KHÔNG THỂ khôi phục</strong> sau khi thực hiện.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Nút xác nhận xoá -->
+              <button
+                type="button"
+                class="flex w-full items-center justify-center gap-2 rounded-lg bg-error-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-error-700 active:bg-error-800"
+                @click="confirmDeletePipeline"
+              >
+                <Trash2 class="h-4 w-4" />
+                Tôi hiểu, tiến hành xoá pipeline này
+              </button>
+            </template>
+
+            <!-- Đếm ngược xoá -->
+            <template v-else-if="pipelineDeleteId === pipeline.id && pipelineDeletePhase === 'countdown'">
+              <Loader2 class="h-4 w-4 shrink-0 animate-spin text-error-500" />
+              <span class="flex-1 text-sm text-error-600 dark:text-error-400">
+                Sẽ xoá sau <strong>{{ pipelineDeleteCountdown }}s</strong>...
+              </span>
+              <button
+                type="button"
+                class="rounded px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 transition-colors"
+                @click="cancelDeletePipeline"
+              >Huỷ</button>
+            </template>
+
+            <!-- Hiển thị thường -->
+            <template v-else>
+              <span
+                class="h-2 w-2 shrink-0 rounded-full"
+                :class="selectedPipelineId === pipeline.id ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'"
+              />
+              <span class="flex-1 text-sm text-gray-800 dark:text-gray-200">{{ pipeline.name }}</span>
+              <button
+                type="button"
+                class="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800"
+                title="Sửa"
+                @click="startEditPipeline(pipeline)"
+              >
+                <Pencil class="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                class="rounded p-1 text-gray-400 transition-colors hover:bg-brand-50 hover:text-brand-500 dark:hover:bg-brand-900/20"
+                title="Nhân bản"
+                @click="duplicatePipeline(pipeline)"
+              >
+                <Copy class="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                class="rounded p-1 text-gray-400 transition-colors hover:bg-error-50 hover:text-error-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Xoá"
+                :disabled="pipelines.length <= 1"
+                @click="startDeletePipeline(pipeline.id)"
+              >
+                <Trash2 class="h-3.5 w-3.5" />
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Thêm pipeline mới -->
+        <div class="mt-3 flex gap-2">
+          <Input
+            v-model="newPipelineName"
+            placeholder="Tên pipeline mới..."
+            class="flex-1 text-sm"
+            @keyup.enter="addNewPipeline"
+          />
+          <Button
+            type="button"
+            size="sm"
+            :disabled="!newPipelineName.trim()"
+            @click="addNewPipeline"
+          >
+            <Plus class="mr-1.5 h-4 w-4" />
+            Thêm
+          </Button>
+        </div>
+
+        <DialogFooter class="mt-2">
+          <Button variant="outline" @click="showPipelineSettingsDialog = false">Đóng</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
   </AdminLayout>
 </template>
 
@@ -1521,15 +2051,20 @@ import { Textarea } from '@/components/ui/textarea'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import LeadKanbanBoard from '@/components/crm/LeadKanbanBoard.vue'
 import { useDealFieldConfigStore } from '@/stores/useDealFieldConfigStore'
+import { useDealCustomFieldStore } from '@/stores/useDealCustomFieldStore'
+import type { CustomFieldType } from '@/stores/useDealCustomFieldStore'
 import { useLeadFieldConfigStore, LEAD_SECTIONS, LEAD_FIELDS } from '@/stores/useLeadFieldConfigStore'
 import { DEAL_SECTIONS, DEAL_FIELDS } from '@/types/dealFields'
 import CrmCustomerBoard from '@/components/crm/CrmCustomerBoard.vue'
+import CrmDeploymentBoard from '@/components/crm/CrmDeploymentBoard.vue'
 import { getSocket, disconnectSocket } from '@/lib/socket'
 import { createDeal, deleteDeal, listDealsKanban, updateDeal, updateDealStage } from '@/services/deals'
 import type { DealCard, DealStage, DealsKanbanPayload, KanbanColumn, KanbanKpi } from '@/types/deals'
 import {
+  AlignLeft,
   AlertTriangle,
   ArrowLeft,
+  Asterisk,
   Bell,
   Building2,
   Calendar,
@@ -1537,9 +2072,13 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  CircleDot,
+  Copy,
   GitBranch,
   GripVertical,
+  Hash,
   LayoutGrid,
+  ListChecks,
   LayoutList,
   Loader2,
   Mail,
@@ -1564,7 +2103,7 @@ import { toast } from 'vue-sonner'
 
 // ─── Types ────────────────────────────────────────────────────
 
-type KanbanTab = 'lead' | 'deal' | 'customer'
+type KanbanTab = 'lead' | 'deal' | 'deployment' | 'customer'
 type ViewMode = 'kanban' | 'list' | 'calendar'
 
 interface DealForm {
@@ -1620,12 +2159,14 @@ interface StageDraft {
 
 // ─── Constants ────────────────────────────────────────────────
 
-const PIPELINES = [
+interface PipelineStage { id: string; name: string; color: string }
+interface Pipeline { id: string; name: string; stages?: PipelineStage[] }
+const pipelines = ref<Pipeline[]>([
   { id: 'b2b', name: 'Bán hàng B2B' },
   { id: 'b2c', name: 'Bán hàng B2C' },
   { id: 'enterprise', name: 'Enterprise' },
   { id: 'partnership', name: 'Hợp tác đối tác' },
-] as const
+])
 
 const VIEW_MODES = [
   { id: 'kanban' as ViewMode, icon: LayoutGrid, label: 'Kanban' },
@@ -1636,7 +2177,6 @@ const VIEW_MODES = [
 const QUICK_FILTERS = [
   { id: 'all', name: 'Tất cả' },
   { id: 'my', name: 'Của tôi' },
-  { id: 'inbound', name: 'Inbound' },
   { id: 'planned', name: 'Có kế hoạch' },
   { id: 'overdue', name: '⚠ Quá hạn' },
   { id: 'hot', name: '🔥 Hot' },
@@ -1780,13 +2320,44 @@ const activeTab = ref<KanbanTab>('deal')
 const viewMode = ref<ViewMode>('kanban')
 const selectedPipelineId = ref<string>('b2b')
 const showPipelineMenu = ref(false)
-const leadBoardRef = ref<InstanceType<typeof LeadKanbanBoard> | null>(null)
+const showPipelineSettingsDialog = ref(false)
+const pipelineEditingId = ref<string | null>(null)
+const pipelineEditingName = ref('')
+const newPipelineName = ref('')
+const pipelineDeleteId = ref<string | null>(null)
+const pipelineDeletePhase = ref<'confirm' | 'countdown' | null>(null)
+const pipelineDeleteCountdown = ref(10)
+let pipelineDeleteTimer: ReturnType<typeof setInterval> | null = null
+const leadBoardRef   = ref<InstanceType<typeof LeadKanbanBoard> | null>(null)
+const deployBoardRef = ref<InstanceType<typeof CrmDeploymentBoard> | null>(null)
 const activeQuickFilter = ref('all')
 const showDuplicateBanner = ref(true)
 const selectedCards = ref<Set<string>>(new Set())
 
+const allSectionsForFields = computed(() => [
+  ...DEAL_SECTIONS,
+  ...customFieldStore.customSections,
+])
+
+const filteredFieldGroups = computed(() => {
+  const q = fieldSearchQuery.value.trim().toLowerCase()
+  return allSectionsForFields.value
+    .map(section => {
+      const staticFields = DEAL_FIELDS.filter(f =>
+        f.sectionId === section.id
+        && !customFieldStore.isStaticHidden(f.fieldId)
+        && (!q || f.labelVI.toLowerCase().includes(q))
+      )
+      const customFields = customFieldStore.fieldsInSection(section.id).filter(f =>
+        !q || f.label.toLowerCase().includes(q)
+      )
+      return { section, staticFields, customFields, total: staticFields.length + customFields.length }
+    })
+    .filter(g => g.total > 0)
+})
+
 const selectedPipelineName = computed(
-  () => PIPELINES.find((p) => p.id === selectedPipelineId.value)?.name ?? PIPELINES[0].name,
+  () => pipelines.value.find((p) => p.id === selectedPipelineId.value)?.name ?? pipelines.value[0]?.name ?? '',
 )
 
 const columns = ref<KanbanColumn[]>(structuredClone(DEFAULT_COLUMNS))
@@ -2181,6 +2752,52 @@ watch(showAutomationDialog, (val) => {
 // ─── Deal Stage Settings ──────────────────────────────────────
 
 const showDealStageSettings = ref(false)
+const dealSettingsTab = ref<'stages' | 'fields'>('stages')
+const fieldSearchQuery = ref('')
+const FIELD_TYPE_HINTS: Record<CustomFieldType, { icon: unknown; label: string; desc: string; examples: string[] }> = {
+  string: {
+    icon: AlignLeft,
+    label: 'Văn bản',
+    desc: 'Lưu trữ văn bản tự do. Phù hợp cho ghi chú, mô tả, địa chỉ, URL.',
+    examples: ['Ghi chú nội bộ', 'Mô tả yêu cầu', 'Địa chỉ giao hàng'],
+  },
+  double: {
+    icon: Hash,
+    label: 'Số',
+    desc: 'Lưu số nguyên hoặc số thập phân. Phù hợp cho giá trị, số lượng, tỷ lệ phần trăm.',
+    examples: ['Ngân sách khách hàng', 'Số lượng nhân viên', 'Tỷ lệ hoa hồng (%)'],
+  },
+  date: {
+    icon: CalendarDays,
+    label: 'Ngày',
+    desc: 'Lưu ngày tháng năm. Phù hợp cho các mốc thời gian quan trọng trong deal.',
+    examples: ['Ngày ký hợp đồng', 'Hạn thanh toán', 'Ngày triển khai dự án'],
+  },
+  single_select: {
+    icon: CircleDot,
+    label: 'Danh sách 1 lựa chọn',
+    desc: 'Chọn đúng 1 giá trị từ danh sách định sẵn. Phù hợp cho thuộc tính phân loại rõ ràng.',
+    examples: ['Mức độ ưu tiên', 'Loại hình dịch vụ', 'Kênh tiếp cận'],
+  },
+  multi_select: {
+    icon: ListChecks,
+    label: 'Danh sách nhiều lựa chọn',
+    desc: 'Chọn nhiều giá trị cùng lúc. Phù hợp khi một deal có thể thuộc nhiều nhóm.',
+    examples: ['Nhãn deal', 'Sản phẩm quan tâm', 'Đối tượng khách hàng'],
+  },
+}
+
+const showAddFieldForm = ref(false)
+const fieldEditingId = ref<string | null>(null)
+const fieldEditingLabel = ref('')
+const fieldDeleteConfirmId = ref<string | null>(null)
+const newFieldLabel = ref('')
+const newFieldType = ref<CustomFieldType>('string')
+const newFieldSectionId = ref('')
+const newFieldIsNewSection = ref(false)
+const newFieldNewSectionName = ref('')
+const newFieldOptions = ref<string[]>([])
+const newFieldOptionInput = ref('')
 const dealStageDraft = ref<StageDraft[]>([])
 const dealColorPickerIdx = ref<number | null>(null)
 const dealStageOrigNames = ref<Record<string, string>>({})
@@ -2205,7 +2822,89 @@ function openDealStageSettings(): void {
   showAddDealStageForm.value = false
   newDealStageName.value = ''
   newDealStagePosition.value = 'last'
+  dealSettingsTab.value = 'stages'
+  showAddFieldForm.value = false
+  fieldSearchQuery.value = ''
   showDealStageSettings.value = true
+}
+
+function startEditField(id: string, currentLabel: string): void {
+  fieldEditingId.value = id
+  fieldEditingLabel.value = currentLabel
+}
+
+function saveFieldEdit(id: string, isCustom: boolean): void {
+  const label = fieldEditingLabel.value.trim()
+  if (!label) return
+  if (isCustom) {
+    customFieldStore.updateCustomField(id, { label })
+  } else {
+    customFieldStore.setStaticOverride(id, { label })
+  }
+  fieldEditingId.value = null
+}
+
+function cancelFieldEdit(): void {
+  fieldEditingId.value = null
+}
+
+function toggleFieldRequired(id: string, isCustom: boolean, currentRequired: boolean): void {
+  if (isCustom) {
+    customFieldStore.updateCustomField(id, { required: !currentRequired })
+  } else {
+    customFieldStore.setStaticOverride(id, { required: !currentRequired })
+  }
+}
+
+function startDeleteField(id: string): void {
+  fieldDeleteConfirmId.value = id
+}
+
+function confirmDeleteField(id: string, isCustom: boolean): void {
+  if (isCustom) {
+    customFieldStore.deleteField(id)
+  } else {
+    customFieldStore.hideStaticField(id)
+  }
+  fieldDeleteConfirmId.value = null
+}
+
+function cancelDeleteField(): void {
+  fieldDeleteConfirmId.value = null
+}
+
+function addFieldOptionTag(): void {
+  const val = newFieldOptionInput.value.trim().replace(/,+$/, '')
+  if (val && !newFieldOptions.value.includes(val)) {
+    newFieldOptions.value.push(val)
+  }
+  newFieldOptionInput.value = ''
+}
+
+function addCustomField(): void {
+  const label = newFieldLabel.value.trim()
+  if (!label) return
+  let sectionId = newFieldSectionId.value
+  if (newFieldIsNewSection.value) {
+    const sectionName = newFieldNewSectionName.value.trim()
+    if (!sectionName) return
+    const newSection = customFieldStore.addSection(sectionName)
+    sectionId = newSection.id
+  }
+  if (!sectionId) return
+  const opts = (newFieldType.value === 'single_select' || newFieldType.value === 'multi_select')
+    ? [...newFieldOptions.value]
+    : undefined
+  customFieldStore.addField(sectionId, label, newFieldType.value, opts)
+  newFieldLabel.value = ''
+  newFieldType.value = 'string'
+  newFieldSectionId.value = ''
+  newFieldIsNewSection.value = false
+  newFieldNewSectionName.value = ''
+  newFieldOptions.value = []
+  newFieldOptionInput.value = ''
+  showAddFieldForm.value = false
+  toast.success('Đã thêm trường thông tin')
 }
 
 function confirmAddDealStage(): void {
@@ -2374,6 +3073,7 @@ function markDealActionDone(id: string): void {
 // ─── Card field visibility ────────────────────────────────────
 
 const dealFieldStore = useDealFieldConfigStore()
+const customFieldStore = useDealCustomFieldStore()
 const leadFieldStore = useLeadFieldConfigStore()
 
 const showCardFieldsPopup = ref(false)
@@ -2487,10 +3187,99 @@ function switchTab(tab: KanbanTab): void {
   }
 }
 
+
 async function switchPipeline(pipelineId: string): Promise<void> {
   selectedPipelineId.value = pipelineId
   showPipelineMenu.value = false
+  const pl = pipelines.value.find((p) => p.id === pipelineId)
+  if (pl?.stages?.length) {
+    columns.value = pl.stages.map((s) => ({ ...s, total: '₫ 0', cards: [] }))
+  }
   void loadKanban()
+}
+
+function openPipelineSettings(): void {
+  showPipelineMenu.value = false
+  pipelineEditingId.value = null
+  newPipelineName.value = ''
+  showPipelineSettingsDialog.value = true
+}
+
+function startEditPipeline(pipeline: Pipeline): void {
+  pipelineEditingId.value = pipeline.id
+  pipelineEditingName.value = pipeline.name
+}
+
+function saveEditPipeline(): void {
+  const p = pipelines.value.find((p) => p.id === pipelineEditingId.value)
+  if (p && pipelineEditingName.value.trim()) {
+    p.name = pipelineEditingName.value.trim()
+    toast.success('Đã cập nhật pipeline')
+  }
+  pipelineEditingId.value = null
+}
+
+function cancelEditPipeline(): void {
+  pipelineEditingId.value = null
+}
+
+function duplicatePipeline(pipeline: Pipeline): void {
+  const newId = pipeline.id + '-copy-' + Date.now()
+  const stages = columns.value.map((c) => ({ id: c.id, name: c.name, color: c.color }))
+  pipelines.value.push({ id: newId, name: pipeline.name + ' copy', stages })
+  toast.success(`Đã nhân bản "${pipeline.name}"`)
+}
+
+function startDeletePipeline(id: string): void {
+  if (pipelines.value.length <= 1) {
+    toast.error('Phải có ít nhất 1 pipeline')
+    return
+  }
+  pipelineDeleteId.value = id
+  pipelineDeletePhase.value = 'confirm'
+}
+
+function confirmDeletePipeline(): void {
+  pipelineDeletePhase.value = 'countdown'
+  pipelineDeleteCountdown.value = 10
+  pipelineDeleteTimer = setInterval(() => {
+    pipelineDeleteCountdown.value--
+    if (pipelineDeleteCountdown.value <= 0) {
+      clearInterval(pipelineDeleteTimer!)
+      pipelineDeleteTimer = null
+      executePipelineDelete()
+    }
+  }, 1000)
+}
+
+function cancelDeletePipeline(): void {
+  if (pipelineDeleteTimer) { clearInterval(pipelineDeleteTimer); pipelineDeleteTimer = null }
+  pipelineDeleteId.value = null
+  pipelineDeletePhase.value = null
+  pipelineDeleteCountdown.value = 10
+}
+
+function executePipelineDelete(): void {
+  const id = pipelineDeleteId.value!
+  pipelines.value = pipelines.value.filter((p) => p.id !== id)
+  if (selectedPipelineId.value === id) {
+    selectedPipelineId.value = pipelines.value[0].id
+    void loadKanban()
+  }
+  pipelineDeleteId.value = null
+  pipelineDeletePhase.value = null
+  pipelineDeleteCountdown.value = 10
+  toast.success('Đã xoá pipeline')
+}
+
+function addNewPipeline(): void {
+  const name = newPipelineName.value.trim()
+  if (!name) return
+  const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now()
+  const stages: PipelineStage[] = DEFAULT_COLUMNS.map((c) => ({ id: c.id, name: c.name, color: c.color }))
+  pipelines.value.push({ id, name, stages })
+  newPipelineName.value = ''
+  toast.success('Đã thêm pipeline')
 }
 
 // ─── Kanban helpers ───────────────────────────────────────────
@@ -2755,6 +3544,7 @@ const route = useRoute()
 
 onMounted(() => {
   if (route.query.tab === 'lead') activeTab.value = 'lead'
+  if (route.query.tab === 'deployment') activeTab.value = 'deployment'
   void loadKanban()
   bindRealtime()
   initColWidths()
@@ -2787,6 +3577,8 @@ onUnmounted(() => {
 }
 
 .kanban-toolbar {
+  position: relative;
+  z-index: 20;
   background: color-mix(in srgb, var(--color-sidebar-bg) 65%, white 35%);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--color-sidebar-active-border);

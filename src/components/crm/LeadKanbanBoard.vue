@@ -703,160 +703,486 @@
     </div>
 
     <!-- ─── Lead Stage Settings Dialog ─────────────────────────── -->
-    <Dialog :open="showLeadStageSettings" @update:open="val => { showLeadStageSettings = val; leadColorPickerIdx = null; showAddLeadStageForm = false }">
-      <DialogContent class="sm:max-w-md max-h-[85vh] overflow-y-auto" @click="leadColorPickerIdx = null">
+    <Dialog :open="showLeadStageSettings" @update:open="val => { showLeadStageSettings = val; leadColorPickerIdx = null; showAddLeadStageForm = false; showLeadAddFieldForm = false }">
+      <DialogContent class="sm:max-w-lg max-h-[85vh] overflow-y-auto" @click="leadColorPickerIdx = null">
         <DialogHeader>
-          <DialogTitle class="text-base font-semibold text-gray-900 dark:text-white">Cài đặt giai đoạn Lead</DialogTitle>
-          <DialogDescription class="text-sm text-gray-500">Thêm, đổi tên hoặc xóa giai đoạn — kéo thả để sắp xếp lại</DialogDescription>
+          <DialogTitle class="text-base font-semibold text-gray-900 dark:text-white">Cài đặt Lead</DialogTitle>
+          <DialogDescription class="sr-only">Quản lý giai đoạn và trường thông tin lead</DialogDescription>
         </DialogHeader>
 
-        <!-- Stage list -->
-        <div class="max-h-[220px] space-y-1.5 overflow-y-auto py-1 pr-1">
-          <div
-            v-for="(stage, idx) in leadStageDraft"
-            :key="stage.id"
-            :draggable="true"
-            :class="[
-              'flex items-center gap-2 rounded-lg border px-3 py-2 transition-all select-none',
-              leadDragIdx === idx ? 'opacity-40' : '',
-              leadDragOverIdx === idx && leadDragIdx !== idx
-                ? 'border-brand-400 bg-brand-50 dark:border-brand-500 dark:bg-brand-900/20'
-                : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50',
-            ]"
-            @dragstart="onLeadDragStart(idx)"
-            @dragover="onLeadDragOver($event, idx)"
-            @drop.prevent="onLeadDrop(idx)"
-            @dragend="onLeadDragEnd"
-          >
-            <!-- Drag handle -->
-            <GripVertical class="h-4 w-4 shrink-0 cursor-grab text-gray-300 dark:text-gray-600" />
+        <!-- Tab switcher -->
+        <div class="flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+          <button
+            type="button"
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="leadSettingsTab === 'stages'
+              ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            @click="leadSettingsTab = 'stages'"
+          >Giai đoạn</button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="leadSettingsTab === 'fields'
+              ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            @click="leadSettingsTab = 'fields'"
+          >Trường thông tin</button>
+        </div>
 
-            <!-- Color swatch + picker -->
-            <div class="relative shrink-0">
+        <!-- ─── Tab: Giai đoạn ─────────────────────────────────── -->
+        <div v-show="leadSettingsTab === 'stages'">
+          <!-- Stage list -->
+          <div class="max-h-[220px] space-y-1.5 overflow-y-auto py-1 pr-1">
+            <div
+              v-for="(stage, idx) in leadStageDraft"
+              :key="stage.id"
+              :draggable="true"
+              :class="[
+                'flex items-center gap-2 rounded-lg border px-3 py-2 transition-all select-none',
+                leadDragIdx === idx ? 'opacity-40' : '',
+                leadDragOverIdx === idx && leadDragIdx !== idx
+                  ? 'border-brand-400 bg-brand-50 dark:border-brand-500 dark:bg-brand-900/20'
+                  : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50',
+              ]"
+              @dragstart="onLeadDragStart(idx)"
+              @dragover="onLeadDragOver($event, idx)"
+              @drop.prevent="onLeadDrop(idx)"
+              @dragend="onLeadDragEnd"
+            >
+              <GripVertical class="h-4 w-4 shrink-0 cursor-grab text-gray-300 dark:text-gray-600" />
+
+              <div class="relative shrink-0">
+                <button
+                  type="button"
+                  class="h-6 w-6 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-110 dark:border-gray-700 dark:ring-gray-600"
+                  :style="{ background: stage.color }"
+                  title="Chọn màu"
+                  @click.stop="leadColorPickerIdx = leadColorPickerIdx === idx ? null : idx"
+                />
+                <transition name="fade">
+                  <div
+                    v-if="leadColorPickerIdx === idx"
+                    class="absolute left-0 top-full z-20 mt-1.5 grid grid-cols-5 gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
+                    @click.stop
+                  >
+                    <button
+                      v-for="entry in STAGE_COLOR_PALETTE"
+                      :key="entry.color"
+                      type="button"
+                      class="h-5 w-5 rounded-full transition-transform hover:scale-125"
+                      :style="{ background: entry.color, outline: stage.color === entry.color ? `2px solid ${entry.color}` : 'none', outlineOffset: '2px' }"
+                      @click.stop="stage.color = entry.color; stage.headerBg = entry.gradient; leadColorPickerIdx = null"
+                    />
+                  </div>
+                </transition>
+              </div>
+
+              <input
+                v-model="stage.name"
+                class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500"
+                placeholder="Tên giai đoạn"
+                maxlength="40"
+                @keyup.enter="stage.name.trim() !== (leadStageOrigNames[stage.id] ?? '') && saveLeadStageName(stage)"
+              />
+
+              <button
+                v-if="stage.name.trim() && stage.name.trim() !== (leadStageOrigNames[stage.id] ?? '')"
+                type="button"
+                class="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-success-600 transition-colors hover:bg-success-50 dark:text-success-400 dark:hover:bg-success-900/20"
+                title="Lưu tên"
+                @click.stop="saveLeadStageName(stage)"
+              >✓ Lưu</button>
+
               <button
                 type="button"
-                class="h-6 w-6 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-110 dark:border-gray-700 dark:ring-gray-600"
-                :style="{ background: stage.color }"
-                title="Chọn màu"
-                @click.stop="leadColorPickerIdx = leadColorPickerIdx === idx ? null : idx"
-              />
-              <transition name="fade">
-                <div
-                  v-if="leadColorPickerIdx === idx"
-                  class="absolute left-0 top-full z-20 mt-1.5 grid grid-cols-5 gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
-                  @click.stop
-                >
-                  <button
-                    v-for="entry in STAGE_COLOR_PALETTE"
-                    :key="entry.color"
-                    type="button"
-                    class="h-5 w-5 rounded-full transition-transform hover:scale-125"
-                    :style="{ background: entry.color, outline: stage.color === entry.color ? `2px solid ${entry.color}` : 'none', outlineOffset: '2px' }"
-                    @click.stop="stage.color = entry.color; stage.headerBg = entry.gradient; leadColorPickerIdx = null"
+                class="shrink-0 rounded-md p-1.5 text-gray-400 transition-colors hover:bg-error-50 hover:text-error-500 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-error-900/20"
+                :disabled="leadStageDraft.length <= 1"
+                :title="leadStageDraft.length <= 1 ? 'Pipeline phải có ít nhất 1 giai đoạn' : 'Xóa giai đoạn'"
+                @click="removeLeadStage(idx)"
+              >
+                <Trash2 class="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom section: sub-form / add button / footer -->
+          <div class="shrink-0 space-y-3 pt-1">
+            <transition name="fade">
+              <div
+                v-if="showAddLeadStageForm"
+                class="rounded-xl border border-brand-200 bg-brand-50/60 p-3 space-y-3 dark:border-brand-700/60 dark:bg-brand-900/20"
+                @click.stop
+              >
+                <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">Giai đoạn mới</p>
+                <div class="space-y-1">
+                  <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Tên giai đoạn</label>
+                  <input
+                    v-model="newLeadStageName"
+                    class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500"
+                    placeholder="VD: Đang thương lượng"
+                    maxlength="40"
+                    @keyup.enter="confirmAddLeadStage"
+                    @keyup.esc="showAddLeadStageForm = false; newLeadStageName = ''"
                   />
                 </div>
-              </transition>
-            </div>
+                <div class="space-y-1">
+                  <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Vị trí</label>
+                  <select
+                    v-model="newLeadStagePosition"
+                    class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  >
+                    <option value="first">Đứng đầu tiên</option>
+                    <option v-for="s in leadStageDraft" :key="s.id" :value="s.id">Sau: {{ s.name || '(chưa đặt tên)' }}</option>
+                    <option value="last">Cuối danh sách</option>
+                  </select>
+                </div>
+                <div class="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                    @click="showAddLeadStageForm = false; newLeadStageName = ''"
+                  >Hủy</button>
+                  <button
+                    v-if="newLeadStageName.trim()"
+                    type="button"
+                    class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                    @click="confirmAddLeadStage"
+                  >Lưu</button>
+                </div>
+              </div>
+            </transition>
 
-            <!-- Name input -->
-            <input
-              v-model="stage.name"
-              class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500"
-              placeholder="Tên giai đoạn"
-              maxlength="40"
-              @keyup.enter="stage.name.trim() !== (leadStageOrigNames[stage.id] ?? '') && saveLeadStageName(stage)"
-            />
-
-            <!-- Per-stage save (shown when name is dirty) -->
             <button
-              v-if="stage.name.trim() && stage.name.trim() !== (leadStageOrigNames[stage.id] ?? '')"
+              v-if="!showAddLeadStageForm"
               type="button"
-              class="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-success-600 transition-colors hover:bg-success-50 dark:text-success-400 dark:hover:bg-success-900/20"
-              title="Lưu tên"
-              @click.stop="saveLeadStageName(stage)"
-            >✓ Lưu</button>
-
-            <!-- Delete -->
-            <button
-              type="button"
-              class="shrink-0 rounded-md p-1.5 text-gray-400 transition-colors hover:bg-error-50 hover:text-error-500 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-error-900/20"
-              :disabled="leadStageDraft.length <= 1"
-              :title="leadStageDraft.length <= 1 ? 'Pipeline phải có ít nhất 1 giai đoạn' : 'Xóa giai đoạn'"
-              @click="removeLeadStage(idx)"
+              class="flex w-full items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 px-3 py-2.5 text-sm font-medium text-gray-400 transition-colors hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:hover:border-brand-600 dark:hover:text-brand-400"
+              @click="showAddLeadStageForm = true; newLeadStagePosition = 'last'"
             >
-              <Trash2 class="h-3.5 w-3.5" />
+              <Plus class="h-4 w-4" />
+              Thêm giai đoạn mới
             </button>
+
+            <DialogFooter class="gap-2">
+              <Button variant="outline" @click="showLeadStageSettings = false; showAddLeadStageForm = false">Hủy</Button>
+              <Button class="bg-brand-500 text-white hover:bg-brand-600" @click="saveLeadStages">Lưu thay đổi</Button>
+            </DialogFooter>
           </div>
         </div>
 
-        <!-- Bottom section: sub-form / add button / footer — always visible -->
-        <div class="shrink-0 space-y-3 pt-1">
+        <!-- ─── Tab: Trường thông tin ──────────────────────────── -->
+        <div v-show="leadSettingsTab === 'fields'" class="space-y-3">
 
-          <!-- Inline add-stage sub-form -->
-          <transition name="fade">
-            <div
-              v-if="showAddLeadStageForm"
-              class="rounded-xl border border-brand-200 bg-brand-50/60 p-3 space-y-3 dark:border-brand-700/60 dark:bg-brand-900/20"
-              @click.stop
-            >
-              <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">Giai đoạn mới</p>
+          <!-- Search -->
+          <div class="relative">
+            <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+            <input
+              v-model="leadFieldSearchQuery"
+              placeholder="Tìm trường..."
+              class="w-full rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-sm text-gray-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
 
-              <div class="space-y-1">
-                <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Tên giai đoạn</label>
-                <input
-                  v-model="newLeadStageName"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500"
-                  placeholder="VD: Đang thương lượng"
-                  maxlength="40"
-                  @keyup.enter="confirmAddLeadStage"
-                  @keyup.esc="showAddLeadStageForm = false; newLeadStageName = ''"
-                />
+          <!-- Field groups -->
+          <div class="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+            <div v-for="group in filteredLeadFieldGroups" :key="group.section.id">
+              <!-- Section header -->
+              <div class="mb-1 flex items-center justify-between">
+                <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  {{ group.section.name }}
+                  <span class="ml-1 font-normal text-gray-400">({{ group.total }})</span>
+                </span>
+                <button
+                  v-if="leadCustomFieldStore.customSections.some(s => s.id === group.section.id)"
+                  type="button"
+                  class="rounded p-0.5 text-gray-300 transition-colors hover:bg-error-50 hover:text-error-500"
+                  title="Xoá nhóm"
+                  @click="leadCustomFieldStore.deleteSection(group.section.id)"
+                >
+                  <Trash2 class="h-3 w-3" />
+                </button>
               </div>
 
+              <!-- Static fields -->
+              <div
+                v-for="field in group.staticFields"
+                :key="field.fieldId"
+                class="flex items-center gap-1.5 rounded-lg px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              >
+                <template v-if="leadFieldEditingId === field.fieldId">
+                  <input
+                    v-model="leadFieldEditingLabel"
+                    class="h-7 flex-1 rounded-md border border-brand-300 bg-white px-2 text-sm outline-none focus:ring-2 focus:ring-brand-100 dark:border-brand-600 dark:bg-gray-800 dark:text-white"
+                    @keyup.enter="saveLeadFieldEdit(field.fieldId, false)"
+                    @keyup.escape="cancelLeadFieldEdit"
+                    autofocus
+                  />
+                  <button type="button" class="rounded p-1 text-success-500 hover:bg-success-50" title="Lưu" @click="saveLeadFieldEdit(field.fieldId, false)">
+                    <Check class="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" class="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" title="Huỷ" @click="cancelLeadFieldEdit">
+                    <X class="h-3.5 w-3.5" />
+                  </button>
+                </template>
+
+                <template v-else-if="leadFieldDeleteConfirmId !== field.fieldId">
+                  <span class="flex-1 text-sm text-gray-700 dark:text-gray-300">
+                    {{ leadCustomFieldStore.getStaticLabel(field.fieldId, field.labelVI) }}
+                  </span>
+                  <span
+                    v-if="leadCustomFieldStore.isStaticRequired(field.fieldId, !!field.required)"
+                    class="shrink-0 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] text-brand-500 dark:bg-brand-900/30"
+                  >bắt buộc</span>
+                  <button
+                    type="button"
+                    class="rounded p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+                    title="Sửa tên"
+                    @click="startLeadEditField(field.fieldId, leadCustomFieldStore.getStaticLabel(field.fieldId, field.labelVI))"
+                  ><Pencil class="h-3 w-3" /></button>
+                  <button
+                    type="button"
+                    class="rounded p-1 transition-colors"
+                    :class="leadCustomFieldStore.isStaticRequired(field.fieldId, !!field.required)
+                      ? 'text-error-500 hover:bg-error-50'
+                      : 'text-gray-300 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700'"
+                    title="Bắt buộc"
+                    @click="toggleLeadFieldRequired(field.fieldId, false, leadCustomFieldStore.isStaticRequired(field.fieldId, !!field.required))"
+                  ><Asterisk class="h-3 w-3" /></button>
+                  <button
+                    type="button"
+                    class="rounded p-1 text-gray-300 transition-colors hover:bg-error-50 hover:text-error-500"
+                    title="Xoá trường"
+                    @click="startLeadDeleteField(field.fieldId)"
+                  ><Trash2 class="h-3.5 w-3.5" /></button>
+                </template>
+
+                <template v-else>
+                  <span class="flex-1 text-xs text-error-600 dark:text-error-400">Xoá trường này?</span>
+                  <button
+                    type="button"
+                    class="rounded px-2 py-0.5 text-xs font-medium bg-error-500 text-white hover:bg-error-600"
+                    @click="confirmLeadDeleteField(field.fieldId, false)"
+                  >Xoá</button>
+                  <button
+                    type="button"
+                    class="rounded px-2 py-0.5 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    @click="cancelLeadDeleteField"
+                  >Huỷ</button>
+                </template>
+              </div>
+
+              <!-- Custom fields -->
+              <div
+                v-for="field in group.customFields"
+                :key="field.id"
+                class="flex items-center gap-1.5 rounded-lg px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              >
+                <template v-if="leadFieldEditingId === field.id">
+                  <input
+                    v-model="leadFieldEditingLabel"
+                    class="h-7 flex-1 rounded-md border border-brand-300 bg-white px-2 text-sm outline-none focus:ring-2 focus:ring-brand-100 dark:border-brand-600 dark:bg-gray-800 dark:text-white"
+                    @keyup.enter="saveLeadFieldEdit(field.id, true)"
+                    @keyup.escape="cancelLeadFieldEdit"
+                    autofocus
+                  />
+                  <button type="button" class="rounded p-1 text-success-500 hover:bg-success-50" title="Lưu" @click="saveLeadFieldEdit(field.id, true)">
+                    <Check class="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" class="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" title="Huỷ" @click="cancelLeadFieldEdit">
+                    <X class="h-3.5 w-3.5" />
+                  </button>
+                </template>
+
+                <template v-else-if="leadFieldDeleteConfirmId !== field.id">
+                  <span class="flex-1 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
+                  <span class="shrink-0 rounded-full bg-success-50 px-1.5 py-0.5 text-[10px] text-success-600 dark:bg-success-900/20">tuỳ chỉnh</span>
+                  <span v-if="field.required" class="shrink-0 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] text-brand-500 dark:bg-brand-900/30">bắt buộc</span>
+                  <button
+                    type="button"
+                    class="rounded p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+                    title="Sửa tên"
+                    @click="startLeadEditField(field.id, field.label)"
+                  ><Pencil class="h-3 w-3" /></button>
+                  <button
+                    type="button"
+                    class="rounded p-1 transition-colors"
+                    :class="field.required
+                      ? 'text-error-500 hover:bg-error-50'
+                      : 'text-gray-300 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700'"
+                    title="Bắt buộc"
+                    @click="toggleLeadFieldRequired(field.id, true, !!field.required)"
+                  ><Asterisk class="h-3 w-3" /></button>
+                  <button
+                    type="button"
+                    class="rounded p-1 text-gray-300 transition-colors hover:bg-error-50 hover:text-error-500"
+                    title="Xoá trường"
+                    @click="startLeadDeleteField(field.id)"
+                  ><Trash2 class="h-3.5 w-3.5" /></button>
+                </template>
+
+                <template v-else>
+                  <span class="flex-1 text-xs text-error-600 dark:text-error-400">Xoá trường này?</span>
+                  <button
+                    type="button"
+                    class="rounded px-2 py-0.5 text-xs font-medium bg-error-500 text-white hover:bg-error-600"
+                    @click="confirmLeadDeleteField(field.id, true)"
+                  >Xoá</button>
+                  <button
+                    type="button"
+                    class="rounded px-2 py-0.5 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    @click="cancelLeadDeleteField"
+                  >Huỷ</button>
+                </template>
+              </div>
+            </div>
+
+            <p v-if="filteredLeadFieldGroups.length === 0" class="py-4 text-center text-sm text-gray-400">
+              Không tìm thấy trường phù hợp
+            </p>
+          </div>
+
+          <!-- Add field form -->
+          <div
+            v-if="showLeadAddFieldForm"
+            class="space-y-3 rounded-xl border border-brand-200 bg-brand-50/60 p-3 dark:border-brand-700/60 dark:bg-brand-900/20"
+          >
+            <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">Trường mới</p>
+
+            <div class="space-y-1">
+              <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Tên trường <span class="text-error-500">*</span></label>
+              <input
+                v-model="newLeadFieldLabel"
+                placeholder="VD: Ngân sách khách hàng"
+                class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                @keyup.enter="addLeadCustomField"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
               <div class="space-y-1">
-                <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Vị trí</label>
+                <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Loại dữ liệu</label>
                 <select
-                  v-model="newLeadStagePosition"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  v-model="newLeadFieldType"
+                  class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  @change="newLeadFieldOptions = []; newLeadFieldOptionInput = ''"
                 >
-                  <option value="first">Đứng đầu tiên</option>
-                  <option v-for="s in leadStageDraft" :key="s.id" :value="s.id">Sau: {{ s.name || '(chưa đặt tên)' }}</option>
-                  <option value="last">Cuối danh sách</option>
+                  <option value="string">Văn bản</option>
+                  <option value="double">Số</option>
+                  <option value="date">Ngày</option>
+                  <option value="single_select">Danh sách 1 lựa chọn</option>
+                  <option value="multi_select">Danh sách nhiều lựa chọn</option>
                 </select>
               </div>
 
-              <div class="flex justify-end gap-2">
-                <button
-                  type="button"
-                  class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                  @click="showAddLeadStageForm = false; newLeadStageName = ''"
-                >Hủy</button>
-                <button
-                  v-if="newLeadStageName.trim()"
-                  type="button"
-                  class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                  @click="confirmAddLeadStage"
-                >Lưu</button>
+              <div class="space-y-1">
+                <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Thuộc nhóm <span class="text-error-500">*</span></label>
+                <select
+                  v-model="newLeadFieldSectionId"
+                  class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  @change="newLeadFieldIsNewSection = newLeadFieldSectionId === '__new__'"
+                >
+                  <option value="" disabled>Chọn nhóm...</option>
+                  <option v-for="s in allLeadSectionsForFields" :key="s.id" :value="s.id">{{ s.name }}</option>
+                  <option value="__new__">+ Tạo nhóm mới...</option>
+                </select>
               </div>
             </div>
-          </transition>
 
-          <!-- Toggle add-form button -->
+            <!-- Type hint panel -->
+            <div class="rounded-lg border border-gray-200 bg-gray-50 p-2.5 dark:border-gray-700 dark:bg-gray-800/60">
+              <div class="mb-1 flex items-center gap-1.5">
+                <component :is="LEAD_FIELD_TYPE_HINTS[newLeadFieldType].icon" class="h-3.5 w-3.5 text-brand-500" />
+                <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">{{ LEAD_FIELD_TYPE_HINTS[newLeadFieldType].label }}</span>
+              </div>
+              <p class="mb-2 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">{{ LEAD_FIELD_TYPE_HINTS[newLeadFieldType].desc }}</p>
+              <div class="flex flex-wrap gap-1">
+                <button
+                  v-for="ex in LEAD_FIELD_TYPE_HINTS[newLeadFieldType].examples"
+                  :key="ex"
+                  type="button"
+                  class="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[10px] text-gray-500 transition-colors hover:border-brand-300 hover:text-brand-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:text-brand-400"
+                  :title="`Dùng '${ex}' làm tên trường`"
+                  @click="newLeadFieldLabel = !newLeadFieldLabel.trim() ? ex : newLeadFieldLabel"
+                >{{ ex }}</button>
+              </div>
+
+              <!-- Options editor for list types -->
+              <template v-if="newLeadFieldType === 'single_select' || newLeadFieldType === 'multi_select'">
+                <div class="mt-2.5 border-t border-gray-200 pt-2.5 dark:border-gray-700">
+                  <div class="mb-1.5 flex items-center justify-between">
+                    <label class="text-[11px] font-medium text-gray-600 dark:text-gray-400">
+                      Các lựa chọn
+                      <span v-if="newLeadFieldOptions.length" class="ml-1 text-gray-400">({{ newLeadFieldOptions.length }})</span>
+                    </label>
+                  </div>
+                  <div v-if="newLeadFieldOptions.length" class="mb-1.5 flex flex-wrap gap-1">
+                    <span
+                      v-for="(opt, i) in newLeadFieldOptions"
+                      :key="i"
+                      class="flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] text-brand-600 dark:bg-brand-900/30 dark:text-brand-400"
+                    >
+                      {{ opt }}
+                      <button type="button" class="text-brand-400 hover:text-brand-700 dark:hover:text-brand-300" @click="newLeadFieldOptions.splice(i, 1)">
+                        <X class="h-2.5 w-2.5" />
+                      </button>
+                    </span>
+                  </div>
+                  <div class="flex gap-1.5">
+                    <input
+                      v-model="newLeadFieldOptionInput"
+                      placeholder="Thêm lựa chọn và nhấn Enter..."
+                      class="flex-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs outline-none focus:border-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                      @keyup.enter="addLeadFieldOptionTag"
+                      @keydown.comma.prevent="addLeadFieldOptionTag"
+                    />
+                    <button
+                      type="button"
+                      class="rounded-md bg-brand-500 px-2 py-1 text-xs text-white hover:bg-brand-600"
+                      @click="addLeadFieldOptionTag"
+                    ><Plus class="h-3 w-3" /></button>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <div v-if="newLeadFieldIsNewSection" class="space-y-1">
+              <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Tên nhóm mới <span class="text-error-500">*</span></label>
+              <input
+                v-model="newLeadFieldNewSectionName"
+                placeholder="VD: Thông tin bổ sung"
+                class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              />
+            </div>
+
+            <div class="flex justify-end gap-2">
+              <button
+                type="button"
+                class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                @click="showLeadAddFieldForm = false; newLeadFieldLabel = ''; newLeadFieldIsNewSection = false"
+              >Huỷ</button>
+              <button
+                type="button"
+                class="rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-40"
+                :disabled="!newLeadFieldLabel.trim() || (!newLeadFieldSectionId && !newLeadFieldIsNewSection) || (newLeadFieldIsNewSection && !newLeadFieldNewSectionName.trim())"
+                @click="addLeadCustomField"
+              >Thêm trường</button>
+            </div>
+          </div>
+
+          <!-- Toggle add button -->
           <button
-            v-if="!showAddLeadStageForm"
+            v-if="!showLeadAddFieldForm"
             type="button"
             class="flex w-full items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 px-3 py-2.5 text-sm font-medium text-gray-400 transition-colors hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:hover:border-brand-600 dark:hover:text-brand-400"
-            @click="showAddLeadStageForm = true; newLeadStagePosition = 'last'"
+            @click="showLeadAddFieldForm = true"
           >
             <Plus class="h-4 w-4" />
-            Thêm giai đoạn mới
+            Thêm trường thông tin mới
           </button>
 
-          <DialogFooter class="gap-2">
-            <Button variant="outline" @click="showLeadStageSettings = false; showAddLeadStageForm = false">Hủy</Button>
-            <Button class="bg-brand-500 text-white hover:bg-brand-600" @click="saveLeadStages">Lưu thay đổi</Button>
+          <DialogFooter>
+            <Button variant="outline" @click="showLeadStageSettings = false">Đóng</Button>
           </DialogFooter>
-
         </div>
       </DialogContent>
     </Dialog>
@@ -1049,13 +1375,18 @@
 import { computed, nextTick, ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import {
+  AlignLeft,
   AlertTriangle,
+  Asterisk,
   Building2,
   Calendar,
   CalendarDays,
   Check,
   CheckCircle2,
+  CircleDot,
   GripVertical,
+  Hash,
+  ListChecks,
   Mail,
   MessageCircle,
   MessageSquare,
@@ -1083,6 +1414,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useLeadCustomFieldStore, type CustomFieldType } from '@/stores/useLeadCustomFieldStore'
+import { LEAD_SECTIONS, LEAD_FIELDS } from '@/types/leadFields'
 
 const props = withDefaults(defineProps<{
   viewMode?: 'kanban' | 'list' | 'calendar'
@@ -1774,9 +2107,161 @@ function stopLeadResize(): void {
   document.removeEventListener('mouseup', stopLeadResize)
 }
 
+// ─── Lead Custom Field Store ─────────────────────────────────
+const leadCustomFieldStore = useLeadCustomFieldStore()
+
+const LEAD_FIELD_TYPE_HINTS: Record<CustomFieldType, { icon: unknown; label: string; desc: string; examples: string[] }> = {
+  string: {
+    icon: AlignLeft,
+    label: 'Văn bản',
+    desc: 'Lưu trữ văn bản tự do. Phù hợp cho ghi chú, mô tả, địa chỉ.',
+    examples: ['Ghi chú nội bộ', 'Mô tả nhu cầu', 'Địa chỉ'],
+  },
+  double: {
+    icon: Hash,
+    label: 'Số',
+    desc: 'Lưu số nguyên hoặc số thập phân. Phù hợp cho ngân sách, số lượng.',
+    examples: ['Ngân sách khách hàng', 'Số nhân viên', 'Tỷ lệ hoa hồng (%)'],
+  },
+  date: {
+    icon: CalendarDays,
+    label: 'Ngày',
+    desc: 'Lưu ngày tháng năm. Phù hợp cho các mốc thời gian quan trọng.',
+    examples: ['Ngày hẹn demo', 'Hạn phản hồi', 'Ngày follow-up'],
+  },
+  single_select: {
+    icon: CircleDot,
+    label: 'Danh sách 1 lựa chọn',
+    desc: 'Chọn đúng 1 giá trị từ danh sách định sẵn. Phù hợp cho phân loại rõ ràng.',
+    examples: ['Mức độ ưu tiên', 'Loại hình dịch vụ', 'Kênh tiếp cận'],
+  },
+  multi_select: {
+    icon: ListChecks,
+    label: 'Danh sách nhiều lựa chọn',
+    desc: 'Chọn nhiều giá trị cùng lúc. Phù hợp khi lead có thể thuộc nhiều nhóm.',
+    examples: ['Sản phẩm quan tâm', 'Nhãn lead', 'Đối tượng mục tiêu'],
+  },
+}
+
+const allLeadSectionsForFields = computed(() => [
+  ...LEAD_SECTIONS,
+  ...leadCustomFieldStore.customSections,
+])
+
+const filteredLeadFieldGroups = computed(() => {
+  const q = leadFieldSearchQuery.value.trim().toLowerCase()
+  return allLeadSectionsForFields.value
+    .map(section => {
+      const staticFields = LEAD_FIELDS.filter(f =>
+        f.sectionId === section.id
+        && !leadCustomFieldStore.isStaticHidden(f.fieldId)
+        && (!q || f.labelVI.toLowerCase().includes(q))
+      )
+      const customFields = leadCustomFieldStore.fieldsInSection(section.id).filter(f =>
+        !q || f.label.toLowerCase().includes(q)
+      )
+      return { section, staticFields, customFields, total: staticFields.length + customFields.length }
+    })
+    .filter(g => g.total > 0)
+})
+
+// Field editing state
+const leadFieldSearchQuery = ref('')
+const showLeadAddFieldForm = ref(false)
+const leadFieldEditingId = ref<string | null>(null)
+const leadFieldEditingLabel = ref('')
+const leadFieldDeleteConfirmId = ref<string | null>(null)
+const newLeadFieldLabel = ref('')
+const newLeadFieldType = ref<CustomFieldType>('string')
+const newLeadFieldSectionId = ref('')
+const newLeadFieldIsNewSection = ref(false)
+const newLeadFieldNewSectionName = ref('')
+const newLeadFieldOptions = ref<string[]>([])
+const newLeadFieldOptionInput = ref('')
+
+function startLeadEditField(id: string, currentLabel: string): void {
+  leadFieldEditingId.value = id
+  leadFieldEditingLabel.value = currentLabel
+}
+
+function saveLeadFieldEdit(id: string, isCustom: boolean): void {
+  const label = leadFieldEditingLabel.value.trim()
+  if (!label) return
+  if (isCustom) {
+    leadCustomFieldStore.updateCustomField(id, { label })
+  } else {
+    leadCustomFieldStore.setStaticOverride(id, { label })
+  }
+  leadFieldEditingId.value = null
+}
+
+function cancelLeadFieldEdit(): void {
+  leadFieldEditingId.value = null
+}
+
+function toggleLeadFieldRequired(id: string, isCustom: boolean, currentRequired: boolean): void {
+  if (isCustom) {
+    leadCustomFieldStore.updateCustomField(id, { required: !currentRequired })
+  } else {
+    leadCustomFieldStore.setStaticOverride(id, { required: !currentRequired })
+  }
+}
+
+function startLeadDeleteField(id: string): void {
+  leadFieldDeleteConfirmId.value = id
+}
+
+function confirmLeadDeleteField(id: string, isCustom: boolean): void {
+  if (isCustom) {
+    leadCustomFieldStore.deleteField(id)
+  } else {
+    leadCustomFieldStore.hideStaticField(id)
+  }
+  leadFieldDeleteConfirmId.value = null
+}
+
+function cancelLeadDeleteField(): void {
+  leadFieldDeleteConfirmId.value = null
+}
+
+function addLeadFieldOptionTag(): void {
+  const val = newLeadFieldOptionInput.value.trim().replace(/,+$/, '')
+  if (val && !newLeadFieldOptions.value.includes(val)) {
+    newLeadFieldOptions.value.push(val)
+  }
+  newLeadFieldOptionInput.value = ''
+}
+
+function addLeadCustomField(): void {
+  const label = newLeadFieldLabel.value.trim()
+  if (!label) return
+  let sectionId = newLeadFieldSectionId.value
+  if (newLeadFieldIsNewSection.value) {
+    const sectionName = newLeadFieldNewSectionName.value.trim()
+    if (!sectionName) return
+    const newSection = leadCustomFieldStore.addSection(sectionName)
+    sectionId = newSection.id
+  }
+  if (!sectionId) return
+  const opts = (newLeadFieldType.value === 'single_select' || newLeadFieldType.value === 'multi_select')
+    ? [...newLeadFieldOptions.value]
+    : undefined
+  leadCustomFieldStore.addField(sectionId, label, newLeadFieldType.value, opts)
+  newLeadFieldLabel.value = ''
+  newLeadFieldType.value = 'string'
+  newLeadFieldSectionId.value = ''
+  newLeadFieldIsNewSection.value = false
+  newLeadFieldNewSectionName.value = ''
+  newLeadFieldOptions.value = []
+  newLeadFieldOptionInput.value = ''
+  showLeadAddFieldForm.value = false
+  toast.success('Đã thêm trường thông tin')
+}
+
 // ─── Lead Stage Settings ──────────────────────────────────────
 
 const showLeadStageSettings = ref(false)
+const leadSettingsTab = ref<'stages' | 'fields'>('stages')
 const leadStageDraft = ref<StageDraft[]>([])
 const leadColorPickerIdx = ref<number | null>(null)
 const leadStageOrigNames = ref<Record<string, string>>({})
@@ -1802,6 +2287,9 @@ function openStageSettings(): void {
   showAddLeadStageForm.value = false
   newLeadStageName.value = ''
   newLeadStagePosition.value = 'last'
+  leadSettingsTab.value = 'stages'
+  showLeadAddFieldForm.value = false
+  leadFieldSearchQuery.value = ''
   showLeadStageSettings.value = true
 }
 
