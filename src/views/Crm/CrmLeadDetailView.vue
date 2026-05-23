@@ -351,15 +351,6 @@
           <!-- Hoạt động -->
           <template v-else-if="activeTab === 'activity'">
             <div class="space-y-4">
-              <ActivityItemCard
-                v-for="item in allActivities"
-                :key="item.id"
-                :item="item"
-                @update="onActivityUpdate"
-                @remove="onActivityRemove"
-                @result="onActivityResult"
-              />
-
               <!-- Add activity button -->
               <button
                 type="button"
@@ -369,6 +360,15 @@
                 <Plus class="h-4 w-4" />
                 Thêm hoạt động
               </button>
+
+              <ActivityItemCard
+                v-for="item in allActivities"
+                :key="item.id"
+                :item="item"
+                @update="onActivityUpdate"
+                @remove="onActivityRemove"
+                @result="onActivityResult"
+              />
             </div>
           </template>
 
@@ -567,6 +567,7 @@
       :contact-name="lead.title"
       :contact-phone="lead.phone"
       :contact-email="lead.email"
+      module="lead"
       @submitted="handleActivitySubmitted"
     />
 

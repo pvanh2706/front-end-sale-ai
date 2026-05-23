@@ -12,53 +12,65 @@
         <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
 
           <!-- Left: Tab + Pipeline -->
-          <div class="flex items-center gap-2">
-            <div class="flex items-center gap-1 rounded-xl bg-black/5 p-1 dark:bg-white/5">
-              <button
-                type="button"
-                class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
-                :class="activeTab === 'lead'
-                  ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
-                @click="switchTab('lead')"
-              >Lead</button>
-              <button
-                type="button"
-                class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
-                :class="activeTab === 'deal'
-                  ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
-                @click="switchTab('deal')"
-              >Deal</button>
-              <button
-                type="button"
-                class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
-                :class="activeTab === 'deployment'
-                  ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
-                @click="switchTab('deployment')"
-              >Triển khai</button>
-              <button
-                type="button"
-                class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
-                :class="activeTab === 'customer'
-                  ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
-                @click="switchTab('customer')"
-              >Khách hàng</button>
+          <div class="flex flex-col gap-1.5">
+            <!-- Tab row -->
+            <div class="flex items-center gap-2">
+              <!-- Lead / Deal / Triển khai -->
+              <div class="flex items-center gap-1 rounded-xl bg-black/5 p-1 dark:bg-white/5">
+                <button
+                  type="button"
+                  class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
+                  :class="activeTab === 'lead'
+                    ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
+                  @click="switchTab('lead')"
+                >Lead</button>
+                <button
+                  type="button"
+                  class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
+                  :class="activeTab === 'deal'
+                    ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
+                  @click="switchTab('deal')"
+                >Deal</button>
+                <button
+                  type="button"
+                  class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
+                  :class="activeTab === 'deployment'
+                    ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
+                  @click="switchTab('deployment')"
+                >Triển khai</button>
+              </div>
+              <!-- Khách hàng (ô riêng) -->
+              <div class="flex items-center gap-1 rounded-xl bg-black/5 p-1 dark:bg-white/5">
+                <button
+                  type="button"
+                  class="rounded-lg px-5 py-1.5 text-sm font-semibold transition-colors"
+                  :class="activeTab === 'customer'
+                    ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'"
+                  @click="switchTab('customer')"
+                >Khách hàng</button>
+              </div>
             </div>
 
-            <!-- Pipeline selector (Deal only) -->
+            <!-- Pipeline popup selector (Deal only) -->
             <div v-if="activeTab === 'deal'" class="relative">
               <button
                 type="button"
-                class="flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm shadow-theme-xs transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
                 @click.stop="showPipelineMenu = !showPipelineMenu"
               >
-                <span class="text-brand-500">Pipeline:</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Pipeline</span>
+                <span class="text-gray-300 dark:text-gray-600">›</span>
                 <span class="font-semibold text-gray-900 dark:text-white">{{ selectedPipelineName }}</span>
-                <ChevronDown class="h-4 w-4 text-gray-500" :class="showPipelineMenu ? 'rotate-180' : ''" />
+                <ChevronDown
+                  class="h-3.5 w-3.5 text-gray-400 transition-transform duration-150"
+                  :class="showPipelineMenu ? 'rotate-180' : ''"
+                />
               </button>
+              <!-- Popup dropdown -->
               <div
                 v-if="showPipelineMenu"
                 class="absolute left-0 top-full z-30 mt-1 min-w-[200px] overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-theme-md dark:border-gray-700 dark:bg-gray-900"
@@ -84,7 +96,7 @@
                 <button
                   type="button"
                   class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-                  @click="openPipelineSettings"
+                  @click="openPipelineSettings()"
                 >
                   <Settings class="h-4 w-4" />
                   Cài đặt pipeline
@@ -96,24 +108,40 @@
           <!-- Right actions -->
           <div class="flex items-center gap-2">
             <!-- View mode switcher (hidden on customer tab) -->
-            <div
-              v-if="activeTab !== 'customer'"
-              class="flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-800"
-            >
-              <button
-                v-for="mode in VIEW_MODES"
-                :key="mode.id"
-                type="button"
-                class="rounded p-1.5 transition-colors"
-                :class="viewMode === mode.id
-                  ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
-                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
-                :title="mode.label"
-                @click="viewMode = mode.id"
-              >
-                <component :is="mode.icon" class="h-4 w-4" />
-              </button>
-            </div>
+            <template v-if="activeTab !== 'customer'">
+              <!-- Kanban + List -->
+              <div class="flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-800">
+                <button
+                  v-for="mode in VIEW_MODES.filter(m => m.id !== 'calendar')"
+                  :key="mode.id"
+                  type="button"
+                  class="rounded p-1.5 transition-colors"
+                  :class="viewMode === mode.id
+                    ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+                  :title="mode.label"
+                  @click="viewMode = mode.id"
+                >
+                  <component :is="mode.icon" class="h-4 w-4" />
+                </button>
+              </div>
+              <!-- Calendar (ô riêng) -->
+              <div class="flex items-center rounded-lg border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-800">
+                <button
+                  v-for="mode in VIEW_MODES.filter(m => m.id === 'calendar')"
+                  :key="mode.id"
+                  type="button"
+                  class="rounded p-1.5 transition-colors"
+                  :class="viewMode === mode.id
+                    ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+                  :title="mode.label"
+                  @click="viewMode = mode.id"
+                >
+                  <component :is="mode.icon" class="h-4 w-4" />
+                </button>
+              </div>
+            </template>
 
             <!-- Card field visibility toggle -->
             <div v-if="activeTab !== 'customer' && activeTab !== 'deployment'" class="relative">
@@ -227,7 +255,7 @@
               v-if="activeTab !== 'customer'"
               class="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
               title="Cài đặt giai đoạn"
-              @click.stop="activeTab === 'deal' ? openDealStageSettings() : activeTab === 'deployment' ? undefined : leadBoardRef?.openStageSettings()"
+              @click.stop="activeTab === 'deal' ? openDealStageSettings() : activeTab === 'deployment' ? deployBoardRef?.openSettings() : leadBoardRef?.openStageSettings()"
             >
               <Settings class="h-4 w-4" />
             </button>
@@ -447,6 +475,22 @@
                       <input type="radio" :value="opt.value" v-model="dealFilterDateRange" class="h-3.5 w-3.5 border-gray-300 accent-primary-600" />
                       {{ opt.label }}
                     </label>
+                  </div>
+                  <div class="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700">
+                    <p class="mb-1.5 text-xs text-gray-400 dark:text-gray-500">Hoặc chọn khoảng ngày:</p>
+                    <div class="flex items-center gap-1.5">
+                      <input
+                        type="date"
+                        v-model="dealFilterDateFrom"
+                        class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none transition focus:border-brand-400 focus:ring-1 focus:ring-brand-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                      />
+                      <span class="shrink-0 text-xs text-gray-400">—</span>
+                      <input
+                        type="date"
+                        v-model="dealFilterDateTo"
+                        class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none transition focus:border-brand-400 focus:ring-1 focus:ring-brand-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1049,149 +1093,15 @@
     </Dialog>
 
     <!-- ─── Automation Dialog ───────────────────────────────────── -->
-    <Dialog :open="showAutomationDialog" @update:open="showAutomationDialog = $event">
-      <DialogContent class="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle class="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white">
-            <button
-              v-if="kanbanRulesView !== 'list'"
-              type="button"
-              class="rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors -ml-1"
-              @click="kanbanRulesView = kanbanRulesView === 'action' ? 'trigger' : 'list'"
-            >
-              <ArrowLeft class="h-4 w-4" />
-            </button>
-            <Zap class="h-5 w-5 text-warning-500" />
-            {{ kanbanRulesView === 'list' ? 'Automation Rules' : kanbanRulesView === 'trigger' ? 'Chọn trigger' : 'Cấu hình hành động' }}
-          </DialogTitle>
-          <DialogDescription class="text-sm text-gray-500">
-            <template v-if="kanbanRulesView === 'list'">{{ activeTab === 'deal' ? 'Tự động hóa khi deal chuyển giai đoạn' : 'Tự động hóa khi lead chuyển giai đoạn' }}</template>
-            <template v-else-if="kanbanRulesView === 'trigger'">Chọn sự kiện để bắt đầu luồng automation</template>
-            <template v-else>Đặt tên rule và chọn hành động thực hiện</template>
-          </DialogDescription>
-        </DialogHeader>
-
-        <!-- VIEW: LIST -->
-        <div v-if="kanbanRulesView === 'list'" class="space-y-2.5 py-4">
-          <div
-            v-for="rule in activeTab === 'deal' ? automationRules : leadAutomationRules"
-            :key="rule.id"
-            class="flex items-start gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50"
-          >
-            <Zap class="mt-0.5 h-4 w-4 shrink-0 text-warning-500" />
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ rule.condition }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">→ {{ rule.action }}</p>
-            </div>
-            <button
-              type="button"
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
-              :class="rule.enabled ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'"
-              @click="rule.enabled = !rule.enabled"
-            >
-              <span
-                class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform"
-                :class="rule.enabled ? 'translate-x-4' : 'translate-x-0.5'"
-              />
-            </button>
-          </div>
-          <button
-            type="button"
-            class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20"
-            @click="kanbanRulesView = 'trigger'"
-          >
-            <Plus class="h-4 w-4" />Thêm rule mới
-          </button>
-        </div>
-
-        <!-- VIEW: SELECT TRIGGER -->
-        <div v-else-if="kanbanRulesView === 'trigger'" class="py-4">
-          <div class="grid grid-cols-2 gap-3">
-            <button
-              v-for="t in KANBAN_TRIGGERS"
-              :key="t.id"
-              type="button"
-              class="text-left rounded-xl border-2 p-4 transition-all"
-              :class="kanbanSelectedTrigger === t.id
-                ? 'border-brand-400 bg-brand-50 dark:border-brand-500 dark:bg-brand-500/10'
-                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-brand-200 hover:bg-white dark:hover:border-brand-500/30'"
-              @click="kanbanSelectedTrigger = t.id"
-            >
-              <div
-                class="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
-                :class="kanbanSelectedTrigger === t.id ? 'bg-brand-100 dark:bg-brand-500/20' : 'bg-white dark:bg-gray-700'"
-              >
-                <component :is="t.icon" class="h-5 w-5" :class="kanbanSelectedTrigger === t.id ? 'text-brand-500' : 'text-gray-400'" />
-              </div>
-              <p class="text-sm font-semibold text-gray-900 dark:text-white leading-snug mb-1">{{ t.label }}</p>
-              <p class="text-xs text-gray-400 leading-snug">{{ t.desc }}</p>
-            </button>
-          </div>
-        </div>
-
-        <!-- VIEW: SELECT ACTIONS -->
-        <div v-else-if="kanbanRulesView === 'action'" class="py-4 space-y-4">
-          <div>
-            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1.5">Tên rule</label>
-            <input
-              v-model="kanbanNewRuleName"
-              type="text"
-              class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-500/20 transition"
-              placeholder="Đặt tên cho automation rule này"
-            />
-          </div>
-          <div>
-            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">Hành động (chọn nhiều)</label>
-            <div class="grid grid-cols-2 gap-2">
-              <button
-                v-for="a in KANBAN_ACTIONS"
-                :key="a.id"
-                type="button"
-                class="flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-all"
-                :class="kanbanSelectedActions.includes(a.id)
-                  ? 'border-brand-400 bg-brand-50 dark:border-brand-500 dark:bg-brand-500/10'
-                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'"
-                @click="toggleKanbanAction(a.id)"
-              >
-                <div
-                  class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  :class="kanbanSelectedActions.includes(a.id) ? 'bg-brand-100 dark:bg-brand-500/20' : 'bg-white dark:bg-gray-700'"
-                >
-                  <component :is="a.icon" class="h-3.5 w-3.5" :class="kanbanSelectedActions.includes(a.id) ? 'text-brand-500' : 'text-gray-400'" />
-                </div>
-                <span class="text-xs font-medium" :class="kanbanSelectedActions.includes(a.id) ? 'text-brand-700 dark:text-brand-300' : 'text-gray-600 dark:text-gray-400'">{{ a.label }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <template v-if="kanbanRulesView === 'list'">
-            <Button variant="outline" @click="showAutomationDialog = false">Đóng</Button>
-            <Button class="bg-brand-500 text-white hover:bg-brand-600" @click="showAutomationDialog = false">Lưu</Button>
-          </template>
-          <template v-else-if="kanbanRulesView === 'trigger'">
-            <Button variant="outline" @click="kanbanRulesView = 'list'">Quay lại</Button>
-            <Button
-              :disabled="!kanbanSelectedTrigger"
-              class="bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed"
-              @click="kanbanRulesView = 'action'"
-            >Tiếp theo →</Button>
-          </template>
-          <template v-else>
-            <Button variant="outline" @click="kanbanRulesView = 'trigger'">Quay lại</Button>
-            <Button
-              :disabled="kanbanSelectedActions.length === 0 || !kanbanNewRuleName.trim()"
-              class="bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed"
-              @click="saveKanbanRule"
-            >Lưu rule</Button>
-          </template>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <AutomationRulesDialog
+      :open="showAutomationDialog"
+      :entity-type="activeTab === 'deployment' ? 'deployment' : activeTab === 'lead' ? 'lead' : 'deal'"
+      :entity-name="activeTab === 'deployment' ? 'Triển khai' : activeTab === 'lead' ? 'Leads' : 'Deals'"
+      @update:open="showAutomationDialog = $event"
+    />
 
     <!-- ─── Deal Stage Settings Dialog ──────────────────────────── -->
-    <Dialog :open="showDealStageSettings" @update:open="val => { showDealStageSettings = val; dealColorPickerIdx = null; showAddDealStageForm = false; showAddFieldForm = false }">
+    <Dialog :open="showDealStageSettings" @update:open="val => { showDealStageSettings = val; dealColorPickerIdx = null; showAddDealStageForm = false; showAddFieldForm = false; if (!val) dealSettingsTab = 'stages' }">
       <DialogContent class="sm:max-w-lg max-h-[85vh] overflow-y-auto" @click="dealColorPickerIdx = null">
         <DialogHeader>
           <DialogTitle class="text-base font-semibold text-gray-900 dark:text-white">Cài đặt Deal</DialogTitle>
@@ -1216,6 +1126,14 @@
               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
             @click="dealSettingsTab = 'fields'"
           >Trường thông tin</button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="dealSettingsTab === 'actions'
+              ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            @click="dealSettingsTab = 'actions'"
+          >Hành động</button>
         </div>
 
         <div v-show="dealSettingsTab === 'stages'">
@@ -1680,6 +1598,14 @@
             <Button variant="outline" @click="showDealStageSettings = false">Đóng</Button>
           </DialogFooter>
         </div>
+
+        <!-- ─── Tab: Hành động ────────────────────────────────── -->
+        <div v-show="dealSettingsTab === 'actions'">
+          <ActionSettingsPanel module="deal" />
+          <DialogFooter class="mt-4">
+            <Button variant="outline" @click="showDealStageSettings = false">Đóng</Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
 
@@ -2053,10 +1979,12 @@ import LeadKanbanBoard from '@/components/crm/LeadKanbanBoard.vue'
 import { useDealFieldConfigStore } from '@/stores/useDealFieldConfigStore'
 import { useDealCustomFieldStore } from '@/stores/useDealCustomFieldStore'
 import type { CustomFieldType } from '@/stores/useDealCustomFieldStore'
+import ActionSettingsPanel from '@/components/crm/ActionSettingsPanel.vue'
 import { useLeadFieldConfigStore, LEAD_SECTIONS, LEAD_FIELDS } from '@/stores/useLeadFieldConfigStore'
 import { DEAL_SECTIONS, DEAL_FIELDS } from '@/types/dealFields'
 import CrmCustomerBoard from '@/components/crm/CrmCustomerBoard.vue'
 import CrmDeploymentBoard from '@/components/crm/CrmDeploymentBoard.vue'
+import AutomationRulesDialog from '@/components/crm/AutomationRulesDialog.vue'
 import { getSocket, disconnectSocket } from '@/lib/socket'
 import { createDeal, deleteDeal, listDealsKanban, updateDeal, updateDealStage } from '@/services/deals'
 import type { DealCard, DealStage, DealsKanbanPayload, KanbanColumn, KanbanKpi } from '@/types/deals'
@@ -2123,7 +2051,7 @@ interface DealForm {
   teamLeadName: string
 }
 
-interface AutomationRule {
+interface KanbanAutomationRule {
   id: string
   condition: string
   action: string
@@ -2411,6 +2339,8 @@ const dealFilterText = ref('')
 const dealFilterSources = ref<string[]>([])
 const dealFilterStages = ref<DealStage[]>([])
 const dealFilterDateRange = ref('any')
+const dealFilterDateFrom = ref('')
+const dealFilterDateTo = ref('')
 const dealFilterAssignee = ref('')
 const dealFilterPhone = ref('')
 const dealFilterEmail = ref('')
@@ -2424,6 +2354,8 @@ const hasDealFilters = computed(() =>
   dealFilterSources.value.length > 0 ||
   dealFilterStages.value.length > 0 ||
   dealFilterDateRange.value !== 'any' ||
+  dealFilterDateFrom.value.trim() !== '' ||
+  dealFilterDateTo.value.trim() !== '' ||
   dealFilterAssignee.value.trim() !== '' ||
   dealFilterPhone.value.trim() !== '' ||
   dealFilterEmail.value.trim() !== '' ||
@@ -2438,6 +2370,7 @@ const totalDealFilterCount = computed(() => {
   if (dealFilterSources.value.length) n++
   if (dealFilterStages.value.length) n++
   if (dealFilterDateRange.value !== 'any') n++
+  if (dealFilterDateFrom.value.trim() || dealFilterDateTo.value.trim()) n++
   if (dealFilterAssignee.value.trim()) n++
   if (dealFilterPhone.value.trim()) n++
   if (dealFilterEmail.value.trim()) n++
@@ -2455,6 +2388,8 @@ const activeDealFilterChips = computed(() => {
     chips.push({ key: 'stages', label: `Giai đoạn (${dealFilterStages.value.length})` })
   if (dealFilterDateRange.value !== 'any')
     chips.push({ key: 'dateRange', label: DEAL_DATE_RANGE_OPTIONS.find((o) => o.value === dealFilterDateRange.value)?.label ?? dealFilterDateRange.value })
+  if (dealFilterDateFrom.value || dealFilterDateTo.value)
+    chips.push({ key: 'dateCustom', label: `${dealFilterDateFrom.value || '...'} → ${dealFilterDateTo.value || '...'}` })
   if (dealFilterName.value.trim())
     chips.push({ key: 'name', label: `Tên: ${dealFilterName.value.trim()}` })
   if (dealFilterId.value.trim())
@@ -2469,6 +2404,22 @@ const activeDealFilterChips = computed(() => {
     chips.push({ key: 'overdue', label: 'Quá hạn' })
   return chips
 })
+
+function matchesDealCustomDateRange(dateStr: string | undefined, from: string, to: string): boolean {
+  if (!dateStr) return true
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return true
+  if (from) {
+    const fromDate = new Date(from)
+    if (!isNaN(fromDate.getTime()) && d < fromDate) return false
+  }
+  if (to) {
+    const toDate = new Date(to)
+    toDate.setHours(23, 59, 59, 999)
+    if (!isNaN(toDate.getTime()) && d > toDate) return false
+  }
+  return true
+}
 
 function matchesDealDateRange(dateStr: string | undefined, range: string): boolean {
   if (!dateStr) return range === 'any'
@@ -2547,6 +2498,7 @@ const dealFilteredColumns = computed(() => {
       if (dealFilterSources.value.length && !dealFilterSources.value.includes(card.source ?? '')) return false
       if (dealFilterAssignee.value.trim() && !(card.assigneeName?.toLowerCase().includes(dealFilterAssignee.value.trim().toLowerCase()) ?? false)) return false
       if (dealFilterDateRange.value !== 'any' && !matchesDealDateRange(card.lastActivityAt, dealFilterDateRange.value)) return false
+      if ((dealFilterDateFrom.value || dealFilterDateTo.value) && !matchesDealCustomDateRange(card.closeDate, dealFilterDateFrom.value, dealFilterDateTo.value)) return false
       if (dealFilterOverdue.value && !card.isOverdue) return false
       return true
     }),
@@ -2557,6 +2509,7 @@ function removeDealFilter(key: string): void {
   if (key === 'sources') dealFilterSources.value = []
   if (key === 'stages') dealFilterStages.value = []
   if (key === 'dateRange') dealFilterDateRange.value = 'any'
+  if (key === 'dateCustom') { dealFilterDateFrom.value = ''; dealFilterDateTo.value = '' }
   if (key === 'assignee') dealFilterAssignee.value = ''
   if (key === 'phone') dealFilterPhone.value = ''
   if (key === 'email') dealFilterEmail.value = ''
@@ -2571,6 +2524,8 @@ function clearDealFilters(): void {
   dealFilterSources.value = []
   dealFilterStages.value = []
   dealFilterDateRange.value = 'any'
+  dealFilterDateFrom.value = ''
+  dealFilterDateTo.value = ''
   dealFilterAssignee.value = ''
   dealFilterPhone.value = ''
   dealFilterEmail.value = ''
@@ -2679,80 +2634,11 @@ function submitActivity(): void {
 // ─── Automation state ─────────────────────────────────────────
 
 const showAutomationDialog = ref(false)
-const automationRules = ref<AutomationRule[]>([
-  { id: '1', condition: 'Khi deal → Báo giá', action: 'Gửi email nhắc nhở khách hàng', enabled: true },
-  { id: '2', condition: 'Khi deal → Thắng', action: 'Tạo task onboarding cho team', enabled: true },
-  { id: '3', condition: 'Khi deal quá hạn 7 ngày', action: 'Thông báo cho manager', enabled: false },
-  { id: '4', condition: 'Khi deal → Thua', action: 'Tạo lead chăm sóc lại sau 30 ngày', enabled: false },
-])
-
-const leadAutomationRules = ref<AutomationRule[]>([
-  { id: 'l1', condition: 'Khi lead → MQL', action: 'Gửi email chào mừng tự động', enabled: true },
-  { id: 'l2', condition: 'Khi lead → SQL', action: 'Tạo task gọi điện tư vấn', enabled: true },
-  { id: 'l3', condition: 'Khi lead → Customer', action: 'Tạo deal mới trong pipeline', enabled: true },
-  { id: 'l4', condition: 'Khi lead không hoạt động 7 ngày', action: 'Thông báo cho người phụ trách', enabled: false },
-])
-
-type KanbanTriggerType = 'stage_change' | 'field_update' | 'no_activity' | 'activity_added'
-type KanbanActionType = 'send_notification' | 'create_task' | 'send_email' | 'change_assignee' | 'change_stage' | 'add_tag'
-
-const KANBAN_TRIGGERS = [
-  { id: 'stage_change' as KanbanTriggerType, label: 'Khi giai đoạn thay đổi', desc: 'Kích hoạt mỗi khi deal/lead chuyển giai đoạn mới', icon: GitBranch },
-  { id: 'field_update' as KanbanTriggerType, label: 'Khi trường được cập nhật', desc: 'Kích hoạt khi bất kỳ trường dữ liệu nào bị thay đổi', icon: RefreshCw },
-  { id: 'no_activity' as KanbanTriggerType, label: 'Không có hoạt động', desc: 'Kích hoạt khi không có hoạt động trong một khoảng thời gian', icon: Bell },
-  { id: 'activity_added' as KanbanTriggerType, label: 'Khi thêm hoạt động', desc: 'Kích hoạt mỗi khi ghi nhận cuộc gọi, email, hay ghi chú mới', icon: SquareCheckBig },
-]
-
-const KANBAN_ACTIONS = [
-  { id: 'send_notification' as KanbanActionType, label: 'Gửi thông báo', icon: Bell },
-  { id: 'create_task' as KanbanActionType, label: 'Tạo tác vụ', icon: SquareCheckBig },
-  { id: 'send_email' as KanbanActionType, label: 'Gửi email', icon: Mail },
-  { id: 'change_assignee' as KanbanActionType, label: 'Đổi phụ trách', icon: User },
-  { id: 'change_stage' as KanbanActionType, label: 'Chuyển giai đoạn', icon: GitBranch },
-  { id: 'add_tag' as KanbanActionType, label: 'Thêm nhãn', icon: Zap },
-]
-
-const kanbanRulesView = ref<'list' | 'trigger' | 'action'>('list')
-const kanbanSelectedTrigger = ref<KanbanTriggerType | null>(null)
-const kanbanSelectedActions = ref<KanbanActionType[]>([])
-const kanbanNewRuleName = ref('')
-
-function toggleKanbanAction(id: KanbanActionType) {
-  const idx = kanbanSelectedActions.value.indexOf(id)
-  if (idx === -1) kanbanSelectedActions.value.push(id)
-  else kanbanSelectedActions.value.splice(idx, 1)
-}
-
-function saveKanbanRule() {
-  if (!kanbanSelectedTrigger.value || kanbanSelectedActions.value.length === 0 || !kanbanNewRuleName.value.trim()) return
-  const trigger = KANBAN_TRIGGERS.find((t) => t.id === kanbanSelectedTrigger.value)!
-  const targetRules = activeTab.value === 'deal' ? automationRules : leadAutomationRules
-  targetRules.value.unshift({
-    id: Date.now().toString(),
-    condition: kanbanNewRuleName.value.trim(),
-    action: trigger.label,
-    enabled: true,
-  })
-  toast.success('Đã tạo automation rule')
-  kanbanRulesView.value = 'list'
-  kanbanSelectedTrigger.value = null
-  kanbanSelectedActions.value = []
-  kanbanNewRuleName.value = ''
-}
-
-watch(showAutomationDialog, (val) => {
-  if (!val) {
-    kanbanRulesView.value = 'list'
-    kanbanSelectedTrigger.value = null
-    kanbanSelectedActions.value = []
-    kanbanNewRuleName.value = ''
-  }
-})
 
 // ─── Deal Stage Settings ──────────────────────────────────────
 
 const showDealStageSettings = ref(false)
-const dealSettingsTab = ref<'stages' | 'fields'>('stages')
+const dealSettingsTab = ref<'stages' | 'fields' | 'actions'>('stages')
 const fieldSearchQuery = ref('')
 const FIELD_TYPE_HINTS: Record<CustomFieldType, { icon: unknown; label: string; desc: string; examples: string[] }> = {
   string: {

@@ -192,6 +192,22 @@
                   {{ opt.label }}
                 </label>
               </div>
+              <div class="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700">
+                <p class="mb-1.5 text-xs text-gray-400 dark:text-gray-500">Hoặc chọn khoảng ngày:</p>
+                <div class="flex items-center gap-1.5">
+                  <input
+                    type="date"
+                    v-model="leadFilterDateFrom"
+                    class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none transition focus:border-brand-400 focus:ring-1 focus:ring-brand-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  />
+                  <span class="shrink-0 text-xs text-gray-400">—</span>
+                  <input
+                    type="date"
+                    v-model="leadFilterDateTo"
+                    class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none transition focus:border-brand-400 focus:ring-1 focus:ring-brand-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  />
+                </div>
+              </div>
             </div>
 
             <!-- Tên lead -->
@@ -703,7 +719,7 @@
     </div>
 
     <!-- ─── Lead Stage Settings Dialog ─────────────────────────── -->
-    <Dialog :open="showLeadStageSettings" @update:open="val => { showLeadStageSettings = val; leadColorPickerIdx = null; showAddLeadStageForm = false; showLeadAddFieldForm = false }">
+    <Dialog :open="showLeadStageSettings" @update:open="val => { showLeadStageSettings = val; leadColorPickerIdx = null; showAddLeadStageForm = false; showLeadAddFieldForm = false; if (!val) leadSettingsTab = 'stages' }">
       <DialogContent class="sm:max-w-lg max-h-[85vh] overflow-y-auto" @click="leadColorPickerIdx = null">
         <DialogHeader>
           <DialogTitle class="text-base font-semibold text-gray-900 dark:text-white">Cài đặt Lead</DialogTitle>
@@ -728,6 +744,14 @@
               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
             @click="leadSettingsTab = 'fields'"
           >Trường thông tin</button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="leadSettingsTab === 'actions'
+              ? 'bg-white text-gray-900 shadow-theme-xs dark:bg-gray-700 dark:text-white'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            @click="leadSettingsTab = 'actions'"
+          >Hành động</button>
         </div>
 
         <!-- ─── Tab: Giai đoạn ─────────────────────────────────── -->
@@ -1184,6 +1208,14 @@
             <Button variant="outline" @click="showLeadStageSettings = false">Đóng</Button>
           </DialogFooter>
         </div>
+
+        <!-- ─── Tab: Hành động ────────────────────────────────── -->
+        <div v-show="leadSettingsTab === 'actions'">
+          <ActionSettingsPanel module="lead" />
+          <DialogFooter class="mt-4">
+            <Button variant="outline" @click="showLeadStageSettings = false">Đóng</Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
 
@@ -1416,6 +1448,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useLeadCustomFieldStore, type CustomFieldType } from '@/stores/useLeadCustomFieldStore'
 import { LEAD_SECTIONS, LEAD_FIELDS } from '@/types/leadFields'
+import ActionSettingsPanel from '@/components/crm/ActionSettingsPanel.vue'
 
 const props = withDefaults(defineProps<{
   viewMode?: 'kanban' | 'list' | 'calendar'
@@ -1862,6 +1895,8 @@ const leadFilterText = ref('')
 const leadFilterSources = ref<string[]>([])
 const leadFilterStages = ref<LeadStage[]>([])
 const leadFilterDateRange = ref('any')
+const leadFilterDateFrom = ref('')
+const leadFilterDateTo = ref('')
 const leadFilterAssignee = ref('')
 const leadFilterCompany = ref('')
 const leadFilterPhone = ref('')
@@ -1878,6 +1913,8 @@ const hasLeadFilters = computed(() =>
   leadFilterSources.value.length > 0 ||
   leadFilterStages.value.length > 0 ||
   leadFilterDateRange.value !== 'any' ||
+  leadFilterDateFrom.value.trim() !== '' ||
+  leadFilterDateTo.value.trim() !== '' ||
   leadFilterAssignee.value.trim() !== '' ||
   leadFilterCompany.value.trim() !== '' ||
   leadFilterPhone.value.trim() !== '' ||
@@ -1895,6 +1932,7 @@ const totalLeadFilterCount = computed(() => {
   if (leadFilterSources.value.length) n++
   if (leadFilterStages.value.length) n++
   if (leadFilterDateRange.value !== 'any') n++
+  if (leadFilterDateFrom.value.trim() || leadFilterDateTo.value.trim()) n++
   if (leadFilterAssignee.value.trim()) n++
   if (leadFilterCompany.value.trim()) n++
   if (leadFilterPhone.value.trim()) n++
@@ -1915,6 +1953,8 @@ const activeLeadFilterChips = computed(() => {
     chips.push({ key: 'stages', label: `Giai đoạn (${leadFilterStages.value.length})` })
   if (leadFilterDateRange.value !== 'any')
     chips.push({ key: 'dateRange', label: DATE_RANGE_OPTIONS.find((o) => o.value === leadFilterDateRange.value)?.label ?? leadFilterDateRange.value })
+  if (leadFilterDateFrom.value || leadFilterDateTo.value)
+    chips.push({ key: 'dateCustom', label: `${leadFilterDateFrom.value || '...'} → ${leadFilterDateTo.value || '...'}` })
   if (leadFilterName.value.trim())
     chips.push({ key: 'name', label: `Tên: ${leadFilterName.value.trim()}` })
   if (leadFilterId.value.trim())
@@ -1932,6 +1972,45 @@ const activeLeadFilterChips = computed(() => {
   if (leadFilterRepeat.value) chips.push({ key: 'repeat', label: 'Repeat' })
   return chips
 })
+
+function parseLeadDate(dateStr: string): Date | null {
+  if (!dateStr) return null
+  // Today patterns
+  if (/phút|giờ|hôm nay/i.test(dateStr)) return new Date()
+  // "DD MMM" like "13 May", "6 Apr", "23 March", "12 May"
+  const enMatch = dateStr.trim().match(/^(\d{1,2})\s+([A-Za-z]+)$/)
+  if (enMatch) {
+    const year = new Date().getFullYear()
+    const parsed = new Date(`${enMatch[2]} ${enMatch[1]}, ${year}`)
+    if (!isNaN(parsed.getTime())) return parsed
+  }
+  // "15 Tháng 4" → April 15
+  const vnMatch = dateStr.trim().match(/^(\d{1,2})\s+Tháng\s+(\d{1,2})$/i)
+  if (vnMatch) {
+    const day = parseInt(vnMatch[1])
+    const month = parseInt(vnMatch[2]) - 1
+    const year = new Date().getFullYear()
+    return new Date(year, month, day)
+  }
+  // Try direct parse (ISO etc.)
+  const d = new Date(dateStr)
+  return isNaN(d.getTime()) ? null : d
+}
+
+function matchesLeadCustomDateRange(dateStr: string, from: string, to: string): boolean {
+  const d = parseLeadDate(dateStr)
+  if (!d) return true
+  if (from) {
+    const fromDate = new Date(from)
+    if (!isNaN(fromDate.getTime()) && d < fromDate) return false
+  }
+  if (to) {
+    const toDate = new Date(to)
+    toDate.setHours(23, 59, 59, 999)
+    if (!isNaN(toDate.getTime()) && d > toDate) return false
+  }
+  return true
+}
 
 function matchesLeadDateRange(dateStr: string, range: string): boolean {
   const d = dateStr.toLowerCase()
@@ -1991,6 +2070,7 @@ const filteredColumns = computed(() => {
       if (leadFilterAssignee.value.trim() && !(card.assigneeName?.toLowerCase().includes(leadFilterAssignee.value.trim().toLowerCase()) ?? false)) return false
       if (leadFilterCompany.value.trim() && !(card.companyName?.toLowerCase().includes(leadFilterCompany.value.trim().toLowerCase()) ?? false)) return false
       if (leadFilterDateRange.value !== 'any' && !matchesLeadDateRange(card.date, leadFilterDateRange.value)) return false
+      if ((leadFilterDateFrom.value || leadFilterDateTo.value) && !matchesLeadCustomDateRange(card.date, leadFilterDateFrom.value, leadFilterDateTo.value)) return false
       if (leadFilterViewed.value && !card.isViewed) return false
       if (leadFilterHasTask.value && !card.hasTask) return false
       if (leadFilterRepeat.value && !card.isRepeat) return false
@@ -2014,6 +2094,7 @@ function removeLeadFilter(key: string): void {
   if (key === 'sources') leadFilterSources.value = []
   if (key === 'stages') leadFilterStages.value = []
   if (key === 'dateRange') leadFilterDateRange.value = 'any'
+  if (key === 'dateCustom') { leadFilterDateFrom.value = ''; leadFilterDateTo.value = '' }
   if (key === 'assignee') leadFilterAssignee.value = ''
   if (key === 'company') leadFilterCompany.value = ''
   if (key === 'phone') leadFilterPhone.value = ''
@@ -2031,6 +2112,8 @@ function clearLeadFilters(): void {
   leadFilterSources.value = []
   leadFilterStages.value = []
   leadFilterDateRange.value = 'any'
+  leadFilterDateFrom.value = ''
+  leadFilterDateTo.value = ''
   leadFilterAssignee.value = ''
   leadFilterCompany.value = ''
   leadFilterPhone.value = ''
@@ -2261,7 +2344,7 @@ function addLeadCustomField(): void {
 // ─── Lead Stage Settings ──────────────────────────────────────
 
 const showLeadStageSettings = ref(false)
-const leadSettingsTab = ref<'stages' | 'fields'>('stages')
+const leadSettingsTab = ref<'stages' | 'fields' | 'actions'>('stages')
 const leadStageDraft = ref<StageDraft[]>([])
 const leadColorPickerIdx = ref<number | null>(null)
 const leadStageOrigNames = ref<Record<string, string>>({})

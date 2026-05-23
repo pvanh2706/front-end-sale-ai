@@ -7,6 +7,7 @@ export type PhaseStatus = 'done' | 'active' | 'trial-active' | 'waiting'
 export type DeployType = 'trial' | 'direct'
 export type TrialStatus = 'in_trial' | 'converted' | 'not_converted'
 export type SubTaskStatus = 'todo' | 'in_progress' | 'done'
+export type SubTaskPriority = 'block' | 'high' | 'medium' | 'low'
 
 export interface DeployPhase { label: string; status: PhaseStatus }
 export interface ProductTrack { product: string; phases: DeployPhase[] }
@@ -25,6 +26,8 @@ export interface SubTask {
   title: string
   product: string
   status: SubTaskStatus
+  priority: SubTaskPriority
+  estimatedHours: number
   dueDate: string
   assignee: string
   checklist: ChecklistItem[]
@@ -70,6 +73,9 @@ export interface DeployCard {
   notes?: string
   activities?: DeployActivity[]
   createdAt?: string
+  // Contact info
+  email?: string
+  phone?: string
   // Personnel & deadline
   salesPerson?: string
   salesLead?: string
@@ -110,6 +116,7 @@ const MOCK_CARDS: DeployCard[] = [
   {
     id: 'dp-1', columnId: 'new', createdAt: '2026-05-10',
     customerName: 'LALISA HOTEL', contactName: 'Nguyễn T.Thu Hương',
+    email: 'contact@lalisahotel.com', phone: '024.3825.6789',
     type: 'trial', progress: 0,
     trialStatus: 'in_trial', trialStartDate: '', trialEndDate: '',
     salesPerson: 'Nguyễn T.Thu Hương', salesLead: 'Trần Minh Khoa',
@@ -159,7 +166,42 @@ const MOCK_CARDS: DeployCard[] = [
       system_contact: 'Nguyễn T.Thu Hương',
       system_company: 'LALISA HOTEL',
     },
-    subTasks: [],
+    subTasks: [
+      {
+        id: 'st-1-1', title: 'Cài đặt môi trường dùng thử ezBe',
+        product: 'ezBe', status: 'todo', priority: 'block', estimatedHours: 32,
+        dueDate: '2026-06-05', assignee: 'Nguyễn T.Thu Hương', note: 'Cần setup server staging riêng cho khách hàng.',
+        checklist: [
+          { id: 'ci-1-1', label: 'Khởi tạo server staging', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-05-28' },
+          { id: 'ci-1-2', label: 'Cài đặt ezBe trên staging', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-06-01' },
+          { id: 'ci-1-3', label: 'Cấu hình kết nối OTA test', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-06-03' },
+          { id: 'ci-1-4', label: 'Kiểm tra end-to-end môi trường', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-06-05' },
+        ],
+      },
+      {
+        id: 'st-1-2', title: 'Kiểm tra kết nối kênh Booking.com & Agoda',
+        product: 'ezBe', status: 'todo', priority: 'high', estimatedHours: 10,
+        dueDate: '2026-06-10', assignee: 'Nguyễn T.Thu Hương', note: '',
+        checklist: [
+          { id: 'ci-1-5', label: 'Tạo tài khoản test OTA', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-06-07' },
+          { id: 'ci-1-6', label: 'Kiểm tra đồng bộ phòng & giá', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-06-10' },
+        ],
+      },
+      {
+        id: 'st-1-3', title: 'Chuẩn bị tài liệu hướng dẫn dùng thử',
+        product: 'ezBe', status: 'todo', priority: 'medium', estimatedHours: 4,
+        dueDate: '2026-06-02', assignee: 'Nguyễn T.Thu Hương', note: '',
+        checklist: [
+          { id: 'ci-1-7', label: 'Soạn slide giới thiệu tính năng', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-06-02' },
+        ],
+      },
+      {
+        id: 'st-1-4', title: 'Gửi email kick-off dùng thử cho khách hàng',
+        product: 'ezBe', status: 'todo', priority: 'low', estimatedHours: 1,
+        dueDate: '2026-05-27', assignee: 'Nguyễn T.Thu Hương', note: '',
+        checklist: [],
+      },
+    ],
     activities: [
       { id: 'a1', type: 'system', content: 'Dự án được tạo', author: 'Thu Hương', authorInitials: 'TH', authorColor: '#3450cc', createdAt: '2026-05-10 09:00' },
     ],
@@ -167,6 +209,7 @@ const MOCK_CARDS: DeployCard[] = [
   {
     id: 'dp-2', columnId: 'new', createdAt: '2026-05-12',
     customerName: 'Solla Hotel', contactName: 'Nguyễn T.H.Ngọc',
+    email: 'info@sollahotel.vn', phone: '028.3925.4456',
     type: 'direct', progress: 0,
     salesPerson: 'Nguyễn T.H.Ngọc', salesLead: 'Trần Minh Khoa',
     deployPerson: '', deployLead: '', deployDeadline: '2026-07-30',
@@ -220,7 +263,43 @@ const MOCK_CARDS: DeployCard[] = [
       system_contact: 'Nguyễn T.H.Ngọc',
       system_company: 'Solla Hotel',
     },
-    subTasks: [],
+    subTasks: [
+      {
+        id: 'st-2-1', title: 'Cài đặt ezCloud server production',
+        product: 'ezCloud', status: 'todo', priority: 'block', estimatedHours: 40,
+        dueDate: '2026-06-15', assignee: 'Nguyễn T.H.Ngọc', note: 'Cần migration data từ VNS sang ezCloud.',
+        checklist: [
+          { id: 'ci-2-1', label: 'Khởi tạo và cấu hình server production', done: false, assignee: 'Nguyễn T.H.Ngọc', deadline: '2026-06-05' },
+          { id: 'ci-2-2', label: 'Migration data phòng, giá từ VNS', done: false, assignee: 'Nguyễn T.H.Ngọc', deadline: '2026-06-10' },
+          { id: 'ci-2-3', label: 'Cấu hình module Front Office', done: false, assignee: 'Nguyễn T.H.Ngọc', deadline: '2026-06-12' },
+          { id: 'ci-2-4', label: 'Kiểm tra toàn bộ luồng check-in/out', done: false, assignee: 'Nguyễn T.H.Ngọc', deadline: '2026-06-15' },
+        ],
+      },
+      {
+        id: 'st-2-2', title: 'Cài đặt & cấu hình ezCms website',
+        product: 'ezCms', status: 'todo', priority: 'high', estimatedHours: 16,
+        dueDate: '2026-06-20', assignee: 'Nguyễn T.H.Ngọc', note: '',
+        checklist: [
+          { id: 'ci-2-5', label: 'Cài đặt ezCms trên domain của khách hàng', done: false, assignee: 'Nguyễn T.H.Ngọc', deadline: '2026-06-16' },
+          { id: 'ci-2-6', label: 'Kết nối ezCms với ezCloud PMS', done: false, assignee: 'Nguyễn T.H.Ngọc', deadline: '2026-06-18' },
+          { id: 'ci-2-7', label: 'Nhập nội dung và hình ảnh khách sạn', done: false, assignee: 'Nguyễn T.H.Ngọc', deadline: '2026-06-20' },
+        ],
+      },
+      {
+        id: 'st-2-3', title: 'Lên kế hoạch kick-off meeting',
+        product: 'ezCloud', status: 'todo', priority: 'medium', estimatedHours: 3,
+        dueDate: '2026-05-26', assignee: 'Nguyễn T.H.Ngọc', note: '',
+        checklist: [
+          { id: 'ci-2-8', label: 'Gửi agenda kick-off cho Solla Hotel', done: false, assignee: 'Nguyễn T.H.Ngọc', deadline: '2026-05-26' },
+        ],
+      },
+      {
+        id: 'st-2-4', title: 'Gửi email xác nhận timeline triển khai',
+        product: 'ezCloud', status: 'todo', priority: 'low', estimatedHours: 1,
+        dueDate: '2026-05-23', assignee: 'Nguyễn T.H.Ngọc', note: '',
+        checklist: [],
+      },
+    ],
     activities: [
       { id: 'a1', type: 'system', content: 'Dự án được tạo', author: 'Hải Ngọc', authorInitials: 'HN', authorColor: '#e03131', createdAt: '2026-05-12 10:30' },
     ],
@@ -228,6 +307,7 @@ const MOCK_CARDS: DeployCard[] = [
   {
     id: 'dp-3', columnId: 'in_trial', createdAt: '2026-04-20',
     customerName: 'LALU HOTEL', contactName: 'Trần Thanh Huy',
+    email: 'booking@laluhotel.com', phone: '0234.381.2345',
     type: 'trial', progress: 20, trialDaysLeft: 12,
     trialStatus: 'in_trial', trialStartDate: '2026-05-04', trialEndDate: '2026-06-03',
     salesPerson: 'Trần Thanh Huy', salesLead: 'Lê Văn Hùng',
@@ -277,7 +357,43 @@ const MOCK_CARDS: DeployCard[] = [
       system_contact: 'Trần Thanh Huy',
       system_company: 'LALU HOTEL',
     },
-    subTasks: [],
+    subTasks: [
+      {
+        id: 'st-3-1', title: 'Xử lý lỗi báo cáo cuối ngày ezCloud',
+        product: 'ezCloud', status: 'todo', priority: 'block', estimatedHours: 24,
+        dueDate: '2026-05-25', assignee: 'Trần Thanh Huy', note: 'Khách hàng phản ánh báo cáo Revenue không khớp. Cần kiểm tra cấu hình tax và discount.',
+        checklist: [
+          { id: 'ci-3-1', label: 'Reproduce lỗi báo cáo trên môi trường staging', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-05-22' },
+          { id: 'ci-3-2', label: 'Kiểm tra cấu hình tax/discount', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-05-23' },
+          { id: 'ci-3-3', label: 'Fix và deploy hotfix', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-05-25' },
+        ],
+      },
+      {
+        id: 'st-3-2', title: 'Follow-up khách hàng về trải nghiệm dùng thử',
+        product: 'ezCloud', status: 'in_progress', priority: 'high', estimatedHours: 8,
+        dueDate: '2026-05-27', assignee: 'Trần Thanh Huy', note: 'Lên lịch gặp mặt trước khi hết hạn dùng thử.',
+        checklist: [
+          { id: 'ci-3-4', label: 'Gọi điện hỏi thăm trải nghiệm tuần 1', done: true, assignee: 'Trần Thanh Huy', deadline: '2026-05-10' },
+          { id: 'ci-3-5', label: 'Gửi survey phản hồi', done: true, assignee: 'Trần Thanh Huy', deadline: '2026-05-15' },
+          { id: 'ci-3-6', label: 'Gặp mặt review trước hết hạn', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-05-27' },
+        ],
+      },
+      {
+        id: 'st-3-3', title: 'Đào tạo thêm module Housekeeping',
+        product: 'ezCloud', status: 'todo', priority: 'medium', estimatedHours: 5,
+        dueDate: '2026-05-30', assignee: 'Trần Thanh Huy', note: '',
+        checklist: [
+          { id: 'ci-3-7', label: 'Soạn tài liệu đào tạo Housekeeping', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-05-28' },
+          { id: 'ci-3-8', label: 'Đào tạo trực tiếp tại khách sạn', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-05-30' },
+        ],
+      },
+      {
+        id: 'st-3-4', title: 'Ghi nhận feedback dùng thử vào hệ thống',
+        product: 'ezCloud', status: 'todo', priority: 'low', estimatedHours: 2,
+        dueDate: '2026-06-01', assignee: 'Trần Thanh Huy', note: '',
+        checklist: [],
+      },
+    ],
     activities: [
       { id: 'a1', type: 'system', content: 'Dự án được tạo', author: 'Thanh Huy', authorInitials: 'HY', authorColor: '#f79009', createdAt: '2026-04-20 08:00' },
       { id: 'a2', type: 'system', content: 'Chuyển giai đoạn: Mới → Đang dùng thử', author: 'Thanh Huy', authorInitials: 'HY', authorColor: '#f79009', createdAt: '2026-05-04 09:00' },
@@ -287,6 +403,7 @@ const MOCK_CARDS: DeployCard[] = [
   {
     id: 'dp-4', columnId: 'in_trial', createdAt: '2026-04-15',
     customerName: 'An Viên Resort', contactName: 'Nguyễn T.Thu Hương',
+    email: 'info@anvienresort.com', phone: '0258.381.4567',
     type: 'trial', progress: 15, trialDaysLeft: 3,
     trialStatus: 'in_trial', trialStartDate: '2026-04-27', trialEndDate: '2026-05-27',
     salesPerson: 'Nguyễn T.Thu Hương', salesLead: 'Trần Minh Khoa',
@@ -335,7 +452,34 @@ const MOCK_CARDS: DeployCard[] = [
       system_contact: 'Nguyễn T.Thu Hương',
       system_company: 'An Viên Resort',
     },
-    subTasks: [],
+    subTasks: [
+      {
+        id: 'st-4-1', title: 'Liên hệ khẩn — Quyết định gia hạn dùng thử ezCms',
+        product: 'ezCms', status: 'todo', priority: 'block', estimatedHours: 2,
+        dueDate: '2026-05-24', assignee: 'Nguyễn T.Thu Hương', note: 'Chỉ còn 3 ngày dùng thử. Cần liên hệ ngay để chốt quyết định.',
+        checklist: [
+          { id: 'ci-4-1', label: 'Gọi điện cho Giám đốc Nguyễn Quang Vinh', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-05-23' },
+          { id: 'ci-4-2', label: 'Gửi báo cáo tổng kết kết quả dùng thử', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-05-24' },
+        ],
+      },
+      {
+        id: 'st-4-2', title: 'Chuẩn bị báo giá & đề xuất hợp đồng chính thức',
+        product: 'ezCms', status: 'todo', priority: 'high', estimatedHours: 8,
+        dueDate: '2026-05-25', assignee: 'Nguyễn T.Thu Hương', note: '',
+        checklist: [
+          { id: 'ci-4-3', label: 'Soạn báo giá gói ezCms Website 1 năm', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-05-24' },
+          { id: 'ci-4-4', label: 'Bổ sung gói hỗ trợ kỹ thuật', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-05-25' },
+        ],
+      },
+      {
+        id: 'st-4-3', title: 'Demo thêm tính năng Booking Engine trực tiếp',
+        product: 'ezCms', status: 'todo', priority: 'medium', estimatedHours: 3,
+        dueDate: '2026-05-26', assignee: 'Nguyễn T.Thu Hương', note: '',
+        checklist: [
+          { id: 'ci-4-5', label: 'Chuẩn bị demo booking online end-to-end', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-05-26' },
+        ],
+      },
+    ],
     activities: [
       { id: 'a1', type: 'system', content: 'Dự án được tạo', author: 'Thu Hương', authorInitials: 'TH', authorColor: '#3450cc', createdAt: '2026-04-15 08:00' },
       { id: 'a2', type: 'email', content: 'Gửi email nhắc nhở gia hạn dùng thử đến Giám đốc An Viên Resort.', author: 'Thu Hương', authorInitials: 'TH', authorColor: '#3450cc', createdAt: '2026-05-20 10:00' },
@@ -344,6 +488,7 @@ const MOCK_CARDS: DeployCard[] = [
   {
     id: 'dp-5', columnId: 'converting', createdAt: '2026-04-01',
     customerName: 'Aliza Homestay', contactName: 'Nguyễn T.Thu Hương',
+    email: 'hello@alizahomestay.vn', phone: '0566.123.456',
     type: 'trial', progress: 35, isConverting: true,
     trialStatus: 'converted', trialStartDate: '2026-04-10', trialEndDate: '2026-05-10', convertedDate: '2026-05-18',
     salesPerson: 'Nguyễn T.Thu Hương', salesLead: 'Trần Minh Khoa',
@@ -403,7 +548,44 @@ const MOCK_CARDS: DeployCard[] = [
       system_contact: 'Nguyễn T.Thu Hương',
       system_company: 'Aliza Homestay',
     },
-    subTasks: [],
+    subTasks: [
+      {
+        id: 'st-5-1', title: 'Hoàn thiện & ký kết hợp đồng triển khai ezCloud',
+        product: 'ezCloud', status: 'in_progress', priority: 'block', estimatedHours: 16,
+        dueDate: '2026-05-28', assignee: 'Nguyễn T.Thu Hương', note: 'Đang chờ phê duyệt nội bộ từ phía Aliza Homestay.',
+        checklist: [
+          { id: 'ci-5-1', label: 'Gửi hợp đồng bản nháp cho khách hàng', done: true, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-05-19' },
+          { id: 'ci-5-2', label: 'Họp review điều khoản hợp đồng', done: true, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-05-22' },
+          { id: 'ci-5-3', label: 'Điều chỉnh phụ lục theo yêu cầu', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-05-26' },
+          { id: 'ci-5-4', label: 'Ký kết hợp đồng chính thức', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-05-28' },
+        ],
+      },
+      {
+        id: 'st-5-2', title: 'Lên kế hoạch triển khai chi tiết (Project Plan)',
+        product: 'ezCloud', status: 'todo', priority: 'high', estimatedHours: 12,
+        dueDate: '2026-06-05', assignee: 'Trần Thanh Huy', note: '',
+        checklist: [
+          { id: 'ci-5-5', label: 'Phân tích yêu cầu kỹ thuật Aliza Homestay', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-05-30' },
+          { id: 'ci-5-6', label: 'Lập lịch triển khai từng giai đoạn', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-06-02' },
+          { id: 'ci-5-7', label: 'Xác nhận kế hoạch với khách hàng', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-06-05' },
+        ],
+      },
+      {
+        id: 'st-5-3', title: 'Kick-off meeting chính thức với Aliza Homestay',
+        product: 'ezCloud', status: 'todo', priority: 'medium', estimatedHours: 3,
+        dueDate: '2026-06-07', assignee: 'Nguyễn T.Thu Hương', note: '',
+        checklist: [
+          { id: 'ci-5-8', label: 'Chuẩn bị agenda kick-off', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-06-05' },
+          { id: 'ci-5-9', label: 'Tổ chức họp kick-off tại homestay', done: false, assignee: 'Nguyễn T.Thu Hương', deadline: '2026-06-07' },
+        ],
+      },
+      {
+        id: 'st-5-4', title: 'Chuẩn bị tài liệu onboarding cho nhân viên',
+        product: 'ezCloud', status: 'todo', priority: 'low', estimatedHours: 2,
+        dueDate: '2026-06-10', assignee: 'Trần Thanh Huy', note: '',
+        checklist: [],
+      },
+    ],
     activities: [
       { id: 'a1', type: 'system', content: 'Dự án được tạo', author: 'Thu Hương', authorInitials: 'TH', authorColor: '#3450cc', createdAt: '2026-04-01 08:00' },
       { id: 'a2', type: 'meeting', content: 'Khách hàng hài lòng và muốn chuyển sang sử dụng chính thức.', author: 'Thu Hương', authorInitials: 'TH', authorColor: '#3450cc', createdAt: '2026-05-15 14:00' },
@@ -413,6 +595,7 @@ const MOCK_CARDS: DeployCard[] = [
   {
     id: 'dp-6', columnId: 'deploying', createdAt: '2026-03-15',
     customerName: 'Pencil Hotel', contactName: 'Trương Hải Thành',
+    email: 'sale@pencilhotel.vn', phone: '024.3726.8899',
     type: 'trial', progress: 55,
     trialStatus: 'converted', trialStartDate: '2026-03-20', trialEndDate: '2026-04-20', convertedDate: '2026-04-25',
     salesPerson: 'Trương Hải Thành', salesLead: 'Lê Văn Hùng',
@@ -485,7 +668,7 @@ const MOCK_CARDS: DeployCard[] = [
     subTasks: [
       {
         id: 'st-6-1', title: 'Cài đặt & cấu hình ezFolio production',
-        product: 'ezFolio', status: 'done', dueDate: '2026-05-15',
+        product: 'ezFolio', status: 'done', priority: 'block', estimatedHours: 32, dueDate: '2026-05-15',
         assignee: 'Nguyễn T.H.Ngọc', note: '',
         checklist: [
           { id: 'ci-1', label: 'Cài đặt server production', done: true, assignee: 'Nguyễn T.H.Ngọc', deadline: '2026-05-10' },
@@ -496,7 +679,7 @@ const MOCK_CARDS: DeployCard[] = [
       },
       {
         id: 'st-6-2', title: 'Đào tạo nhân viên lễ tân ezFolio',
-        product: 'ezFolio', status: 'in_progress', dueDate: '2026-06-01',
+        product: 'ezFolio', status: 'in_progress', priority: 'high', estimatedHours: 20, dueDate: '2026-06-01',
         assignee: 'Trương Hải Thành', note: 'Ca tối chưa sắp xếp được lịch.',
         checklist: [
           { id: 'ci-5', label: 'Đào tạo quản trị viên', done: true, assignee: 'Trương Hải Thành', deadline: '2026-05-20' },
@@ -508,7 +691,7 @@ const MOCK_CARDS: DeployCard[] = [
       },
       {
         id: 'st-6-3', title: 'Triển khai & cấu hình ezBe',
-        product: 'ezBe', status: 'in_progress', dueDate: '2026-06-15',
+        product: 'ezBe', status: 'in_progress', priority: 'high', estimatedHours: 14, dueDate: '2026-06-15',
         assignee: 'Nguyễn T.H.Ngọc', note: '',
         checklist: [
           { id: 'ci-10', label: 'Cài đặt ezBe trên server', done: true, assignee: 'Nguyễn T.H.Ngọc', deadline: '2026-05-18' },
@@ -528,6 +711,7 @@ const MOCK_CARDS: DeployCard[] = [
   {
     id: 'dp-7', columnId: 'deploying', createdAt: '2026-05-01',
     customerName: 'S Hotel', contactName: 'Ngô Bảo Khánh',
+    email: 'reservation@shotel.com', phone: '028.3812.7766',
     type: 'direct', progress: 25,
     salesPerson: 'Ngô Bảo Khánh', salesLead: 'Trần Minh Khoa',
     deployPerson: 'Trần Thanh Huy', deployLead: 'Phạm Đức Thịnh', deployDeadline: '2026-07-15',
@@ -586,9 +770,9 @@ const MOCK_CARDS: DeployCard[] = [
     },
     subTasks: [
       {
-        id: 'st-7-1', title: 'Cài đặt & cấu hình ezCloud',
-        product: 'ezCloud', status: 'in_progress', dueDate: '2026-06-10',
-        assignee: 'Trần Thanh Huy', note: 'Cần thêm module F&B theo yêu cầu.',
+        id: 'st-7-1', title: 'Cài đặt & cấu hình ezCloud (incl. module F&B)',
+        product: 'ezCloud', status: 'in_progress', priority: 'block', estimatedHours: 40, dueDate: '2026-06-10',
+        assignee: 'Trần Thanh Huy', note: 'Cần thêm module F&B theo yêu cầu. Migration từ Opera Cloud.',
         checklist: [
           { id: 'ci-20', label: 'Thu thập yêu cầu chi tiết từ IT Manager', done: true, assignee: 'Trần Thanh Huy', deadline: '2026-05-08' },
           { id: 'ci-21', label: 'Cài đặt server production', done: true, assignee: 'Trần Thanh Huy', deadline: '2026-05-15' },
@@ -596,6 +780,31 @@ const MOCK_CARDS: DeployCard[] = [
           { id: 'ci-23', label: 'Cấu hình module F&B', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-06-01' },
           { id: 'ci-24', label: 'Kiểm tra tích hợp thanh toán', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-06-05' },
         ],
+      },
+      {
+        id: 'st-7-2', title: 'Đào tạo nhân viên vận hành ezCloud',
+        product: 'ezCloud', status: 'todo', priority: 'high', estimatedHours: 16, dueDate: '2026-06-25',
+        assignee: 'Trần Thanh Huy', note: 'Khách sạn 150 phòng — cần đào tạo 3 ca, khoảng 15 nhân viên.',
+        checklist: [
+          { id: 'ci-25', label: 'Đào tạo quản trị viên hệ thống', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-06-15' },
+          { id: 'ci-26', label: 'Đào tạo lễ tân ca sáng & chiều', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-06-20' },
+          { id: 'ci-27', label: 'Đào tạo thu ngân & F&B', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-06-25' },
+        ],
+      },
+      {
+        id: 'st-7-3', title: 'Kiểm tra & xác nhận migration data từ Opera Cloud',
+        product: 'ezCloud', status: 'todo', priority: 'medium', estimatedHours: 6, dueDate: '2026-05-30',
+        assignee: 'Trần Thanh Huy', note: '',
+        checklist: [
+          { id: 'ci-28', label: 'Export toàn bộ data từ Opera Cloud', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-05-27' },
+          { id: 'ci-29', label: 'Kiểm tra data integrity sau migration', done: false, assignee: 'Trần Thanh Huy', deadline: '2026-05-30' },
+        ],
+      },
+      {
+        id: 'st-7-4', title: 'Cập nhật tài liệu kỹ thuật dự án',
+        product: 'ezCloud', status: 'todo', priority: 'low', estimatedHours: 2, dueDate: '2026-07-01',
+        assignee: 'Trần Thanh Huy', note: '',
+        checklist: [],
       },
     ],
     activities: [
@@ -606,6 +815,7 @@ const MOCK_CARDS: DeployCard[] = [
   {
     id: 'dp-8', columnId: 'acceptance', createdAt: '2026-03-01',
     customerName: 'Champs Elysees', contactName: 'Bùi Đức Trung Hiếu',
+    email: 'booking@champshotel.vn', phone: '0292.381.5566',
     type: 'direct', progress: 85,
     salesPerson: 'Bùi Đức Trung Hiếu', salesLead: 'Lê Văn Hùng',
     deployPerson: 'Bùi Đức Trung Hiếu', deployLead: 'Phạm Đức Thịnh', deployDeadline: '2026-06-05',
@@ -666,7 +876,7 @@ const MOCK_CARDS: DeployCard[] = [
     subTasks: [
       {
         id: 'st-8-1', title: 'Nghiệm thu ezFolio',
-        product: 'ezFolio', status: 'done', dueDate: '2026-04-20',
+        product: 'ezFolio', status: 'done', priority: 'block', estimatedHours: 24, dueDate: '2026-04-20',
         assignee: 'Bùi Đức Trung Hiếu', note: '',
         checklist: [
           { id: 'ci-30', label: 'Kiểm tra toàn bộ chức năng theo checklist', done: true, assignee: 'Bùi Đức Trung Hiếu', deadline: '2026-04-18' },
@@ -676,7 +886,7 @@ const MOCK_CARDS: DeployCard[] = [
       },
       {
         id: 'st-8-2', title: 'Đào tạo nhân viên marketing ezCms',
-        product: 'ezCms', status: 'in_progress', dueDate: '2026-06-01',
+        product: 'ezCms', status: 'in_progress', priority: 'high', estimatedHours: 10, dueDate: '2026-06-01',
         assignee: 'Bùi Đức Trung Hiếu', note: 'Team marketing 5 người, cần 2 buổi.',
         checklist: [
           { id: 'ci-33', label: 'Đào tạo quản trị viên CMS', done: true, assignee: 'Bùi Đức Trung Hiếu', deadline: '2026-05-15' },
@@ -684,6 +894,21 @@ const MOCK_CARDS: DeployCard[] = [
           { id: 'ci-35', label: 'Đào tạo content writer', done: false, assignee: 'Bùi Đức Trung Hiếu', deadline: '2026-05-28' },
           { id: 'ci-36', label: 'Nghiệm thu & ký biên bản ezCms', done: false, assignee: 'Bùi Đức Trung Hiếu', deadline: '2026-06-01' },
         ],
+      },
+      {
+        id: 'st-8-3', title: 'Nghiệm thu tổng thể & bàn giao dự án',
+        product: 'ezCms', status: 'todo', priority: 'medium', estimatedHours: 4, dueDate: '2026-06-05',
+        assignee: 'Bùi Đức Trung Hiếu', note: 'Bàn giao đồng thời ezFolio + ezCms.',
+        checklist: [
+          { id: 'ci-37', label: 'Chuẩn bị biên bản bàn giao tổng thể', done: false, assignee: 'Bùi Đức Trung Hiếu', deadline: '2026-06-03' },
+          { id: 'ci-38', label: 'Ký biên bản bàn giao với khách hàng', done: false, assignee: 'Bùi Đức Trung Hiếu', deadline: '2026-06-05' },
+        ],
+      },
+      {
+        id: 'st-8-4', title: 'Gửi hóa đơn thanh toán đợt 2',
+        product: 'ezFolio', status: 'todo', priority: 'low', estimatedHours: 1, dueDate: '2026-06-06',
+        assignee: 'Bùi Đức Trung Hiếu', note: '50% còn lại sau nghiệm thu.',
+        checklist: [],
       },
     ],
     activities: [
@@ -694,6 +919,7 @@ const MOCK_CARDS: DeployCard[] = [
   {
     id: 'dp-9', columnId: 'done', createdAt: '2026-02-01',
     customerName: 'Bella VT Hotel', contactName: 'Trần Thanh Huy',
+    email: 'info@bellavthotel.com', phone: '0254.381.3344',
     type: 'direct', progress: 100,
     salesPerson: 'Trần Thanh Huy', salesLead: 'Lê Văn Hùng',
     deployPerson: 'Trần Thanh Huy', deployLead: 'Phạm Đức Thịnh', deployDeadline: '2026-03-15',
@@ -749,7 +975,17 @@ const MOCK_CARDS: DeployCard[] = [
       system_contact: 'Trần Thanh Huy',
       system_company: 'Bella VT Hotel',
     },
-    subTasks: [],
+    subTasks: [
+      {
+        id: 'st-9-1', title: 'Hỗ trợ kỹ thuật sau go-live (tháng đầu)',
+        product: 'ezCms', status: 'done', priority: 'medium', estimatedHours: 6, dueDate: '2026-03-15',
+        assignee: 'Trần Thanh Huy', note: 'Hỗ trợ các vấn đề phát sinh trong tháng đầu vận hành.',
+        checklist: [
+          { id: 'ci-9-1', label: 'Theo dõi và xử lý ticket hỗ trợ', done: true, assignee: 'Trần Thanh Huy', deadline: '2026-03-15' },
+          { id: 'ci-9-2', label: 'Báo cáo tổng kết hỗ trợ tháng đầu', done: true, assignee: 'Trần Thanh Huy', deadline: '2026-03-15' },
+        ],
+      },
+    ],
     activities: [
       { id: 'a1', type: 'system', content: 'Dự án được tạo', author: 'Thanh Huy', authorInitials: 'HY', authorColor: '#f79009', createdAt: '2026-02-01 08:00' },
       { id: 'a2', type: 'system', content: 'Chuyển giai đoạn: Nghiệm thu → Hoàn thành', author: 'Thanh Huy', authorInitials: 'HY', authorColor: '#f79009', createdAt: '2026-03-15 10:00' },
@@ -760,6 +996,8 @@ const MOCK_CARDS: DeployCard[] = [
 // ─── Store ─────────────────────────────────────────────────────────────────
 
 export const useDeploymentStore = defineStore('deployment', () => {
+  const columns = ref<DeployColumn[]>(DEPLOY_COLUMNS.map((c) => ({ ...c })))
+
   const cards = ref<DeployCard[]>(
     MOCK_CARDS.map((c) => ({
       ...c,
@@ -839,19 +1077,23 @@ export const useDeploymentStore = defineStore('deployment', () => {
   }
 
   function columnName(id: string): string {
-    return DEPLOY_COLUMNS.find((c) => c.id === id)?.name ?? id
+    return columns.value.find((c) => c.id === id)?.name ?? id
   }
 
   function columnColor(id: string): string {
-    return DEPLOY_COLUMNS.find((c) => c.id === id)?.color ?? '#6b778c'
+    return columns.value.find((c) => c.id === id)?.color ?? '#6b778c'
+  }
+
+  function updateColumns(newCols: DeployColumn[]): void {
+    columns.value = newCols
   }
 
   return {
-    cards,
+    cards, columns,
     getById, updateCard, updatePhase,
     addSubTask, updateSubTask, deleteSubTask,
     toggleChecklistItem, addChecklistItem,
     addCard, addActivity,
-    columnName, columnColor,
+    columnName, columnColor, updateColumns,
   }
 })

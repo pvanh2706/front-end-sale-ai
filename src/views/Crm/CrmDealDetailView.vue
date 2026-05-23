@@ -546,14 +546,6 @@
           <!-- Hoạt động tab -->
           <template v-else-if="activeTab === 'activity'">
             <div class="space-y-4">
-              <ActivityItemCard
-                v-for="item in allActivities"
-                :key="item.id"
-                :item="item"
-                @update="onActivityUpdate"
-                @remove="onActivityRemove"
-                @result="onActivityResult"
-              />
               <!-- Add activity button -->
               <button
                 type="button"
@@ -563,6 +555,15 @@
                 <span class="material-symbols-outlined text-[18px]">add</span>
                 Thêm hoạt động
               </button>
+
+              <ActivityItemCard
+                v-for="item in allActivities"
+                :key="item.id"
+                :item="item"
+                @update="onActivityUpdate"
+                @remove="onActivityRemove"
+                @result="onActivityResult"
+              />
             </div>
           </template>
 
@@ -746,6 +747,7 @@
       v-model:open="showActivityDialog"
       :initial-type="activityDialogInitialType"
       :contact-name="deal.contactName ?? undefined"
+      module="deal"
       @submitted="handleActivitySubmitted"
     />
   </AdminLayout>

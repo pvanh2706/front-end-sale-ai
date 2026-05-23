@@ -174,6 +174,17 @@
           </Button>
         </div>
 
+        <!-- Automation Rules button -->
+        <Button
+          type="button"
+          variant="outline"
+          class="w-full gap-2 border-warning-200 dark:border-warning-800 text-warning-700 dark:text-warning-400 hover:bg-warning-50 dark:hover:bg-warning-500/10"
+          @click="showAutomation = true"
+        >
+          <Zap class="h-4 w-4" />
+          Automation Rules
+        </Button>
+
         <!-- AI chat button -->
         <Button
           type="button"
@@ -743,12 +754,34 @@
     <!-- ═══════════════════════════════════════════════════════════
          ADD SUB-TASK DIALOG
     ══════════════════════════════════════════════════════════════ -->
-    <Dialog v-model:open="showAddSubTaskDialog">
+    <Dialog :open="showAddSubTaskDialog" @update:open="val => { showAddSubTaskDialog = val; if (!val) selectedSubTaskPresetId = null }">
       <DialogContent class="max-w-md">
         <DialogHeader>
-          <DialogTitle>Thêm công việc con</DialogTitle>
+          <DialogTitle>Thêm công việc triển khai</DialogTitle>
         </DialogHeader>
         <div class="mt-2 space-y-4">
+
+          <!-- ⚡ Hành động nhanh -->
+          <div v-if="deployPresetActions.length" class="space-y-1.5">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">⚡ Hành động nhanh</p>
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                v-for="action in deployPresetActions"
+                :key="action.id"
+                type="button"
+                class="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all"
+                :class="selectedSubTaskPresetId === action.id
+                  ? 'border-brand-400 bg-brand-50 text-brand-700 dark:border-brand-600 dark:bg-brand-900/20 dark:text-brand-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'"
+                @click="applySubTaskPreset(action)"
+              >
+                <span>{{ action.emoji }}</span>
+                <span>{{ action.name }}</span>
+                <span class="ml-0.5 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">{{ action.score }}đ</span>
+              </button>
+            </div>
+          </div>
+
           <div class="space-y-1.5">
             <Label>Tên công việc <span class="text-error-500">*</span></Label>
             <Input v-model="addSubTaskForm.title" placeholder="Mô tả công việc cần làm..." />
@@ -822,12 +855,33 @@
     <!-- ═══════════════════════════════════════════════════════════
          ADD ACTIVITY DIALOG
     ══════════════════════════════════════════════════════════════ -->
-    <Dialog v-model:open="showAddActivity">
+    <Dialog :open="showAddActivity" @update:open="val => { showAddActivity = val; if (!val) selectedDeployPresetId = null }">
       <DialogContent class="max-w-md">
         <DialogHeader>
           <DialogTitle>Thêm hoạt động</DialogTitle>
         </DialogHeader>
         <div class="mt-2 space-y-4">
+          <!-- ⓪ Hành động nhanh -->
+          <div v-if="deployPresetActions.length" class="space-y-1.5">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">⚡ Hành động nhanh</p>
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                v-for="action in deployPresetActions"
+                :key="action.id"
+                type="button"
+                class="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all"
+                :class="selectedDeployPresetId === action.id
+                  ? 'border-brand-400 bg-brand-50 text-brand-700 dark:border-brand-600 dark:bg-brand-900/20 dark:text-brand-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'"
+                @click="applyDeployPresetAction(action)"
+              >
+                <span>{{ action.emoji }}</span>
+                <span>{{ action.name }}</span>
+                <span class="ml-0.5 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">{{ action.score }}đ</span>
+              </button>
+            </div>
+          </div>
+
           <div class="space-y-1.5">
             <Label>Loại hoạt động</Label>
             <div class="flex flex-wrap gap-2">
@@ -988,6 +1042,14 @@
       </DialogContent>
     </Dialog>
 
+    <!-- Automation Rules Dialog -->
+    <AutomationRulesDialog
+      :open="showAutomation"
+      entity-type="deployment"
+      :entity-name="card?.customerName ?? ''"
+      @update:open="showAutomation = $event"
+    />
+
   </AdminLayout>
 </template>
 
@@ -997,7 +1059,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft, Box, CalendarDays, CheckCircle2, ChevronRight,
   Circle, CircleDot, Flag, ListChecks, Mail, MessageSquare,
-  Pencil, Phone, Plus, Sparkles, SquareCheckBig, Trash2, User, X,
+  Pencil, Phone, Plus, Sparkles, SquareCheckBig, Trash2, User, X, Zap,
 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -1011,12 +1073,15 @@ import {
   DEPLOY_COLUMNS, useDeploymentStore,
   type ChecklistItem, type DeployActivity, type PhaseStatus, type ProductTrack, type SubTask, type SubTaskStatus,
 } from '@/stores/useDeploymentStore'
+import { useActionSettingsStore } from '@/stores/useActionSettingsStore'
+import AutomationRulesDialog from '@/components/crm/AutomationRulesDialog.vue'
 
 // ─── Router & Store ───────────────────────────────────────────
 
 const route  = useRoute()
 const router = useRouter()
 const store  = useDeploymentStore()
+const actionSettingsStore = useActionSettingsStore()
 
 // ─── Data ─────────────────────────────────────────────────────
 
@@ -1180,6 +1245,7 @@ const showDeleteConfirm          = ref(false)
 const showDeleteSubTaskConfirm   = ref(false)
 const deletingSubTaskId          = ref<string | null>(null)
 const showAiChat                 = ref(false)
+const showAutomation             = ref(false)
 
 // Selected sub-task for editing
 const editingSubTaskId = ref<string | null>(null)
@@ -1202,6 +1268,12 @@ const newChecklistDeadline = ref('')
 
 // Add sub-task form
 const addSubTaskForm = reactive({ title: '', product: '', assignee: '', dueDate: '' })
+const selectedSubTaskPresetId = ref<string | null>(null)
+
+function applySubTaskPreset(action: { id: string; name: string; emoji: string }): void {
+  addSubTaskForm.title = `${action.emoji} ${action.name}`
+  selectedSubTaskPresetId.value = action.id
+}
 
 // Phase dialog
 const phaseDialogData = ref<{ product: string; index: number; label: string } | null>(null)
@@ -1209,6 +1281,20 @@ const phaseDialogStatus = ref<PhaseStatus>('waiting')
 
 // Activity form
 const activityForm = reactive({ type: 'note', content: '', author: '' })
+const selectedDeployPresetId = ref<string | null>(null)
+const deployPresetActions = computed(() => actionSettingsStore.getActions('deploy'))
+
+const DEPLOY_EMOJI_TYPE_MAP: Record<string, string> = {
+  '📝': 'note', '📞': 'call', '📧': 'email', '🤝': 'meeting',
+  '🔧': 'note', '🎓': 'note', '🛠️': 'note', '✅': 'note', '📋': 'meeting', '📑': 'note',
+}
+
+function applyDeployPresetAction(action: { id: string; name: string; emoji: string; durationMin: number }): void {
+  const emoji = action.emoji.trim()
+  activityForm.type = DEPLOY_EMOJI_TYPE_MAP[emoji] ?? 'note'
+  activityForm.content = `${emoji} ${action.name}`
+  selectedDeployPresetId.value = action.id
+}
 
 // Edit card form
 const editForm = reactive({
@@ -1372,6 +1458,7 @@ function openAddSubTask(): void {
   addSubTaskForm.product  = card.value?.tracks[0]?.product ?? ''
   addSubTaskForm.assignee = ''
   addSubTaskForm.dueDate  = ''
+  selectedSubTaskPresetId.value = null
   showAddSubTaskDialog.value = true
 }
 
@@ -1389,6 +1476,7 @@ function submitAddSubTask(): void {
     checklist: [],
   }
   store.addSubTask(deploymentId.value, newSt)
+  selectedSubTaskPresetId.value = null
   showAddSubTaskDialog.value = false
   toast.success('Đã thêm công việc con')
 }
@@ -1463,6 +1551,7 @@ function submitActivity(): void {
   store.addActivity(deploymentId.value, newAct)
   activityForm.content = ''
   activityForm.author  = ''
+  selectedDeployPresetId.value = null
   showAddActivity.value = false
   toast.success('Đã thêm hoạt động')
 }

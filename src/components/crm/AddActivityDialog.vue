@@ -11,6 +11,41 @@
       <!-- ── Body cuộn ── -->
       <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
 
+        <!-- ⓪ Hành động nhanh (preset actions) -->
+        <Transition name="fade-slide">
+          <div v-if="presetActions.length > 0" class="space-y-2">
+            <p class="text-theme-xs font-semibold uppercase tracking-wide text-gray-400">Hành động nhanh</p>
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                v-for="action in presetActions"
+                :key="action.id"
+                type="button"
+                class="group flex cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-sm transition-all"
+                :class="selectedPresetId === action.id
+                  ? 'border-brand-400 bg-brand-50 text-brand-700 shadow-sm dark:border-brand-500 dark:bg-brand-900/20 dark:text-brand-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:bg-brand-50/50 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-brand-600'"
+                @click="applyPresetAction(action)"
+              >
+                <span class="text-base leading-none">{{ action.emoji }}</span>
+                <span class="font-medium">{{ action.name }}</span>
+                <span
+                  class="ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition-colors"
+                  :class="selectedPresetId === action.id
+                    ? 'bg-brand-100 text-brand-600 dark:bg-brand-800 dark:text-brand-300'
+                    : 'bg-brand-50 text-brand-400 dark:bg-brand-900/30 dark:text-brand-500'"
+                >{{ action.score }}đ</span>
+                <span
+                  class="rounded-full px-1.5 py-0.5 text-[10px] transition-colors"
+                  :class="selectedPresetId === action.id
+                    ? 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                    : 'bg-gray-100 text-gray-400 dark:bg-gray-700/60 dark:text-gray-500'"
+                >{{ action.durationMin }}ph</span>
+              </button>
+            </div>
+            <div class="border-t border-gray-100 dark:border-gray-800" />
+          </div>
+        </Transition>
+
         <!-- ① Loại hoạt động -->
         <div class="space-y-2">
           <p class="text-theme-xs font-semibold uppercase tracking-wide text-gray-400">Loại hoạt động</p>
@@ -196,11 +231,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useActionSettingsStore } from '@/stores/useActionSettingsStore'
+import type { ActionModule, PresetAction } from '@/stores/useActionSettingsStore'
 
 // ─── Types ────────────────────────────────────────────────────
 
 interface Props {
   open: boolean
+  module?: ActionModule
   contactName?: string
   contactPhone?: string
   contactEmail?: string
@@ -338,6 +376,36 @@ const activityTypes: ActivityType[] = [
 
 // ─── State ────────────────────────────────────────────────────
 
+// ─── Preset actions ──────────────────────────────────────────
+const actionStore = useActionSettingsStore()
+const presetActions = computed<PresetAction[]>(() =>
+  props.module ? actionStore.getActions(props.module) : []
+)
+const selectedPresetId = ref<string | null>(null)
+
+const EMOJI_TYPE_MAP: Record<string, string> = {
+  '📞': 'call', '📧': 'email', '💬': 'message', '🤝': 'meeting',
+  '📊': 'call', '✍️': 'note', '🔁': 'call',   '🎓': 'meeting',
+  '🔧': 'note', '🛠️': 'note', '✅': 'note',   '📋': 'meeting',
+  '📑': 'note', '🏆': 'task',
+}
+
+function applyPresetAction(action: PresetAction): void {
+  const targetType = EMOJI_TYPE_MAP[action.emoji] ?? 'note'
+  selectType(targetType)
+  form.value.title = `${action.emoji} ${action.name}`
+  // Pre-fill duration from durationMin
+  const dur = action.durationMin
+  if      (dur <= 15) form.value.duration = '15 phút'
+  else if (dur <= 30) form.value.duration = '30 phút'
+  else if (dur <= 45) form.value.duration = '45 phút'
+  else if (dur <= 60) form.value.duration = '1 giờ'
+  else if (dur <= 90) form.value.duration = '1.5 giờ'
+  else                form.value.duration = '2 giờ'
+  selectedPresetId.value = action.id
+}
+
+// ─── Form state ───────────────────────────────────────────────
 const selectedTypeId = ref<string | null>(null)
 const selectedSubType = ref<string>('')
 const form = ref<ActivityForm>({
@@ -438,6 +506,7 @@ watch(selectedSubType, (sub) => {
 function resetForm(): void {
   selectedTypeId.value = null
   selectedSubType.value = ''
+  selectedPresetId.value = null
   form.value = {
     title: '',
     date: new Date().toISOString().slice(0, 16),

@@ -31,7 +31,18 @@
       "Bash(Select-Object Name)",
       "Bash(findstr /i \"dev\\\\|start\\\\|port\")",
       "Bash(node backend/server.mjs)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "PowerShell(Set-Location \"F:\\\\Dự án CodeOn\\\\Salio\"; Start-Process powershell -ArgumentList '-NoExit', '-Command', 'npm run dev:backend' -WindowStyle Normal; Start-Process powershell -ArgumentList '-NoExit', '-Command', 'npm run dev:web' -WindowStyle Normal; Write-Host \"Started FE \\(port 5174\\) and BE \\(port 4000\\) in separate windows\")",
+      "Bash(netstat -ano)",
+      "Bash(findstr \"LISTENING\")",
+      "Bash(findstr \":5173\\\\|:3000\\\\|:8080\\\\|:4173\\\\|:5174\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5175)",
+      "Bash(start http://localhost:5174)",
+      "Bash(findstr \"5174\\\\|5175\\\\|4000\")",
+      "Bash(findstr LISTENING)",
+      "PowerShell(Stop-Process -Id 16612 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Id 2476 -Force -ErrorAction SilentlyContinue)"
     ]
   }
 }
