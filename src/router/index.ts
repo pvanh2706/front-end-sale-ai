@@ -63,6 +63,12 @@ const router = createRouter({
             meta: { title: 'CRM & Công việc', public: true },
         },
         {
+            path: '/crm-ai-chat',
+            name: 'CrmAiChat',
+            component: () => import('../views/Crm/CrmAiChatView.vue'),
+            meta: { title: 'AI CRM Assistant', public: true },
+        },
+        {
             path: '/crm-deals',
             name: 'CrmDealsKanban',
             component: () => import('../views/Crm/CrmDealsKanbanView.vue'),

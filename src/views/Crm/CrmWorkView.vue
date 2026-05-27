@@ -34,6 +34,23 @@
         </article>
       </section>
 
+      <!-- AI Chat CTA -->
+      <div class="flex flex-col gap-3 rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-white px-5 py-4 dark:border-brand-500/30 dark:from-brand-500/10 dark:to-gray-900 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500 shadow-theme-sm">
+            <Sparkles class="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <p class="text-theme-sm font-semibold text-gray-900 dark:text-white">Hỏi đáp với AI</p>
+            <p class="text-theme-xs text-gray-500 dark:text-gray-400">Tổng hợp công việc hôm nay, phân tích pipeline và dự báo rủi ro ngay lập tức</p>
+          </div>
+        </div>
+        <Button type="button" class="shrink-0 gap-2 bg-brand-500 text-white hover:bg-brand-600" @click="handleAiChat">
+          <MessageCircle class="h-4 w-4" />
+          Mở chat AI
+        </Button>
+      </div>
+
       <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
         <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 class="text-theme-xl font-semibold text-gray-900 dark:text-white">Pipeline tổng quan</h2>
@@ -57,94 +74,10 @@
         </div>
       </section>
 
-      <section class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div class="space-y-6 xl:col-span-2">
-          <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
-            <div class="mb-4 flex items-center justify-between">
-              <h3 class="flex items-center gap-2 text-theme-xl font-semibold text-gray-900 dark:text-white">
-                <ListTodo class="h-5 w-5 text-brand-500" />
-                Công việc hôm nay
-              </h3>
-              <Button type="button" variant="ghost" size="sm" class="text-brand-500 hover:text-brand-600" @click="handleViewAllTasks">Xem tất cả</Button>
-            </div>
+      <RevenueChart />
 
-            <div class="space-y-2">
-              <div v-for="task in todayTasks" :key="task.id" class="group flex items-center gap-3 rounded-lg border border-transparent p-3 transition-colors hover:border-gray-200 hover:bg-gray-50 dark:hover:border-gray-800 dark:hover:bg-gray-950">
-                <Checkbox :checked="task.done" :disabled="loading" @update:checked="handleToggleTask(task.id, $event)" />
-                <div class="min-w-0 flex-1">
-                  <p class="truncate text-theme-sm font-medium text-gray-900 dark:text-white" :class="task.done ? 'line-through text-gray-400 dark:text-gray-500' : ''">{{ task.title }}</p>
-                  <p class="text-theme-xs text-gray-500 dark:text-gray-400">{{ task.meta }}</p>
-                </div>
-                <Button type="button" variant="ghost" size="icon-sm" class="opacity-0 transition-opacity group-hover:opacity-100">
-                  <MoreVertical class="h-4 w-4 text-gray-500" />
-                </Button>
-              </div>
-            </div>
-          </article>
+      <RevenueDashboard />
 
-          <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
-            <div class="mb-4 flex items-center justify-between">
-              <h3 class="flex items-center gap-2 text-theme-xl font-semibold text-gray-900 dark:text-white">
-                <Flame class="h-5 w-5 text-error-500" />
-                Deal cần ưu tiên
-              </h3>
-            </div>
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <article v-for="deal in priorityDeals" :key="deal.name" class="rounded-lg border border-gray-200 p-4 transition-colors hover:border-brand-300 dark:border-gray-800 dark:hover:border-brand-500/40">
-                <div class="flex items-start justify-between gap-2">
-                  <h4 class="text-theme-sm font-semibold text-gray-900 dark:text-white">{{ deal.name }}</h4>
-                  <Badge :class="deal.stageClass">{{ deal.stage }}</Badge>
-                </div>
-                <div class="mt-3 flex items-end gap-1">
-                  <span class="text-theme-xl font-semibold text-brand-500">{{ deal.value }}</span>
-                  <span class="pb-0.5 text-theme-xs text-gray-500 dark:text-gray-400">VND</span>
-                </div>
-                <Button type="button" variant="outline" size="sm" class="mt-3 w-full border-gray-300 text-brand-500 hover:bg-brand-500 hover:text-white dark:border-gray-700" @click="handleContactDeal(deal.name)">
-                  Liên hệ ngay
-                </Button>
-              </article>
-            </div>
-          </article>
-        </div>
-
-        <div class="space-y-6">
-          <article class="relative overflow-hidden rounded-xl border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-success-50 p-5 dark:border-brand-500/30 dark:from-brand-500/10 dark:via-gray-900 dark:to-success-500/10">
-            <div class="relative z-10 mb-4 flex items-center gap-2">
-              <Sparkles class="h-5 w-5 text-brand-500" />
-              <h3 class="text-theme-xl font-semibold text-brand-500">Gợi ý AI</h3>
-            </div>
-            <div class="relative z-10 space-y-3">
-              <article v-for="advice in aiSuggestions" :key="advice.title" class="rounded-lg border border-white/70 bg-white/90 p-3 shadow-theme-xs backdrop-blur-sm dark:border-white/10 dark:bg-gray-900/80">
-                <p class="text-theme-xs font-semibold text-brand-500">{{ advice.title }}</p>
-                <p class="mt-1 text-theme-sm text-gray-700 dark:text-gray-300">{{ advice.content }}</p>
-              </article>
-            </div>
-            <Sparkles class="absolute -bottom-6 -right-6 h-20 w-20 text-brand-500/10" />
-          </article>
-
-          <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
-            <h3 class="mb-4 text-theme-xl font-semibold text-gray-900 dark:text-white">Thông báo gần đây</h3>
-            <div class="space-y-4">
-              <div v-for="notice in notifications" :key="notice.id" class="flex gap-3 border-b border-gray-100 pb-3 last:border-0 last:pb-0 dark:border-gray-800">
-                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" :class="notice.iconBgClass">
-                  <component :is="notice.icon" class="h-4 w-4" :class="notice.iconClass" />
-                </div>
-                <div>
-                  <p class="text-theme-sm text-gray-700 dark:text-gray-300">{{ notice.content }}</p>
-                  <p class="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">{{ notice.time }}</p>
-                </div>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <footer class="grid grid-cols-2 gap-3 pb-2 md:grid-cols-4">
-        <Button v-for="action in quickActions" :key="action.label" type="button" variant="outline" class="h-auto flex-col gap-2 rounded-xl border-gray-200 bg-white py-4 text-center text-gray-700 hover:border-brand-300 hover:bg-brand-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-brand-500/10" @click="handleQuickAction(action.label)">
-          <component :is="action.icon" class="h-5 w-5 text-brand-500" />
-          <span class="text-theme-sm font-medium">{{ action.label }}</span>
-        </Button>
-      </footer>
     </div>
   </AdminLayout>
 </template>
@@ -155,18 +88,11 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { toast } from 'vue-sonner'
 import {
-  BarChart3,
-  Bell,
   CalendarPlus,
   ClipboardList,
-  Flame,
   Handshake,
-  ListTodo,
-  Mail,
   MessageCircle,
-  MoreVertical,
   PersonStanding,
-  Settings2,
   Sparkles,
   Target,
   TrendingDown,
@@ -175,10 +101,10 @@ import {
 
 import { RouterLink } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { useCrmStore } from '@/stores/useCrmStore'
+import RevenueChart from '@/components/crm/RevenueChart.vue'
+import RevenueDashboard from '@/components/crm/RevenueDashboard.vue'
 import type { CrmMetricTone } from '@/types/crm'
 
 interface KpiStat {
@@ -202,36 +128,10 @@ interface PipelineStage {
   barColorClass: string
 }
 
-interface PriorityDeal {
-  name: string
-  stage: string
-  value: string
-  stageClass: string
-}
-
-interface AiSuggestion {
-  title: string
-  content: string
-}
-
-interface NotificationItem {
-  id: number
-  content: string
-  time: string
-  icon: unknown
-  iconBgClass: string
-  iconClass: string
-}
-
-interface QuickAction {
-  label: string
-  icon: unknown
-}
-
 const router = useRouter()
 const pageTitle = ref('CRM & Công việc')
 const crmStore = useCrmStore()
-const { kpis, pipeline, tasks, loading, error, totalTasksToday } = storeToRefs(crmStore)
+const { kpis, pipeline, error, totalTasksToday } = storeToRefs(crmStore)
 
 const metricIcons: Record<string, unknown> = {
   'leads-new': PersonStanding,
@@ -288,60 +188,6 @@ const pipelineStages = computed<PipelineStage[]>(() => pipeline.value.map((stage
   barColorClass: pipelineBarColorClass(stage.tone),
 })))
 
-const todayTasks = computed(() => tasks.value)
-
-const priorityDeals = ref<PriorityDeal[]>([
-  {
-    name: 'Dự án SmartCity',
-    stage: 'Negotiation',
-    value: '1,2 tỷ',
-    stageClass: 'bg-warning-50 text-warning-500 dark:bg-warning-500/20 dark:text-warning-300',
-  },
-  {
-    name: 'Vận tải Hùng Cường',
-    stage: 'Proposal',
-    value: '350tr',
-    stageClass: 'bg-brand-50 text-brand-500 dark:bg-brand-500/20 dark:text-brand-300',
-  },
-])
-
-const aiSuggestions = ref<AiSuggestion[]>([
-  {
-    title: 'Nhắc nhở follow-up',
-    content: 'Mr. Nam chưa phản hồi email 3 ngày. Gợi ý gửi thêm tin nhắn Zalo.',
-  },
-  {
-    title: 'Cơ hội chốt deal',
-    content: 'Deal TechPro ở stage Proposal quá lâu. Bạn có thể đề xuất ưu đãi 5%.',
-  },
-])
-
-const notifications = ref<NotificationItem[]>([
-  {
-    id: 1,
-    content: 'Bạn có email mới từ khách hàng Hòa Phát',
-    time: '15 phút trước',
-    icon: Mail,
-    iconBgClass: 'bg-brand-50 dark:bg-brand-500/15',
-    iconClass: 'text-brand-500 dark:text-brand-300',
-  },
-  {
-    id: 2,
-    content: 'Dự án Vinhomes đã chuyển sang stage Won',
-    time: '2 giờ trước',
-    icon: Bell,
-    iconBgClass: 'bg-success-50 dark:bg-success-500/15',
-    iconClass: 'text-success-500 dark:text-success-300',
-  },
-])
-
-const quickActions = ref<QuickAction[]>([
-  { label: 'Hỏi đáp AI', icon: MessageCircle },
-  { label: 'Mở lịch hẹn', icon: CalendarPlus },
-  { label: 'Báo cáo nhanh', icon: BarChart3 },
-  { label: 'Config Pipeline', icon: Settings2 },
-])
-
 onMounted(() => {
   void crmStore.fetchDashboard()
 })
@@ -350,19 +196,7 @@ function handleAddTask(): void {
   toast.success('Mở form thêm công việc')
 }
 
-function handleViewAllTasks(): void {
-  void router.push('/crm-deals')
-}
-
-function handleToggleTask(taskId: string, checked: boolean | 'indeterminate'): void {
-  void crmStore.setTaskDone(taskId, checked === true)
-}
-
-function handleContactDeal(dealName: string): void {
-  toast.success(`Đã tạo nhắc lịch liên hệ cho ${dealName}`)
-}
-
-function handleQuickAction(actionName: string): void {
-  toast.info(`Đang mở: ${actionName}`)
+function handleAiChat(): void {
+  void router.push('/crm-ai-chat')
 }
 </script>
