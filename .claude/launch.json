@@ -3,9 +3,15 @@
   "configurations": [
     {
       "name": "sales-ai-dev",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--port", "5175"],
-      "port": 5175
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web"],
+      "port": 5174
+    },
+    {
+      "name": "sales-ai-backend",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["backend/server.mjs"],
+      "port": 4000
     }
   ]
 }

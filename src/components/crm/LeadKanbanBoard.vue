@@ -820,9 +820,8 @@
 
               <button
                 type="button"
-                class="shrink-0 rounded-md p-1.5 text-gray-400 transition-colors hover:bg-error-50 hover:text-error-500 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-error-900/20"
-                :disabled="leadStageDraft.length <= 1"
-                :title="leadStageDraft.length <= 1 ? 'Pipeline phải có ít nhất 1 giai đoạn' : 'Xóa giai đoạn'"
+                class="shrink-0 rounded-md p-1.5 text-gray-400 transition-colors hover:bg-error-50 hover:text-error-500 dark:hover:bg-error-900/20"
+                title="Xóa giai đoạn"
                 @click="removeLeadStage(idx)"
               >
                 <Trash2 class="h-3.5 w-3.5" />
@@ -2397,10 +2396,11 @@ function confirmAddLeadStage(): void {
 
 function removeLeadStage(idx: number): void {
   const draft = leadStageDraft.value[idx]
+  // Kiểm tra stage thực (không phải stage mới tạo trong draft) có chứa lead không
   if (!draft.isNew) {
     const col = columns.value.find((c) => c.id === draft.id)
     if (col && col.cards.length > 0) {
-      toast.error(`Không thể xóa — giai đoạn đang có ${col.cards.length} lead`)
+      toast.warning('Không thể xóa, cần chuyển Lead sang stage khác trước')
       return
     }
   }

@@ -43,11 +43,54 @@
                 <option value="">-- Chọn bộ phận --</option>
                 <option v-for="dept in departments" :key="dept" :value="dept">{{ dept }}</option>
               </select>
+
+              <!-- Inline thêm bộ phận mới -->
+              <div v-if="showAddDept" class="flex items-center gap-1.5">
+                <Input
+                  ref="addDeptInputRef"
+                  v-model="newDeptName"
+                  placeholder="Tên bộ phận mới..."
+                  class="h-8 flex-1 text-xs"
+                  @keyup.enter="addDepartment"
+                  @keyup.escape="cancelAddDept"
+                />
+                <button
+                  type="button"
+                  class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors shrink-0"
+                  title="Xác nhận"
+                  @click="addDepartment"
+                >
+                  <Check class="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  class="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors dark:border-gray-600 dark:hover:border-gray-500 shrink-0"
+                  title="Huỷ"
+                  @click="cancelAddDept"
+                >
+                  <X class="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <button
+                v-else
+                type="button"
+                class="flex items-center gap-1 text-xs font-medium text-brand-500 hover:text-brand-600 transition-colors"
+                @click="openAddDept"
+              >
+                <Plus class="h-3 w-3" />
+                Thêm bộ phận
+              </button>
             </div>
 
             <div class="space-y-1.5">
               <Label class="text-xs font-medium text-gray-600 dark:text-gray-400">Chức vụ</Label>
-              <Input v-model="form.jobTitle" placeholder="VD: Sales Executive" />
+              <select
+                v-model="form.jobTitle"
+                class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="">-- Chọn chức vụ --</option>
+                <option v-for="pos in positions" :key="pos" :value="pos">{{ pos }}</option>
+              </select>
             </div>
           </div>
 
@@ -271,12 +314,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { toast } from 'vue-sonner'
 import {
-  AlertCircle, CheckCircle, Copy, Eye, EyeOff,
-  Loader2, Mail, RefreshCw, Search, Trash2,
-  UserPlus, Users,
+  AlertCircle, Check, CheckCircle, Copy, Eye, EyeOff,
+  Loader2, Mail, Plus, RefreshCw, Search, Trash2,
+  UserPlus, Users, X,
 } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -292,17 +335,50 @@ interface Member {
   createdAt: string
 }
 
-const departments = [
+const departments = ref([
   'Sales', 'Marketing', 'Kỹ thuật', 'Kế toán / Tài chính',
   'Nhân sự', 'Vận hành', 'Chăm sóc khách hàng', 'Ban giám đốc',
-]
+])
+
+// Thêm bộ phận mới
+const showAddDept = ref(false)
+const newDeptName = ref('')
+const addDeptInputRef = ref<InstanceType<typeof import('@/components/ui/input').Input> | null>(null)
+
+function openAddDept() {
+  showAddDept.value = true
+  nextTick(() => {
+    const el = addDeptInputRef.value?.$el as HTMLInputElement | undefined
+    el?.focus()
+  })
+}
+
+function addDepartment() {
+  const name = newDeptName.value.trim()
+  if (!name) return
+  if (departments.value.includes(name)) {
+    toast.error(`Bộ phận "${name}" đã tồn tại`)
+    return
+  }
+  departments.value.push(name)
+  form.value.department = name
+  cancelAddDept()
+  toast.success(`Đã thêm bộ phận "${name}"`)
+}
+
+function cancelAddDept() {
+  showAddDept.value = false
+  newDeptName.value = ''
+}
+
+const positions = ['Admin', 'Team Lead', 'Member']
 
 const members = ref<Member[]>([
   {
     id: '1',
     fullName: 'Nguyễn Thị Lan',
     department: 'Sales',
-    jobTitle: 'Sales Executive',
+    jobTitle: 'Team Lead',
     email: 'lan.nguyen@salio.ai',
     password: 'Salio@2024',
     active: true,
@@ -312,7 +388,7 @@ const members = ref<Member[]>([
     id: '2',
     fullName: 'Trần Minh Tuấn',
     department: 'Marketing',
-    jobTitle: 'Marketing Specialist',
+    jobTitle: 'Member',
     email: 'tuan.tran@salio.ai',
     password: 'Salio@2024',
     active: false,

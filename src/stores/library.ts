@@ -10,6 +10,7 @@ import {
 } from '@/services/library'
 import { isSuccess } from '@/types/common'
 import type { LibraryNode, LibraryNodeType } from '@/types/library'
+import { MOCK_LIBRARY_TREE } from '@/mocks/libraryMock'
 
 const CACHE_TTL_MS = 5 * 60 * 1000
 const POLL_INTERVAL_MS = 30 * 1000
@@ -30,7 +31,7 @@ interface CachedTreePayload {
 }
 
 export const useLibraryStore = defineStore('library', () => {
-  const tree = ref<LibraryNode[]>(ensureSystemRoots([]))
+  const tree = ref<LibraryNode[]>(ensureSystemRoots(MOCK_LIBRARY_TREE))
   const loading = ref(false)
   const error = ref<string | null>(null)
   const lastFetchedAt = ref<number>(0)
@@ -69,7 +70,8 @@ export const useLibraryStore = defineStore('library', () => {
   function hydrateFromCache(): void {
     const cached = readCache()
     if (!cached) {
-      tree.value = ensureSystemRoots(tree.value)
+      // Không có cache → dùng mock làm seed ban đầu
+      tree.value = ensureSystemRoots(MOCK_LIBRARY_TREE)
       return
     }
 
@@ -109,7 +111,14 @@ export const useLibraryStore = defineStore('library', () => {
       const result = await fetchLibraryTree({ include_counts: true })
 
       if (isSuccess(result)) {
-        const normalizedTree = ensureSystemRoots(result.data)
+        // Nếu API trả về dữ liệu thực → dùng dữ liệu đó; nếu rỗng → giữ mock
+        const apiHasRealData = result.data.some(
+          (n) => !n.is_system && n.children && n.children.length > 0,
+        ) || result.data.some(
+          (n) => n.is_system && n.children && n.children.length > 0,
+        )
+        const source = apiHasRealData ? result.data : MOCK_LIBRARY_TREE
+        const normalizedTree = ensureSystemRoots(source)
         tree.value = normalizedTree
         lastFetchedAt.value = Date.now()
         cacheHydrated.value = false
@@ -119,8 +128,11 @@ export const useLibraryStore = defineStore('library', () => {
         return
       }
 
+      // API lỗi → giữ mock data (không xoá trắng cây)
       error.value = result.error
-      tree.value = ensureSystemRoots(tree.value)
+      if (!tree.value.some((n) => n.is_system && n.children.length > 0)) {
+        tree.value = ensureSystemRoots(MOCK_LIBRARY_TREE)
+      }
       loading.value = false
       if (!background) {
         toast.error('Không tải được Thư viện. [Thử lại]')

@@ -102,47 +102,132 @@
         <!-- Bài viết -->
         <article class="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
 
-          <!-- Tiêu đề & meta -->
-          <header v-if="selectedLibraryNode" class="mb-10">
-            <h1 class="mb-3 text-3xl font-bold leading-tight text-gray-900 dark:text-white">
-              {{ selectedLibraryNode.name }}
-            </h1>
-            <div v-if="currentPage.date" class="flex items-center gap-1.5 text-theme-sm text-gray-500 dark:text-gray-400">
-              <Calendar class="h-4 w-4" />
-              <span>Cập nhật: {{ currentPage.date }}</span>
+          <!-- ── Tiêu đề & meta (chung cho mọi loại node) ── -->
+          <header v-if="selectedLibraryNode" class="mb-8">
+            <div class="flex items-start gap-4">
+              <!-- Icon node type -->
+              <div
+                class="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+                :class="selectedLibraryNode.type === 'folder'
+                  ? 'bg-brand-50 dark:bg-brand-500/10'
+                  : docTypeStyle(selectedLibraryNode.file_mime).bg"
+              >
+                <component
+                  :is="selectedLibraryNode.type === 'folder' ? FolderOpen : docTypeStyle(selectedLibraryNode.file_mime).icon"
+                  class="h-6 w-6"
+                  :class="selectedLibraryNode.type === 'folder'
+                    ? 'text-brand-500'
+                    : docTypeStyle(selectedLibraryNode.file_mime).color"
+                />
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <h1 class="mb-2 text-2xl font-bold leading-tight text-gray-900 dark:text-white">
+                  {{ selectedLibraryNode.name }}
+                </h1>
+                <div class="flex flex-wrap items-center gap-3 text-theme-xs text-gray-500 dark:text-gray-400">
+                  <!-- Type badge -->
+                  <span
+                    v-if="selectedLibraryNode.type === 'document'"
+                    class="rounded-full px-2.5 py-0.5 font-medium"
+                    :class="docTypeStyle(selectedLibraryNode.file_mime).badge"
+                  >
+                    {{ docTypeStyle(selectedLibraryNode.file_mime).label }}
+                  </span>
+                  <!-- Status badge -->
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-medium"
+                    :class="selectedLibraryNode.status === 'approved'
+                      ? 'bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-400'
+                      : selectedLibraryNode.status === 'pending'
+                        ? 'bg-warning-50 text-warning-600 dark:bg-warning-500/10 dark:text-warning-400'
+                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
+                  >
+                    <CheckCircle2 v-if="selectedLibraryNode.status === 'approved'" class="h-3 w-3" />
+                    <Clock v-else-if="selectedLibraryNode.status === 'pending'" class="h-3 w-3" />
+                    <CircleDot v-else class="h-3 w-3" />
+                    {{
+                      selectedLibraryNode.status === 'approved' ? 'Đã phê duyệt & ban hành'
+                      : selectedLibraryNode.status === 'pending' ? 'Chờ phê duyệt'
+                      : 'Bản nháp'
+                    }}
+                  </span>
+                  <!-- Updated date -->
+                  <span v-if="currentPage.date" class="flex items-center gap-1">
+                    <Calendar class="h-3.5 w-3.5" />
+                    Cập nhật: {{ currentPage.date }}
+                  </span>
+                  <!-- Children count for folder -->
+                  <span v-if="selectedLibraryNode.type === 'folder'" class="flex items-center gap-1">
+                    <Layers class="h-3.5 w-3.5" />
+                    {{ selectedLibraryNode.children.length }} mục
+                  </span>
+                </div>
+              </div>
             </div>
+
+            <!-- Description (nếu có) -->
+            <p
+              v-if="selectedLibraryNode.description"
+              class="mt-5 text-theme-sm leading-relaxed text-gray-600 dark:text-gray-400 border-l-2 border-brand-300 pl-4"
+            >
+              {{ selectedLibraryNode.description }}
+            </p>
           </header>
 
-          <!-- ── File viewer (khi tài liệu đã được upload) ──────────────────── -->
+          <!-- ── 1. File viewer — document CÓ file_url ─────────────────────── -->
           <section
             v-if="selectedLibraryNode?.type === 'document' && currentFileUrl"
             class="mb-10 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800"
           >
-            <!-- Image viewer -->
-            <template v-if="currentFileMime?.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(currentFileUrl ?? '')">
-              <img
-                :src="currentFileUrl!"
-                :alt="selectedLibraryNode!.name"
-                class="max-h-[640px] w-full object-contain bg-gray-100 dark:bg-gray-900"
-              />
+            <!-- Image viewer — hiển thị trực tiếp -->
+            <template v-if="isImageFile(currentFileMime, currentFileUrl)">
+              <div class="bg-gray-100 dark:bg-gray-900">
+                <img
+                  :src="currentFileUrl!"
+                  :alt="selectedLibraryNode!.name"
+                  class="mx-auto max-h-[640px] w-full object-contain"
+                />
+              </div>
             </template>
-            <!-- PDF inline viewer -->
-            <template v-else-if="currentFileMime === 'application/pdf' || /\.pdf$/i.test(currentFileUrl ?? '')">
-              <iframe
-                :src="currentFileUrl!"
-                class="h-[700px] w-full border-0"
-                title="PDF viewer"
-              />
+
+            <!-- PDF + Office — nhúng qua Google Docs Viewer -->
+            <template v-else-if="isEmbeddableFile(currentFileMime, currentFileUrl)">
+              <div class="relative">
+                <!-- Loading overlay -->
+                <div
+                  v-if="docViewerLoading"
+                  class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/90 dark:bg-gray-900/90"
+                >
+                  <Loader2 class="h-8 w-8 animate-spin text-primary-500" />
+                  <p class="text-theme-sm text-gray-500">Đang tải tài liệu...</p>
+                </div>
+                <iframe
+                  :src="googleDocsViewerUrl(currentFileUrl!)"
+                  class="h-[720px] w-full border-0"
+                  title="Document viewer"
+                  @load="docViewerLoading = false"
+                  @error="docViewerLoading = false"
+                />
+              </div>
             </template>
-            <!-- Other: download card -->
+
+            <!-- Fallback: download card -->
             <template v-else>
               <div class="flex flex-col items-center justify-center gap-5 py-16 bg-gray-50 dark:bg-gray-900">
-                <div class="flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600">
-                  <FileText class="h-10 w-10 text-gray-400 dark:text-gray-500" />
+                <div
+                  class="flex h-20 w-20 items-center justify-center rounded-2xl"
+                  :class="docTypeStyle(selectedLibraryNode!.file_mime).bg"
+                >
+                  <component
+                    :is="docTypeStyle(selectedLibraryNode!.file_mime).icon"
+                    class="h-10 w-10"
+                    :class="docTypeStyle(selectedLibraryNode!.file_mime).color"
+                  />
                 </div>
                 <div class="text-center space-y-1">
                   <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ selectedLibraryNode!.name }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Tệp đã được lưu trữ trên máy chủ</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Tệp đã được lưu trữ. Tải xuống để xem nội dung.</p>
                 </div>
                 <a
                   :href="currentFileUrl!"
@@ -157,52 +242,124 @@
             </template>
           </section>
 
-          <!-- Folder contents (has children) -->
+          <!-- ── 2. Document info — document CHƯA có file ───────────────────── -->
           <section
-            v-if="selectedLibraryNode?.type === 'folder' && selectedLibraryNode.children.length > 0"
-            class="space-y-10"
+            v-else-if="selectedLibraryNode?.type === 'document' && !currentFileUrl"
+            class="mb-10 space-y-6"
           >
-            <!-- Sub-folders list -->
+            <!-- Upload CTA card -->
+            <div class="rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-8 py-10 text-center dark:border-gray-700 dark:bg-gray-900/50">
+              <div
+                class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
+                :class="docTypeStyle(selectedLibraryNode.file_mime).bg"
+              >
+                <component
+                  :is="docTypeStyle(selectedLibraryNode.file_mime).icon"
+                  class="h-8 w-8"
+                  :class="docTypeStyle(selectedLibraryNode.file_mime).color"
+                />
+              </div>
+              <p class="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Chưa có tệp đính kèm
+              </p>
+              <p class="mb-5 text-xs text-gray-500 dark:text-gray-500">
+                Tải lên tệp để xem và chia sẻ nội dung tài liệu này
+              </p>
+              <Button
+                size="sm"
+                class="gap-1.5 bg-primary-500 text-white hover:bg-primary-600"
+                @click="openAddDocumentDialog"
+              >
+                <Upload class="h-4 w-4" />
+                Tải tệp lên
+              </Button>
+            </div>
+
+            <!-- Thông tin chi tiết -->
+            <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+              <div class="border-b border-gray-100 px-5 py-3.5 dark:border-gray-800">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Thông tin tài liệu</p>
+              </div>
+              <dl class="divide-y divide-gray-100 dark:divide-gray-800">
+                <div class="flex items-center gap-4 px-5 py-3.5">
+                  <dt class="w-36 shrink-0 text-xs text-gray-500 dark:text-gray-400">Loại tệp</dt>
+                  <dd class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {{ docTypeStyle(selectedLibraryNode.file_mime).label }}
+                  </dd>
+                </div>
+                <div class="flex items-center gap-4 px-5 py-3.5">
+                  <dt class="w-36 shrink-0 text-xs text-gray-500 dark:text-gray-400">Trạng thái</dt>
+                  <dd>
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      :class="selectedLibraryNode.status === 'approved'
+                        ? 'bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-400'
+                        : selectedLibraryNode.status === 'pending'
+                          ? 'bg-warning-50 text-warning-600 dark:bg-warning-500/10 dark:text-warning-400'
+                          : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
+                    >
+                      {{
+                        selectedLibraryNode.status === 'approved' ? 'Đã phê duyệt & ban hành'
+                        : selectedLibraryNode.status === 'pending' ? 'Chờ phê duyệt'
+                        : 'Bản nháp'
+                      }}
+                    </span>
+                  </dd>
+                </div>
+                <div v-if="currentPage.date" class="flex items-center gap-4 px-5 py-3.5">
+                  <dt class="w-36 shrink-0 text-xs text-gray-500 dark:text-gray-400">Cập nhật lần cuối</dt>
+                  <dd class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ currentPage.date }}</dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+
+          <!-- ── 3. Folder contents — thư mục có con ────────────────────────── -->
+          <section
+            v-else-if="selectedLibraryNode?.type === 'folder' && selectedLibraryNode.children.length > 0"
+            class="space-y-8"
+          >
+            <!-- Sub-folders grid -->
             <div v-if="folderChildren.length > 0">
               <div class="mb-4 flex items-center gap-2">
-                <FolderOpen class="h-5 w-5 text-brand-500" />
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                <FolderOpen class="h-4.5 w-4.5 text-brand-500" />
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
                   Thư mục con
                   <span class="ml-1.5 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-500 dark:bg-brand-500/10">
                     {{ folderChildren.length }}
                   </span>
                 </h3>
               </div>
-              <div class="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white dark:divide-gray-800 dark:border-gray-800 dark:bg-gray-900">
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <button
                   v-for="child in folderChildren"
                   :key="child.id"
                   type="button"
-                  class="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                  class="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left transition-all hover:border-brand-300 hover:shadow-theme-sm dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500/40"
                   @click="handleTreeSelect(child)"
                 >
                   <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 transition-colors group-hover:bg-brand-100 dark:bg-brand-500/10 dark:group-hover:bg-brand-500/20">
                     <FolderOpen class="h-5 w-5 text-brand-500" />
                   </div>
                   <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-medium text-gray-900 group-hover:text-brand-500 dark:text-white">
+                    <p class="truncate text-sm font-medium text-gray-900 group-hover:text-brand-600 dark:text-white dark:group-hover:text-brand-400">
                       {{ child.name }}
                     </p>
-                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      {{ child.children.length > 0 ? `${child.children.length} mục` : child.total_children ? `${child.total_children} mục` : 'Thư mục' }}
+                    <p class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                      {{ child.documents_count > 0 ? `${child.documents_count} tài liệu` : child.children.length > 0 ? `${child.children.length} mục` : 'Thư mục trống' }}
                     </p>
                   </div>
-                  <ChevronRight class="h-4 w-4 shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-500" />
+                  <ChevronRight class="h-4 w-4 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-gray-600" />
                 </button>
               </div>
             </div>
 
             <!-- Documents list -->
-            <div>
+            <div v-if="documentChildren.length > 0 || !folderChildren.length">
               <div class="mb-4 flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <FileText class="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                  <FileText class="h-4.5 w-4.5 text-gray-500 dark:text-gray-400" />
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
                     Tài liệu
                     <span class="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                       {{ documentChildren.length }}
@@ -211,61 +368,125 @@
                 </div>
                 <Button
                   size="sm"
-                  class="gap-1.5 bg-primary-500 text-white hover:bg-primary-600"
+                  variant="outline"
+                  class="gap-1.5 text-gray-600 dark:text-gray-400"
                   @click="openAddDocumentDialog"
                 >
                   <Plus class="h-4 w-4" />
                   Thêm tài liệu
                 </Button>
               </div>
+
               <div
                 v-if="documentChildren.length > 0"
                 class="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white dark:divide-gray-800 dark:border-gray-800 dark:bg-gray-900"
               >
                 <button
-                  v-for="doc in documentChildren"
-                  :key="doc.id"
+                  v-for="docNode in documentChildren"
+                  :key="docNode.id"
                   type="button"
-                  class="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
-                  @click="handleTreeSelect(doc)"
+                  class="group flex w-full items-center gap-4 px-5 py-3.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                  @click="handleTreeSelect(docNode)"
                 >
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-brand-50 dark:bg-gray-800 dark:group-hover:bg-brand-500/10">
-                    <FileText class="h-5 w-5 text-gray-400 group-hover:text-brand-500 dark:text-gray-500" />
+                  <!-- File type icon -->
+                  <div
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors"
+                    :class="docTypeStyle(docNode.file_mime).bg"
+                  >
+                    <component
+                      :is="docTypeStyle(docNode.file_mime).icon"
+                      class="h-4.5 w-4.5 transition-colors"
+                      :class="docTypeStyle(docNode.file_mime).color"
+                    />
                   </div>
                   <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-medium text-gray-900 group-hover:text-brand-500 dark:text-white">
-                      {{ doc.name }}
+                    <p class="truncate text-sm font-medium text-gray-900 group-hover:text-brand-600 dark:text-white dark:group-hover:text-brand-400">
+                      {{ docNode.name }}
                     </p>
-                    <p v-if="doc.updated_at" class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      Cập nhật: {{ formatDate(doc.updated_at) }}
-                    </p>
+                    <div class="mt-0.5 flex items-center gap-2">
+                      <span class="text-[11px] font-medium" :class="docTypeStyle(docNode.file_mime).textColor">
+                        {{ docTypeStyle(docNode.file_mime).label }}
+                      </span>
+                      <span class="text-gray-300 dark:text-gray-700">·</span>
+                      <span v-if="docNode.updated_at" class="text-[11px] text-gray-400 dark:text-gray-500">
+                        {{ formatDate(docNode.updated_at) }}
+                      </span>
+                    </div>
                   </div>
-                  <ChevronRight class="h-4 w-4 shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-500" />
+                  <!-- Status dot -->
+                  <span
+                    class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    :class="docNode.status === 'approved'
+                      ? 'bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-400'
+                      : docNode.status === 'pending'
+                        ? 'bg-warning-50 text-warning-600 dark:bg-warning-500/10 dark:text-warning-400'
+                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800'"
+                  >
+                    {{ docNode.status === 'approved' ? 'Đã duyệt' : docNode.status === 'pending' ? 'Chờ duyệt' : 'Nháp' }}
+                  </span>
+                  <ChevronRight class="h-4 w-4 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-gray-600" />
                 </button>
+              </div>
+
+              <!-- Folder has sub-folders but no docs -->
+              <div
+                v-else
+                class="rounded-xl border border-dashed border-gray-200 py-10 text-center dark:border-gray-700"
+              >
+                <p class="text-sm text-gray-400 dark:text-gray-600">Chưa có tài liệu trong thư mục này</p>
+                <Button size="sm" class="mt-3 gap-1.5 bg-primary-500 text-white hover:bg-primary-600" @click="openAddDocumentDialog">
+                  <Plus class="h-4 w-4" />
+                  Thêm tài liệu
+                </Button>
               </div>
             </div>
           </section>
 
-          <!-- Empty state -->
+          <!-- ── 4. Empty state ─────────────────────────────────────────────── -->
           <section
-            v-if="showEmptyState"
+            v-else-if="showEmptyState"
             class="flex flex-col items-center justify-center py-16 text-center"
           >
-            <div class="mb-6 flex h-52 w-52 items-center justify-center rounded-3xl border-2 border-dashed border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
-              <FileText class="h-20 w-20 text-gray-300 dark:text-gray-600" />
+            <div class="mb-6 flex h-48 w-48 items-center justify-center rounded-3xl border-2 border-dashed border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
+              <FolderOpen class="h-16 w-16 text-gray-200 dark:text-gray-700" />
             </div>
-            <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Trang này chưa có nội dung</h2>
-            <p class="mb-8 max-w-md text-theme-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+            <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Thư mục trống</h2>
+            <p class="mb-6 max-w-sm text-theme-sm text-gray-400 dark:text-gray-500 leading-relaxed">
               {{ emptyDescription }}
             </p>
-            <Button
-              v-if="selectedLibraryNode"
-              class="gap-2 bg-primary-500 text-white hover:bg-primary-600"
-              @click="openAddDocumentDialog"
-            >
-              <Plus class="h-4 w-4" />
-              Thêm tài liệu
-            </Button>
+            <div class="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                class="gap-1.5"
+                @click="showGlobalAddFolderModal = true"
+              >
+                <FolderOpen class="h-4 w-4" />
+                Thêm thư mục con
+              </Button>
+              <Button
+                size="sm"
+                class="gap-1.5 bg-primary-500 text-white hover:bg-primary-600"
+                @click="openAddDocumentDialog"
+              >
+                <Plus class="h-4 w-4" />
+                Thêm tài liệu
+              </Button>
+            </div>
+          </section>
+
+          <!-- ── 5. Welcome state — chưa chọn node nào ─────────────────────── -->
+          <section
+            v-else-if="!selectedLibraryNode"
+            class="flex flex-col items-center justify-center py-20 text-center"
+          >
+            <div class="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-brand-50 dark:bg-brand-500/10">
+              <BookOpen class="h-12 w-12 text-brand-400" />
+            </div>
+            <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Thư viện tài liệu</h2>
+            <p class="max-w-sm text-theme-sm text-gray-400 dark:text-gray-500 leading-relaxed">
+              Chọn một thư mục hoặc tài liệu ở sidebar bên trái để xem nội dung.
+            </p>
           </section>
 
         </article>
@@ -714,34 +935,40 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue-sonner'
 import {
-  Bold,
-  Copy,
   BookOpen,
   Building2,
   Calendar,
   CheckCircle2,
   ChevronRight,
+  CircleDot,
+  Clock,
+  Copy,
   Download,
-  Eye,
+  File,
+  FileImage,
+  FileSpreadsheet,
   FileText,
+  FileType,
   FolderOpen,
+  Layers,
   Loader2,
   Mail,
-  MessageSquare,
-  Paperclip,
   Pencil,
   Plus,
+  Presentation,
   Share2,
   Shield,
+  Upload,
   UserRound,
   Users,
   X,
 } from 'lucide-vue-next'
+import type { Component } from 'vue'
 
 import { get } from '@/services/api'
 import {
@@ -801,10 +1028,91 @@ const documentChildren = computed<LibraryNode[]>(() =>
 
 const showEmptyState = computed(() => {
   const node = selectedLibraryNode.value
-  if (!node) return true
-  if (node.type === 'folder') return node.children.length === 0
-  return !currentFileUrl.value
+  if (!node) return false               // → welcome state
+  if (node.type === 'document') return false // → document info section handles this
+  return node.children.length === 0    // folder with no children
 })
+
+// ─── File type style helper ───────────────────────────────────────────────────
+interface DocTypeStyle {
+  icon: Component
+  label: string
+  bg: string
+  color: string
+  textColor: string
+  badge: string
+}
+
+function docTypeStyle(mime?: string | null): DocTypeStyle {
+  if (!mime) {
+    return {
+      icon: File,
+      label: 'Tài liệu',
+      bg: 'bg-gray-100 dark:bg-gray-800',
+      color: 'text-gray-400 dark:text-gray-500',
+      textColor: 'text-gray-500 dark:text-gray-400',
+      badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
+    }
+  }
+  if (mime === 'application/pdf') {
+    return {
+      icon: FileText,
+      label: 'PDF',
+      bg: 'bg-error-50 dark:bg-error-500/10',
+      color: 'text-error-500',
+      textColor: 'text-error-500',
+      badge: 'bg-error-50 text-error-600 dark:bg-error-500/10 dark:text-error-400',
+    }
+  }
+  if (mime.includes('word') || mime.includes('wordprocessingml')) {
+    return {
+      icon: FileType,
+      label: 'Word',
+      bg: 'bg-brand-50 dark:bg-brand-500/10',
+      color: 'text-brand-500',
+      textColor: 'text-brand-500',
+      badge: 'bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400',
+    }
+  }
+  if (mime.includes('spreadsheet') || mime.includes('excel') || mime.includes('csv')) {
+    return {
+      icon: FileSpreadsheet,
+      label: 'Excel',
+      bg: 'bg-success-50 dark:bg-success-500/10',
+      color: 'text-success-600',
+      textColor: 'text-success-600',
+      badge: 'bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-400',
+    }
+  }
+  if (mime.includes('presentation') || mime.includes('powerpoint')) {
+    return {
+      icon: Presentation,
+      label: 'PowerPoint',
+      bg: 'bg-warning-50 dark:bg-warning-500/10',
+      color: 'text-warning-600',
+      textColor: 'text-warning-600',
+      badge: 'bg-warning-50 text-warning-600 dark:bg-warning-500/10 dark:text-warning-400',
+    }
+  }
+  if (mime.startsWith('image/')) {
+    return {
+      icon: FileImage,
+      label: 'Hình ảnh',
+      bg: 'bg-violet-50 dark:bg-violet-500/10',
+      color: 'text-violet-500',
+      textColor: 'text-violet-500',
+      badge: 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
+    }
+  }
+  return {
+    icon: File,
+    label: 'Tệp',
+    bg: 'bg-gray-100 dark:bg-gray-800',
+    color: 'text-gray-400 dark:text-gray-500',
+    textColor: 'text-gray-500 dark:text-gray-400',
+    badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
+  }
+}
 
 
 const libraryStore = useLibraryStore()
@@ -1011,6 +1319,36 @@ function submitEdit(): void {
   }
   showEditDialog.value = false
   toast.success('Đã cập nhật tài liệu')
+}
+
+// ─── Document viewer helpers ──────────────────────────────────────────────────
+const docViewerLoading = ref(false)
+
+watch(
+  () => currentFileUrl.value,
+  (url) => {
+    if (url && isEmbeddableFile(currentFileMime.value, url)) {
+      docViewerLoading.value = true
+    }
+  },
+)
+
+function isImageFile(mime?: string | null, url?: string | null): boolean {
+  if (mime?.startsWith('image/')) return true
+  return /\.(png|jpe?g|gif|webp|svg)$/i.test(url ?? '')
+}
+
+function isEmbeddableFile(mime?: string | null, url?: string | null): boolean {
+  if (!url) return false
+  if (mime === 'application/pdf' || /\.pdf$/i.test(url)) return true
+  if (mime?.includes('wordprocessingml') || mime?.includes('word') || /\.docx?$/i.test(url)) return true
+  if (mime?.includes('spreadsheetml') || mime?.includes('excel') || /\.xlsx?$/i.test(url)) return true
+  if (mime?.includes('presentationml') || mime?.includes('powerpoint') || /\.pptx?$/i.test(url)) return true
+  return false
+}
+
+function googleDocsViewerUrl(fileUrl: string): string {
+  return `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(fileUrl)}`
 }
 
 // ─── Global add folder modal ──────────────────────────────────

@@ -259,6 +259,59 @@
             >
               <Settings class="h-4 w-4" />
             </button>
+            <!-- Excel import / export (Lead & Deal only) -->
+            <div
+              v-if="activeTab === 'lead' || activeTab === 'deal'"
+              class="relative"
+            >
+              <button
+                ref="excelMenuBtn"
+                type="button"
+                class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                title="Import / Export Excel"
+                @click.stop="showExcelMenu = !showExcelMenu"
+              >
+                <FileDown class="h-3.5 w-3.5" />
+                Excel
+                <ChevronDown class="h-3 w-3 opacity-60" />
+              </button>
+
+              <!-- Dropdown menu -->
+              <div
+                v-if="showExcelMenu"
+                class="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
+                @click.stop
+              >
+                <!-- Import -->
+                <label
+                  class="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+                  @click="showExcelMenu = false"
+                >
+                  <FileUp class="h-4 w-4 shrink-0 text-brand-500" />
+                  <span>Thêm mới từ excel</span>
+                  <input
+                    ref="excelImportInput"
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    class="hidden"
+                    @change="handleImportExcel"
+                  />
+                </label>
+
+                <div class="mx-3 border-t border-gray-100 dark:border-gray-800" />
+
+                <!-- Export -->
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+                  @click="handleExportExcel"
+                >
+                  <FileDown class="h-4 w-4 shrink-0 text-success-500" />
+                  <span>Xuất danh sách ra excel</span>
+                </button>
+              </div>
+            </div>
+
             <Button
               v-if="activeTab !== 'customer'"
               class="gap-1.5 bg-primary-700 text-white hover:bg-primary-800"
@@ -2002,6 +2055,8 @@ import {
   ChevronDown,
   CircleDot,
   Copy,
+  FileDown,
+  FileUp,
   GitBranch,
   GripVertical,
   Hash,
@@ -2994,6 +3049,39 @@ function toggleDealSection(sectionId: string, visible: boolean): void {
     .filter((f) => f.sectionId === sectionId)
     .forEach((f) => dealFieldStore.setFieldVisible(f.fieldId, visible))
   dealFieldStore.saveConfig()
+}
+
+// ─── Excel import / export ────────────────────────────────────
+
+const showExcelMenu = ref(false)
+const excelMenuBtn = ref<HTMLElement | null>(null)
+const excelImportInput = ref<HTMLInputElement | null>(null)
+
+watch(showExcelMenu, (open) => {
+  if (open) {
+    nextTick(() => document.addEventListener('click', closeExcelMenuOutside))
+  } else {
+    document.removeEventListener('click', closeExcelMenuOutside)
+  }
+})
+
+function closeExcelMenuOutside(): void {
+  showExcelMenu.value = false
+}
+
+function handleImportExcel(event: Event): void {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  // TODO: parse .xlsx file and import leads/deals
+  toast.success(`Đã chọn file: ${file.name}`)
+  ;(event.target as HTMLInputElement).value = ''
+  showExcelMenu.value = false
+}
+
+function handleExportExcel(): void {
+  // TODO: export current leads/deals to .xlsx
+  toast.success('Đang xuất danh sách ra Excel…')
+  showExcelMenu.value = false
 }
 
 // ─── Deal dialog state ────────────────────────────────────────

@@ -24,6 +24,8 @@ export interface LibraryNode {
   file_id?: string | null
   /** MIME type of the uploaded file */
   file_mime?: string | null
+  /** Mô tả / hướng dẫn sử dụng tài liệu */
+  description?: string | null
 }
 
 export interface ChatContextPayload {
